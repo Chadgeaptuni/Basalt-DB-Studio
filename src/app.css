@@ -51,8 +51,9 @@
     background-color: var(--bg-0);
     color: var(--fg-1);
     font-size: 14px;
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+    /* No font-smoothing/text-rendering overrides: forcing `antialiased` thins
+       light-on-dark text (default dark theme) so it reads blurry, and
+       `optimizeLegibility` adds subpixel-kerning fuzz. OS default renders crispest. */
     /* The app shell owns scrolling; the window itself never scrolls (DESIGN §5). */
     overflow: hidden;
   }

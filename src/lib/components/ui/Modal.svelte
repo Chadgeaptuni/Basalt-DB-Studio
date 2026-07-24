@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
   import X from "@lucide/svelte/icons/x";
   import IconButton from "./IconButton.svelte";
+  import { uiFade, uiScale } from "$lib/utils/motion";
 
   interface Props {
     open?: boolean;
@@ -45,12 +46,14 @@
       tabindex="-1"
       class="absolute inset-0 bg-bg-0/60"
       onclick={close}
+      transition:uiFade
     ></button>
     <div
       role="dialog"
       aria-modal="true"
       aria-label={title}
       class="relative z-10 w-full {maxw} rounded-lg border border-border bg-bg-2"
+      transition:uiScale
     >
       <header class="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 class="text-base font-medium text-fg-0">{title}</h2>

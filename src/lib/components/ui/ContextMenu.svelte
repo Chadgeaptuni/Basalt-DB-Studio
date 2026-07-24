@@ -9,6 +9,8 @@
 <script lang="ts">
   // Floating menu at (x,y): `--bg-2`, 1px border, 24px rows (DESIGN §6). Closes on
   // outside click / Escape. Dumb primitive — the caller owns the items + placement.
+  import { uiScale } from "$lib/utils/motion";
+
   interface Props {
     x: number;
     y: number;
@@ -36,9 +38,10 @@
   role="menu"
   tabindex="-1"
   class="fixed z-50 min-w-44 rounded-lg border border-border bg-bg-2 py-1"
-  style="left:{x}px; top:{y}px"
+  style="left:{x}px; top:{y}px; transform-origin:top left"
   onclick={(e) => e.stopPropagation()}
   onkeydown={() => {}}
+  transition:uiScale
 >
   {#each items as item (item.label)}
     <button
