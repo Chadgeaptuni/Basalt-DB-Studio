@@ -7,6 +7,7 @@
   import Database from "@lucide/svelte/icons/database";
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
+  import AccordionSection from "$lib/components/ui/AccordionSection.svelte";
   import Badge from "$lib/components/ui/Badge.svelte";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
@@ -75,11 +76,10 @@
   }
 </script>
 
-<div class="flex h-full flex-col">
-  <header class="flex h-9 items-center justify-between border-b border-border px-3">
-    <span class="text-xs font-medium tracking-wider text-fg-2 uppercase">Connections</span>
+<AccordionSection id="connections" title="Connections">
+  {#snippet actions()}
     <IconButton icon={Plug} title="New connection" size="sm" onclick={() => (form = { profile: null })} />
-  </header>
+  {/snippet}
 
   <div class="flex-1 overflow-auto">
     {#if !connections.loaded}
@@ -142,7 +142,7 @@
       </ul>
     {/if}
   </div>
-</div>
+</AccordionSection>
 
 {#if form}
   <ConnectionForm profile={form.profile} onclose={() => (form = null)} />

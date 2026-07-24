@@ -8,6 +8,7 @@
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
+  import AccordionSection from "$lib/components/ui/AccordionSection.svelte";
   import ContextMenu, { type MenuItem } from "$lib/components/ui/ContextMenu.svelte";
   import { savedQueries } from "$lib/stores/savedQueries.svelte";
   import { saveQuery } from "$lib/stores/saveQuery.svelte";
@@ -66,13 +67,11 @@
   }
 </script>
 
-<div class="flex h-full flex-col">
-  <header class="flex h-9 items-center gap-2 border-b border-border px-3">
-    <span class="text-xs font-medium tracking-wider text-fg-2 uppercase">Saved</span>
-    <div class="flex-1"></div>
+<AccordionSection id="saved" title="Saved">
+  {#snippet actions()}
     <IconButton icon={Save} title="Save current query" size="sm" onclick={() => void saveQuery.trigger()} />
     <IconButton icon={RefreshCw} title="Refresh" size="sm" onclick={() => void savedQueries.load()} />
-  </header>
+  {/snippet}
 
   <div class="flex-1 overflow-auto py-1">
     {#if savedQueries.loading && savedQueries.items.length === 0}
@@ -101,7 +100,7 @@
       </div>
     {/if}
   </div>
-</div>
+</AccordionSection>
 
 {#if menu}
   <ContextMenu x={menu.x} y={menu.y} items={menu.items} onclose={() => (menu = null)} />

@@ -20,9 +20,14 @@ questions CLAUDE.md governs; this spec owns architecture and scope.
 1. **Bundle < 30 MB, lightweight is a first-class goal.** Must still feel
    polished and finished, not stripped. This constraint can veto features and
    dependencies. Enforced in CI by `scripts/check-bundle-size.mjs`.
-2. **Cross-platform:** macOS, Windows, Linux from day one (Tauri build matrix in CI).
+2. **Cross-platform:** macOS, Windows, Linux from day one (Tauri build matrix in
+   CI). Minimum targets: **macOS 13, Windows 11, and Linux with webkit2gtk 4.1**
+   (e.g. Ubuntu 22.04+).
 3. **Secrets never leak into git.** Connection TOML stores a `secret_ref` (UUID)
    only — the profile struct has no password field, making leakage a type error.
+4. **No telemetry.** No analytics, crash reporting, or usage tracking of any
+   kind. The only outbound network is the user's own DB connections, git-sync to
+   their own remote, and the signed update check — a documented guarantee.
 
 ## Differentiators (where we invest)
 
@@ -61,14 +66,14 @@ calls Tauri commands; Rust owns all data access.
 Svelte UI ──invoke──▶ commands ──▶ services ──▶ Driver enum (Pg | MySql | Sqlite)
                                       │              └─ sqlx, rustls, russh tunnel
                                       ├─▶ config dir (TOML)  ◀── git-sync unit
-                                      ├─▶ local SQLite       ◀── query history
                                       └─▶ SecretStore        ◀── keychain | encrypted file
+(query history lives in-memory in the Svelte UI, session-scoped)
 ```
 
 ### Backend — `src-tauri/`
 
 Layering rule: **commands → services → (drivers | sqlgen | config | secrets |
-tunnel | history | gitsync)**. Commands are thin (deserialize → service → map
+tunnel | gitsync)**. Commands are thin (deserialize → service → map
 error). Nothing below `services/` imports `tauri`.
 
 ```
@@ -76,15 +81,14 @@ src-tauri/
 ├── Cargo.toml                    # release profile; sqlx/keyring features as above
 ├── tauri.conf.json               # CSP, frontendDist, removeUnusedCommands
 ├── capabilities/default.json
-├── migrations/                   # history DB, numbered 0001_..., additive only
 ├── src/
-│   ├── main.rs / lib.rs / state.rs   # builder, tracing init, AppState { sessions, history, config }
+│   ├── main.rs / lib.rs / state.rs   # builder, tracing→rotating file log, AppState { sessions, config }
 │   ├── errors/mod.rs             # AppError (thiserror) → ErrorResponse { kind, message, detail }
 │   ├── commands/                 # one file per domain: connections, introspect, query,
-│   │                             # grid, ddl, history, export, import, gitsync, settings
+│   │                             # grid, ddl, export, import, gitsync, settings
 │   ├── services/                 # connection_service (SessionRegistry), query_service,
 │   │                             # grid_service, ddl_service, export/import_service,
-│   │                             # history_service, gitsync_service
+│   │                             # gitsync_service
 │   ├── drivers/
 │   │   ├── mod.rs                # enum Driver { Pg, MySql, Sqlite } — the ONLY match-dispatch site
 │   │   ├── types.rs              # wire types: ColumnMeta, CellValue, QueryResult, SchemaTree, TxStatus
@@ -95,7 +99,6 @@ src-tauri/
 │   ├── config/                   # paths.rs, connections.rs (NO secret fields — secret_ref only),
 │   │                             # saved_queries.rs, settings.rs   (all TOML)
 │   ├── secrets/                  # mod.rs: SecretStore { Keychain (default) | EncryptedFile (opt-in) }
-│   ├── history/mod.rs            # local SQLite via sqlx; runs migrations/
 │   └── gitsync/mod.rs            # shells out to system git
 └── tests/                        # integration: common/ harness (env-gated), pg_integration,
                                   # mysql_integration, sqlite_integration, grid_roundtrip
@@ -119,7 +122,7 @@ Key backend decisions:
   `confirmationRequired` (detail: classified statements) · `secretNotFound` ·
   `keychainUnavailable` · `vaultLocked` · `configIo` · `configParse` ·
   `gitNotInstalled` · `gitConflict` · `gitDirty` · `importParse` (detail: line)
-  · `historyDb` · `internal`.
+  · `internal`.
 
 ### Frontend — `src/`
 
@@ -155,9 +158,21 @@ Global services declared once (DESIGN.md §9): `toast.success|error|info()` and
 
 - **Config dir** (`~/.config/basalt/` or OS equivalent, via `dirs`): connection
   profiles + saved queries + app settings as TOML. Human-readable, diff-able,
-  and directly usable as the git-sync repo.
-- **Local SQLite:** query history only (searchable, re-runnable; excluded from
-  git because it grows). Migrations numbered, additive.
+  and directly usable as the git-sync repo. Saved queries are organized into
+  **named files under nestable folders** (subdirectories) for clean diffs. TOML
+  carries no schema-version field in v1 — fields are additive and unknown keys
+  are tolerated (forward-compatible by convention); cross-version migration is
+  deferred.
+- **Query history is session-scoped and in-memory** (a frontend rune store fed
+  from each `StatementResult`): searchable and re-runnable within the running
+  app, cleared on quit. No local database, no migrations — nothing to persist,
+  prune, or sync.
+- **Workspace state** — open editor tabs with their unsaved SQL, and the
+  last-active connections — persists per-machine in the config dir
+  (`workspace.toml`, **not** git-synced). On launch, tabs are restored and
+  sessions whose secret is available (keychain) are **auto-reconnected**;
+  encrypted-vault / prompt-only connections restore as disconnected until
+  unlocked.
 - **Secrets — decided (was v1's open question): both backends behind one
   `SecretStore` interface.**
   - **Default: OS keychain** via `keyring` 4.x (service `basalt-db-studio`,
@@ -195,6 +210,25 @@ Decode lives in each engine's `values.rs` — the **single** edge-type site,
 unit-tested per engine (Pg enums decode as `Text`; unmatched types fall back to
 text cast, else `Unknown`).
 
+**Datetime display is a user setting** (`as-stored` · `local` · `UTC`). The wire
+value is always ISO 8601 exactly as the engine returns it (offset preserved for
+timestamptz, naive stays naive); the setting transforms only how a cell is
+*rendered*, never the stored or edited value.
+
+### Connections, TLS & SSH
+
+- **TLS/SSL** exposes the full Postgres-style ladder — `disable` · `require` ·
+  `verify-ca` · `verify-full` — plus an optional **custom CA certificate** and
+  **client cert/key** (rustls, configured per engine). Certs/keys are file-path
+  references in the profile TOML, not secrets. Failures map to `tlsError`.
+- **SSH tunnel** (russh) supports **private key (optional passphrase), password,
+  and ssh-agent** auth. The key passphrase and the SSH password live in the
+  `SecretStore` blob alongside the DB password; the key file itself is a path
+  reference. Failures map to `tunnelError`.
+- **Connect timeout** bounds the initial connection (configurable, default ~10s
+  → fails fast to the matching connection error kind), separate from the
+  per-query statement timeout below.
+
 ### Grid CRUD
 
 - **Editable surface (v1 rule):** CRUD only in the *table data view* (opened
@@ -211,6 +245,17 @@ text cast, else `Unknown`).
   Binary/`Unknown` cells are read-only in v1.
 - The whole batch runs in **one transaction**; any failure rolls everything back
   and returns the failing statement index (frontend highlights the row).
+- **Table-data browse is buffered, not paged:** the data view loads the same
+  `limit + 1` window as any query (default 500); v1 has **no** built-in
+  pagination, click-to-sort, or column filters — refine with SQL. (Server-side
+  paging/sort/filter is deferred.)
+- **Editing UX:** double-click / `Enter` edits a cell inline; JSON and array
+  cells edit as validated text; a **Set to NULL** action (context menu +
+  shortcut) writes SQL `NULL`, kept distinct from empty string. Binary and
+  `Unknown` cells remain read-only in v1. No separate value-viewer panel.
+- **Copy:** `Ctrl+C` copies the selection as TSV (NULL → empty, no header);
+  `Ctrl+Shift+C` opens **Advanced Copy** (toggle header row, choose delimiter,
+  quoting) — a single shared implementation, no per-call-site copy logic.
 
 ### Query lifecycle
 
@@ -224,6 +269,12 @@ text cast, else `Unknown`).
   `SELECT pg_cancel_backend($1)` on the side pool. MySQL → `CONNECTION_ID()` +
   `KILL QUERY <id>`. SQLite → abort the task and drop+reopen the connection
   (cheap); an open explicit tx is reported lost via `queryCancelled` detail.
+- **Statement timeout:** a configurable per-connection timeout, **default off**.
+  When set, a query exceeding it is auto-cancelled through the same cancel path
+  and surfaced as `queryCancelled`; manual `Escape`/cancel is always available.
+- **Result presentation:** a multi-statement run returns `Vec<StatementResult>`;
+  the UI renders **one result tab per statement** (Result 1…n), the failing
+  statement's tab carrying its `queryError`.
 - **Transactions / autocommit:** the session's dedicated connection is the tx
   boundary. `TxStatus { idle | inTx | error }` tracked per session (Pg from
   connection status; MySQL/SQLite by statement classification). Status bar shows
@@ -240,16 +291,46 @@ text cast, else `Unknown`).
   `confirmed: true`. Read-only connections reject non-SELECT with
   `readOnlyViolation`, plus the engine-level read-only session setting where
   available as a second layer.
-- Every executed statement (success or failure, duration, row count) is written
-  to history fire-and-forget — never blocking the result path.
+- Every executed statement (success or failure, duration, row count) is pushed
+  to the in-memory history store from the frontend as results return — never on
+  the result path's critical section.
 
 ### Git-sync
 
 Shell out to **system git** (no `git2`/`gix` — bundle weight, and target users
-have git). Config dir is the repo. "Sync" = `add -A` → `commit` →
-`pull --rebase` → `push`. Missing git → `gitNotInstalled` with an actionable
-state; conflicts → `gitConflict` ("resolve in your git tool, then retry") — v1
-builds no merge UI. History DB and secrets are never inside the synced dir.
+have git). Config dir is the repo. Sync is **manual only in v1** (a Sync button;
+no background/auto-sync): `add -A` → `commit` → `pull --rebase` → `push`. Missing
+git → `gitNotInstalled` with an actionable state; conflicts → `gitConflict`
+("resolve in your git tool, then retry") — v1 builds no merge UI. Secrets and the
+per-machine `workspace.toml` are never inside the synced dir.
+
+### Import / export
+
+- **Export re-runs the query and streams the full result** to CSV/JSON — not
+  just the buffered on-screen rows — with progress over `tauri::ipc::Channel`.
+  An export is therefore complete even when the grid was truncated to the row
+  limit. (M5's 100k-row gate.)
+- **CSV import** offers a per-run conflict mode — **insert · upsert · skip
+  duplicates** — emitting the engine's native form (`INSERT` /
+  `INSERT … ON CONFLICT … DO UPDATE` (Pg) · `INSERT … ON DUPLICATE KEY UPDATE`
+  (MySQL) · `INSERT OR IGNORE`/`INSERT OR REPLACE` (SQLite)). Rows batch inside
+  one transaction; type/parse errors are reported by line (`importParse`).
+
+### Distribution, updates & diagnostics
+
+- **Signed, auto-updating builds:** release artifacts are code-signed (macOS
+  notarization, Windows Authenticode) and ship the **Tauri updater plugin** for
+  in-app updates. The updater's signed check is the app's only non-DB/non-git
+  outbound call. Plugin + signing weight counts against the 30 MB ceiling
+  (tracked from M0).
+- **Logging:** `tracing` writes a **rotating log file** in the OS data/log dir
+  (`tracing-appender`); no in-app log viewer in v1. Given the no-telemetry
+  stance, this file is the primary diagnostic for bug reports.
+- **Accessibility (v1):** full keyboard operability, `:focus-visible` rings, and
+  `prefers-reduced-motion` (DESIGN.md §7). A formal ARIA / screen-reader pass is
+  deferred.
+- **Localization (v1):** English-only UI, strings inline; a translation catalog
+  is deferred.
 
 ---
 
@@ -265,12 +346,12 @@ builds no merge UI. History DB and secrets are never inside the synced dir.
   `BASALT_TEST_PG_URL`/`BASALT_TEST_MYSQL_URL` and self-skip when unset (local
   `cargo test` stays green without Docker); SQLite runs unconditionally.
   Flagship: `grid_roundtrip.rs` — introspect → fetch page → edit batch →
-  re-read → assert, on all engines. History DB uses `#[sqlx::test]`.
+  re-read → assert, on all engines.
 - **Frontend:** vitest + `@testing-library/svelte`, co-located `*.test.ts`:
-  store logic (tabs, toasts, dialogs promise resolution, schema cache),
-  `VirtualList` windowing math, autocomplete config from a mocked schema store.
-  IPC mocked via official `@tauri-apps/api/mocks`. `svelte-check` is the type
-  gate.
+  store logic (tabs, toasts, dialogs promise resolution, schema cache,
+  session history store), `VirtualList` windowing math, autocomplete config
+  from a mocked schema store, Advanced-Copy TSV formatting. IPC mocked via
+  official `@tauri-apps/api/mocks`. `svelte-check` is the type gate.
 - **Regression policy:** every bugfix lands with a co-located test reproducing
   it (CLAUDE.md rule; applies from the first bug).
 - **CI (`.github/workflows/ci.yml`):**
@@ -307,17 +388,19 @@ builds no merge UI. History DB and secrets are never inside the synced dir.
 
 | Area | Features |
 |------|----------|
-| Engines | PostgreSQL, MySQL/MariaDB, SQLite; TLS/SSL modes |
-| Connections | Test button, read-only toggle, SSH tunnel |
-| Browse | Schema tree (DBs, schemas, tables, columns, indexes, views) |
-| Editor | Schema-aware autocomplete, format, multi-tab, multi-statement, query history |
-| Data | Inline grid CRUD (edit/insert/delete, commit/rollback) |
+| Engines | PostgreSQL, MySQL/MariaDB, SQLite |
+| Connections | Test button, read-only toggle, TLS ladder (disable→verify-full, custom CA + client cert), SSH tunnel (key/passphrase/password/agent), connect timeout |
+| Browse | Schema tree (DBs, schemas, tables, columns, indexes, views); buffered table-data view |
+| Editor | Schema-aware autocomplete, format, multi-tab, multi-statement, per-statement result tabs, session query history |
+| Data | Inline grid CRUD (edit/insert/delete, commit/rollback), Set-NULL, TSV + Advanced Copy |
 | DDL | Create / alter / drop tables & indexes (SQL preview before execute) |
-| Import/Export | CSV/JSON export of results; CSV import into tables |
-| Safety | Confirm destructive stmts; tx control; auto row-limit; query cancel |
-| Teams | Git-sync of connection configs (no secrets) + saved queries |
-| Theming | Preset color schemes (token-based) |
-| Platforms | macOS, Windows, Linux |
+| Import/Export | Full-result streamed CSV/JSON export; CSV import (insert/upsert/skip) into tables |
+| Safety | Confirm destructive stmts; tx control; auto row-limit; query cancel; configurable statement timeout |
+| Teams | Manual git-sync of connection configs (no secrets) + saved queries (folders) |
+| Theming | Preset color schemes (token-based); datetime display (stored/local/UTC) |
+| Workspace | Restore open tabs + unsaved SQL; auto-reconnect on launch |
+| Privacy | No telemetry; local rotating log file |
+| Platforms | macOS 13+, Windows 11, Linux (webkit2gtk 4.1); signed + auto-updating |
 
 ### Milestones (all within v1) — each gate blocks the next
 
@@ -326,23 +409,29 @@ release profile, CSP + capabilities + `removeUnusedCommands`, `errors/mod.rs`,
 `api/client.ts` + `types.ts` skeleton, toasts/dialogs stores + hosts, `@theme`
 tokens + dark/light presets, AppShell/Sidebar/StatusBar, core `ui/` primitives
 (Button, Input, Select, Modal, Spinner, EmptyState, Toast, ConfirmDialog,
-VirtualList, SplitPane, Kbd), CI jobs, size-check script, docker-compose.test.yml.
+VirtualList, SplitPane, Kbd), updater plugin + code-sign/notarize config,
+`tracing`→rotating file log, CI jobs, size-check script, docker-compose.test.yml.
 *Gate: CI green on all 3 OSes; empty-app bundle measured < 30 MB.*
 
 **M1 — Connect + introspect + schema browse.** `config/`, `secrets/` (both
-backends), `tunnel/`, `drivers/` enum + per-engine `introspect.rs`,
-`connection_service`, connections + schema tree UI, read-only toggle, Test
-button with distinct error kinds rendered.
-*Gate: real Pg/MySQL/SQLite connections incl. TLS + SSH tunnel; introspect
-integration tests pass; per-driver size recorded.*
+backends), `tunnel/` (key/passphrase/password/agent), `drivers/` enum +
+per-engine `introspect.rs`, `connection_service`, TLS ladder (disable→verify-full
++ custom CA/client cert), connect timeout, workspace-state restore +
+auto-reconnect, connections + schema tree UI, read-only toggle, Test button with
+distinct error kinds rendered.
+*Gate: real Pg/MySQL/SQLite connections incl. all TLS modes + SSH tunnel;
+introspect integration tests pass; tabs/sessions restore on relaunch; per-driver
+size recorded.*
 
 **M2 — SQL editor + run + history.** `sqlgen/` (split/classify/quote),
-`query_service` (limits, cancel registry, tx tracking), per-engine `values.rs`
-decode, `history/` + migration 0001, CM6 editor (autocomplete from schema store,
-format, keymap), tabs store, read-only results grid on VirtualList, StatusBar tx
+`query_service` (limits, cancel registry, statement timeout, tx tracking),
+per-engine `values.rs` decode, in-memory `history.svelte.ts` session store, CM6
+editor (autocomplete from schema store, format, keymap), tabs store, read-only
+results grid on VirtualList with per-statement result tabs, StatusBar tx
 indicator.
-*Gate: run-selection, multi-statement, cancel, tx toggle work on all 3 engines;
-splitter corpus green; history persisted + searchable.*
+*Gate: run-selection, multi-statement (result-tab per statement), cancel,
+statement timeout, tx toggle work on all 3 engines; splitter corpus green;
+session history searchable + re-runnable (clears on quit).*
 
 **M3 — Data grid CRUD.** `grid_service`, bind direction in `values.rs`,
 CellEditor, pending-edit staging with commit/rollback, insert/delete rows,
@@ -355,10 +444,12 @@ DDL preview modal, tree context-menu actions, schema cache refresh after DDL.
 *Gate: create/alter/drop table + index round-trip on all engines; every DDL
 shows generated SQL before execute.*
 
-**M5 — Import / export.** Streaming CSV/JSON export, CSV import wizard (column
-mapping, batched inserts in one tx), Tauri file dialogs, progress via
-`ipc::Channel`.
-*Gate: 100k-row export without UI freeze; import reports type errors by line.*
+**M5 — Import / export.** Full-result streamed CSV/JSON export (re-runs the
+query), CSV import wizard (column mapping, insert/upsert/skip conflict mode,
+batched inserts in one tx), Tauri file dialogs, progress via `ipc::Channel`.
+*Gate: 100k-row export (full result, not just the buffered page) without UI
+freeze; import conflict modes verified per engine; import reports type errors by
+line.*
 
 **M6 — Git-sync.** `gitsync/`, saved-queries UI, sync panel + status badge.
 *Gate: two machines share profiles + saved queries through a repo; leak test
@@ -366,9 +457,12 @@ greps synced dir for plaintext secrets after full workflow; conflict shows
 `gitConflict` state.*
 
 **M7 — Theming polish + release hardening.** Remaining presets, ThemePicker,
-keyboard-shortcut audit, empty/error-state audit across every error kind, app
-icons/metadata, release workflow, bundle size recorded per OS.
-*Gate: all presets pass contrast check; v1.0 draft release built from CI.*
+datetime-display setting, keyboard-shortcut audit, empty/error-state audit across
+every error kind, app icons/metadata, signed + notarized release workflow with
+updater endpoint, bundle size recorded per OS.
+*Gate: all presets pass contrast check; signed/notarized artifacts install
+cleanly on macOS 13 / Windows 11 / webkit2gtk-4.1 Linux; the updater upgrades a
+prior build; v1.0 draft release built from CI.*
 
 ### Deferred (post-v1)
 
@@ -380,6 +474,13 @@ icons/metadata, release workflow, bundle size recorded per OS.
 - Server monitoring / DBA tooling (roles, vacuum, backups)
 - Row streaming to the grid via `ipc::Channel`; full blob viewing/editing
 - MySQL `DELIMITER` support; in-app git conflict resolution
+- Server-side data-grid pagination, click-to-sort, and column filters
+- Persistent (cross-session) query history
+- In-app log viewer; opt-in crash reporting
+- Screen-reader / ARIA accessibility pass
+- Localization / i18n (translation catalog)
+- Config-schema versioning + cross-version migration
+- Auto / background git-sync
 
 ## Resolved questions
 
@@ -392,10 +493,10 @@ icons/metadata, release workflow, bundle size recorded per OS.
 
 ## Risks
 
-- **Bundle size:** 3 drivers + rustls + russh may approach 30 MB. Mitigations:
-  official size-optimized profile, per-driver measurement from M1, rustls only,
-  dependency justification rule (CLAUDE.md), feature-flagged engines as last
-  resort.
+- **Bundle size:** 3 drivers + rustls + russh + the Tauri updater plugin may
+  approach 30 MB. Mitigations: official size-optimized profile, per-driver
+  measurement from M1, rustls only, dependency justification rule (CLAUDE.md),
+  feature-flagged engines as last resort.
 - **Type-system breadth:** edge types (arrays, JSON, enums, geometry) are
   contained in per-engine `values.rs` decode tables with explicit `Unknown`
   fallback — unit-tested, extended per edge case found.

@@ -7,6 +7,8 @@
   import Badge from "$lib/components/ui/Badge.svelte";
   import SettingsModal from "$lib/components/settings/SettingsModal.svelte";
   import { theme } from "$lib/stores/theme.svelte";
+  import { zoom } from "$lib/stores/zoom.svelte";
+  import { keyboard } from "$lib/utils/keyboard";
   import { connections } from "$lib/stores/connections.svelte";
   import { editorTabs } from "$lib/stores/tabs.svelte";
   import type { Engine } from "$lib/api/types";
@@ -59,6 +61,14 @@
   {/if}
 
   <div class="flex-1"></div>
+  <button
+    type="button"
+    class="tabular-nums transition-colors hover:text-fg-1"
+    title="Display size — click to reset ({keyboard.label('mod+0')})"
+    onclick={zoom.reset}
+  >
+    {Math.round(zoom.level * 100)}%
+  </button>
   <span class="tabular-nums">{theme.current}</span>
   <IconButton icon={isDark ? Sun : Moon} title="Toggle light/dark" size="sm" onclick={toggleTheme} />
   <IconButton icon={SettingsIcon} title="Settings" size="sm" onclick={() => (showSettings = true)} />

@@ -23,7 +23,7 @@ AI models default to outdated "Dribbble-style" trends. The following are
   maps to a design token (§3). `text-[#8b5cf6]` is a build-blocking review failure.
 - ❌ **No emoji in the UI.** Icons are Lucide, monochrome, sized deliberately.
 - ❌ **No bouncy/delayed entry animations.** No fade-in-up cascades, no spring
-  wobble, no staggered reveals. Micro-transitions only (§7).
+  wobble, no staggered reveals. Simple transitions only (§7).
 - ❌ **No hero empty states.** No centered illustrations with friendly copy filling
   a pane. Empty states are one line + one action, top-aligned like content (§8).
 - ❌ **No skeleton-shimmer theater.** Local loads under ~150 ms render nothing;
@@ -152,15 +152,19 @@ the primitive**, don't fork it locally.
 - **Every interactive element has hover + focus-visible states.** Hover =
   background shift to `--bg-2` via `transition-colors duration-150`. Focus =
   2px accent ring (`outline`), visible only via `:focus-visible`.
-- **Micro-transitions only:** `transition-colors`/`opacity`, 100–150 ms. No
-  transform animations, no layout animations. Modals/menus may fade-scale in at
-  ≤120 ms. Respect `prefers-reduced-motion` (disable even those).
+- **Simple transitions only — no fancy motion.** Allowed: `transition-colors`,
+  `opacity`/fade, modal & menu fade-scale (≤120 ms), and short height/width slides
+  for collapsing surfaces (accordion sections, tab open/close). All motion is
+  100–150 ms with plain easing. **Forbidden:** spring/bounce, staggered or
+  cascading reveals, fade-in-up hero entrances, skeleton shimmer, parallax, and
+  anything over ~150 ms. Respect `prefers-reduced-motion` — it disables all of the
+  above.
 - **The app is fully keyboard-operable.** Core map (Cmd on macOS = Ctrl elsewhere):
   - `Ctrl+Enter` run statement at cursor / selection · `Ctrl+Shift+Enter` run whole script
   - `Ctrl+T` / `Ctrl+W` new / close editor tab · `Ctrl+PgUp/PgDn` switch tabs
   - `Ctrl+S` save query · `Ctrl+Shift+F` format SQL · `Escape` cancel running query / close overlay
   - `Ctrl+B` toggle sidebar · `Ctrl+K` command palette (if/when shipped)
-  - Grid: arrows/Tab navigate, `Enter` edit cell, `Escape` revert cell, `Ctrl+Enter` commit pending edits, `Ctrl+C` copy cell/selection
+  - Grid: arrows/Tab navigate, `Enter` edit cell, `Escape` revert cell, `Ctrl+Enter` commit pending edits, `Ctrl+C` copy cell/selection (TSV), `Ctrl+Shift+C` advanced copy (headers/delimiter/quoting)
   - Shortcuts live in `src/lib/utils/keyboard.ts` (single registry — no scattered
     `onkeydown` listeners) and are shown in menus/tooltips via `Kbd`.
 - **Frictionless settings:** flat lists with visible controls; no accordions

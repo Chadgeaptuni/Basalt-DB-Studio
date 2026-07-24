@@ -9,6 +9,7 @@
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
+  import AccordionSection from "$lib/components/ui/AccordionSection.svelte";
   import ContextMenu, { type MenuItem } from "$lib/components/ui/ContextMenu.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { schema } from "$lib/stores/schema.svelte";
@@ -69,10 +70,8 @@
   }
 </script>
 
-<div class="flex h-full flex-col">
-  <header class="flex h-9 items-center gap-2 border-b border-border px-3">
-    <span class="text-xs font-medium tracking-wider text-fg-2 uppercase">Schema</span>
-    <div class="flex-1"></div>
+<AccordionSection id="schema" title="Schema">
+  {#snippet actions()}
     {#if view?.tree && view.tree.namespaces.length > 0}
       <IconButton
         icon={Plus}
@@ -81,7 +80,7 @@
         onclick={() => newTable(view.tree!.namespaces[0].name)}
       />
     {/if}
-  </header>
+  {/snippet}
 
   <div class="flex-1 overflow-auto py-1">
     {#if !sessionId}
@@ -157,7 +156,7 @@
       <EmptyState icon={Boxes} message="No tables or views." />
     {/if}
   </div>
-</div>
+</AccordionSection>
 
 {#if menu}
   <ContextMenu x={menu.x} y={menu.y} items={menu.items} onclose={() => (menu = null)} />
