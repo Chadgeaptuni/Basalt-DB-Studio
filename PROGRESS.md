@@ -16,7 +16,13 @@ describe_table type/PK/index assertions, and wrong-password → `authFailed` per
 engine). Credential path: **memory-only password** (transient command arg; the
 profile still has no password field), wired form → in-memory stash → connect.
 
-**Next increment (start here):** the secrets slice. Options, roughly in order:
+**M2 started:** query-execution wire types + `sqlgen/` (split/classify/quote, 14
+tests) are done and committed. The next M2 increment — the backend run path
+(`values.rs` decode + `query_service::run`) — is fully specced in the M2 section
+below; execute it directly. (The secrets slice below is a separable M1 tail that
+can happen before or after; M2 is the active thread.)
+
+**Secrets slice (separable M1 tail):**
 - `secrets/` — Keychain default + EncryptedFile vault (argon2id + ChaCha20), so
   passwords survive restart. Replaces the in-memory stash; keeps the no-field
   invariant (profile stores a `secretRef` only).
@@ -130,11 +136,51 @@ Deferred to next M1 increments:
 - [ ] file-picker for SQLite path (tauri-plugin-dialog); saved_queries config
 
 ## M2 — SQL editor + run + history
-- [ ] sqlgen/ split.rs, classify.rs, quote.rs (+corpus tests)
-- [ ] query_service (limits, cancel registry, statement timeout, tx tracking)
-- [ ] per-engine values.rs decode
-- [ ] history.svelte.ts session store
-- [ ] CM6 editor (schema autocomplete, format, keymap), tabs store, results grid, per-statement result tabs, StatusBar tx
+
+**In progress. Foundation DONE + verified (28 lib tests, clippy/fmt clean):**
+- [x] wire types: `CellValue` (adjacently tagged), `StatementResult`, `TxStatus`,
+  `RunResult` in `drivers/types.rs` + `api/types.ts` mirror. `ColumnInfo` reused
+  as result column meta. **Note:** `StatementResult` will gain an
+  `error: Option<{message, detail}>` field so a failing statement carries its own
+  error in its result tab (add with query_service).
+- [x] `sqlgen/` split.rs (byte state machine: quotes, `--`/`/* */`, `$tag$`,
+  `statement_at`, `mask_noise`), classify.rs (`confirmation_reason`, `is_read_only`,
+  `tx_effect`), quote.rs (per-engine idents) — 14 corpus tests.
+
+**Next M2 increment — backend run path (design worked out, execute directly):**
+- [ ] enable sqlx features `bigdecimal` + `json` + `uuid` (uuid/serde_json already
+  deps; bigdecimal is the one new crate — justified for NUMERIC/DECIMAL precision).
+  Add `futures-util` (stream `.next()` for fetch-side limit).
+- [ ] per-engine `values.rs` decode: null-check via `try_get_raw(i).is_null()`,
+  then match `col.type_info().name()`. NUMERIC/DECIMAL/`BIGINT UNSIGNED` →
+  `BigDecimal`/`u64` → `Decimal(String)`; json/jsonb → `Json(Value)`; pg enum →
+  `Text` (decodes as String); bytea/blob → `Bytes{len, hex of first 64}`; date/
+  time/timestamp(tz) via chrono → ISO strings; pg arrays (int4/int8/text/bool/
+  float8) → `Array`; unmatched → `Unknown{type_name, display}`. Columns from the
+  first row (empty result ⇒ no columns — noted limitation).
+- [ ] `query_service::run`: `split` → confirmation gate (collect
+  `confirmation_reason`s → `ConfirmationRequired{detail}` unless `confirmed`) →
+  read-only gate (`!is_read_only` on RO conn → `readOnlyViolation`) → execute the
+  batch on **one acquired connection** (batch-level tx safety). Row-returning
+  (SELECT/WITH/SHOW/EXPLAIN/VALUES/TABLE or `has_word("RETURNING")`) → `fetch`
+  stream, keep `limit` rows, `truncated` on the next; else `execute` →
+  `rows_affected`. User SQL wrapped in `sqlx::AssertSqlSafe`. Stop at first error
+  (carry it on that `StatementResult`). tx status via `tx_effect` (MySQL/SQLite)
+  / connection status (pg).
+- [ ] `commands/query` (run_query, later cancel_query) + wire into lib.rs.
+- **Deferred within M2 (next-next):** per-session *pinned* connection for
+  cross-run transactions (current slice is batch-scoped tx only); **cancellation**
+  (capture pg `pg_backend_pid()` / mysql `CONNECTION_ID()` at connect; cancel via
+  side pool `pg_cancel_backend` / `KILL QUERY`; SQLite drop+reopen) + cancel
+  registry; **statement timeout** (auto-cancel → `queryCancelled`).
+
+**Then M2 frontend:**
+- [ ] history.svelte.ts session store (pushed from frontend as results return)
+- [ ] api/query.ts; tabs store (sql/result/running/txStatus/dirty)
+- [ ] CM6 editor (`sql({ schema, dialect })` autocomplete from schema store,
+  format via lazy `sql-formatter`, run keymap ⌘↵ / run-selection / run-at-cursor)
+- [ ] results grid (reuse `VirtualList`; per-statement result tabs; NULL badges,
+  right-aligned numbers, type tooltips from ColumnInfo), StatusBar tx indicator
 
 ## M3 — Data grid CRUD
 - [ ] grid_service, bind direction in values.rs, CellEditor, staging commit/rollback, insert/delete, table-data view
