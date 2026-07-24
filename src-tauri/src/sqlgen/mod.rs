@@ -9,6 +9,7 @@
 //! text, never its own parse. No `DELIMITER` support in v1 (documented).
 
 mod classify;
+pub mod ddl;
 mod quote;
 mod split;
 

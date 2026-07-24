@@ -304,3 +304,69 @@ impl GridEdit {
 pub struct GridCommitResult {
     pub rows_affected: u64,
 }
+
+// ── DDL (M4) ──────────────────────────────────────────────────────────────────
+// A structured change turned into engine-specific SQL by `sqlgen::ddl`, previewed
+// in a modal, then executed via the normal run path (which owns the safety gates).
+
+/// A column in a CREATE TABLE / ADD COLUMN. `type_name` and `default` are raw SQL
+/// the user authors (dialect-appropriate) and reviews in the preview.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ColumnSpec {
+    pub name: String,
+    pub type_name: String,
+    pub nullable: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default: Option<String>,
+}
+
+/// A structured DDL operation. One `kind` per supported change; the frontend
+/// builds it from the table designer / index editor / tree actions.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum DdlRequest {
+    CreateTable {
+        namespace: String,
+        name: String,
+        columns: Vec<ColumnSpec>,
+        primary_key: Vec<String>,
+    },
+    DropTable {
+        namespace: String,
+        name: String,
+    },
+    RenameTable {
+        namespace: String,
+        name: String,
+        new_name: String,
+    },
+    AddColumn {
+        namespace: String,
+        table: String,
+        column: ColumnSpec,
+    },
+    DropColumn {
+        namespace: String,
+        table: String,
+        column: String,
+    },
+    RenameColumn {
+        namespace: String,
+        table: String,
+        from: String,
+        to: String,
+    },
+    CreateIndex {
+        namespace: String,
+        table: String,
+        name: String,
+        columns: Vec<String>,
+        unique: bool,
+    },
+    DropIndex {
+        namespace: String,
+        table: String,
+        name: String,
+    },
+}

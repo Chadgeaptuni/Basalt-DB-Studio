@@ -46,6 +46,7 @@ pub fn run() {
             commands::query::run_query,
             commands::grid::grid_browse,
             commands::grid::grid_commit,
+            commands::ddl::ddl_generate,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

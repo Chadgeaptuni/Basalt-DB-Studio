@@ -2,6 +2,7 @@
 //! deserialize, call a service, and map the error — no business logic here.
 
 pub mod connections;
+pub mod ddl;
 pub mod grid;
 pub mod introspect;
 pub mod query;
