@@ -217,3 +217,24 @@ export type GridEdit =
 export interface GridCommitResult {
   rowsAffected: number;
 }
+
+// ── DDL (M4) ──────────────────────────────────────────────────────────────────
+// A structured change → engine SQL (ddl_generate), previewed then executed via
+// run_query. Mirrors drivers/types.rs.
+
+export interface ColumnSpec {
+  name: string;
+  typeName: string;
+  nullable: boolean;
+  default?: string;
+}
+
+export type DdlRequest =
+  | { kind: "createTable"; namespace: string; name: string; columns: ColumnSpec[]; primaryKey: string[] }
+  | { kind: "dropTable"; namespace: string; name: string }
+  | { kind: "renameTable"; namespace: string; name: string; newName: string }
+  | { kind: "addColumn"; namespace: string; table: string; column: ColumnSpec }
+  | { kind: "dropColumn"; namespace: string; table: string; column: string }
+  | { kind: "renameColumn"; namespace: string; table: string; from: string; to: string }
+  | { kind: "createIndex"; namespace: string; table: string; name: string; columns: string[]; unique: boolean }
+  | { kind: "dropIndex"; namespace: string; table: string; name: string };

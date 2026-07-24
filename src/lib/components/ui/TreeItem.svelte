@@ -13,6 +13,7 @@
     title?: string;
     onclick?: () => void;
     ondblclick?: () => void;
+    oncontextmenu?: (e: MouseEvent) => void;
     ontoggle?: () => void;
   }
 
@@ -26,6 +27,7 @@
     title,
     onclick,
     ondblclick,
+    oncontextmenu,
     ontoggle,
   }: Props = $props();
 </script>
@@ -41,6 +43,12 @@
   style="padding-left:{depth * 12 + 4}px"
   onclick={() => onclick?.()}
   ondblclick={() => ondblclick?.()}
+  oncontextmenu={(e) => {
+    if (oncontextmenu) {
+      e.preventDefault();
+      oncontextmenu(e);
+    }
+  }}
   onkeydown={(e) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();

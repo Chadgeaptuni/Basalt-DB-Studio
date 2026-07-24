@@ -2,8 +2,10 @@
   import AppShell from "$lib/components/layout/AppShell.svelte";
   import ToastHost from "$lib/components/layout/ToastHost.svelte";
   import ConfirmDialogHost from "$lib/components/layout/ConfirmDialogHost.svelte";
+  import DdlHost from "$lib/components/ddl/DdlHost.svelte";
 </script>
 
 <AppShell />
 <ToastHost />
 <ConfirmDialogHost />
+<DdlHost />

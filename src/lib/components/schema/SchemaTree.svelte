@@ -3,16 +3,53 @@
   import Table from "@lucide/svelte/icons/table";
   import Eye from "@lucide/svelte/icons/eye";
   import KeyRound from "@lucide/svelte/icons/key-round";
+  import Plus from "@lucide/svelte/icons/plus";
   import TreeItem from "$lib/components/ui/TreeItem.svelte";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import Button from "$lib/components/ui/Button.svelte";
+  import IconButton from "$lib/components/ui/IconButton.svelte";
+  import ContextMenu, { type MenuItem } from "$lib/components/ui/ContextMenu.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { schema } from "$lib/stores/schema.svelte";
   import { editorTabs } from "$lib/stores/tabs.svelte";
+  import { ddl } from "$lib/stores/ddl.svelte";
 
   const sessionId = $derived(connections.active?.sessionId ?? null);
   let expanded = $state<Record<string, boolean>>({});
+  let menu = $state<{ x: number; y: number; items: MenuItem[] } | null>(null);
+
+  function newTable(namespace: string): void {
+    ddl.open({ type: "newTable", namespace });
+  }
+
+  async function openIndexDialog(ns: string, rel: string): Promise<void> {
+    const id = sessionId;
+    const desc = id ? await schema.describe(id, ns, rel) : null;
+    ddl.open({ type: "createIndex", namespace: ns, table: rel, columns: desc?.columns.map((c) => c.name) ?? [] });
+  }
+
+  function nsMenu(e: MouseEvent, ns: string): void {
+    menu = {
+      x: e.clientX,
+      y: e.clientY,
+      items: [{ label: "New table…", onselect: () => newTable(ns) }],
+    };
+  }
+
+  function relMenu(e: MouseEvent, ns: string, rel: string): void {
+    menu = {
+      x: e.clientX,
+      y: e.clientY,
+      items: [
+        { label: "Open data", onselect: () => editorTabs.openTable(ns, rel) },
+        { label: "Add column…", onselect: () => ddl.open({ type: "addColumn", namespace: ns, table: rel }) },
+        { label: "Create index…", onselect: () => void openIndexDialog(ns, rel) },
+        { label: "Rename table…", onselect: () => ddl.open({ type: "renameTable", namespace: ns, table: rel }) },
+        { label: "Drop table", danger: true, onselect: () => ddl.preview({ kind: "dropTable", namespace: ns, name: rel }) },
+      ],
+    };
+  }
 
   // Load the tree the first time a session becomes active.
   $effect(() => {
@@ -33,8 +70,17 @@
 </script>
 
 <div class="flex h-full flex-col">
-  <header class="flex h-9 items-center border-b border-border px-3">
+  <header class="flex h-9 items-center gap-2 border-b border-border px-3">
     <span class="text-xs font-medium tracking-wider text-fg-2 uppercase">Schema</span>
+    <div class="flex-1"></div>
+    {#if view?.tree && view.tree.namespaces.length > 0}
+      <IconButton
+        icon={Plus}
+        title="New table"
+        size="sm"
+        onclick={() => newTable(view.tree!.namespaces[0].name)}
+      />
+    {/if}
   </header>
 
   <div class="flex-1 overflow-auto py-1">
@@ -60,6 +106,7 @@
             expanded={expanded[`ns:${ns.name}`]}
             onclick={() => toggleNs(ns.name)}
             ontoggle={() => toggleNs(ns.name)}
+            oncontextmenu={(e) => nsMenu(e, ns.name)}
           />
           {#if expanded[`ns:${ns.name}`]}
             {#each ns.relations as rel (rel.name)}
@@ -73,6 +120,7 @@
                 title={`${rel.kind} · double-click to open data`}
                 onclick={() => toggleTable(ns.name, rel.name)}
                 ondblclick={() => editorTabs.openTable(ns.name, rel.name)}
+                oncontextmenu={(e) => relMenu(e, ns.name, rel.name)}
                 ontoggle={() => toggleTable(ns.name, rel.name)}
               />
               {#if expanded[tkey] && sessionId}
@@ -110,3 +158,7 @@
     {/if}
   </div>
 </div>
+
+{#if menu}
+  <ContextMenu x={menu.x} y={menu.y} items={menu.items} onclose={() => (menu = null)} />
+{/if}

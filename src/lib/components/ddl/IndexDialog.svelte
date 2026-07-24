@@ -1,0 +1,58 @@
+<script lang="ts">
+  import Modal from "$lib/components/ui/Modal.svelte";
+  import Input from "$lib/components/ui/Input.svelte";
+  import Button from "$lib/components/ui/Button.svelte";
+  import Checkbox from "$lib/components/ui/Checkbox.svelte";
+  import { untrack } from "svelte";
+  import { ddl } from "$lib/stores/ddl.svelte";
+
+  interface Props {
+    namespace: string;
+    table: string;
+    columns: string[];
+  }
+  let { namespace, table, columns }: Props = $props();
+
+  // Fresh dialog per open, so the initial value is intentional (not reactive).
+  let name = $state(untrack(() => `${table}_idx`));
+  let unique = $state(false);
+  let picked = $state<Record<string, boolean>>({});
+
+  const chosen = $derived(columns.filter((c) => picked[c]));
+  const valid = $derived(name.trim().length > 0 && chosen.length > 0);
+
+  function preview(): void {
+    ddl.preview({
+      kind: "createIndex",
+      namespace,
+      table,
+      name: name.trim(),
+      columns: chosen,
+      unique,
+    });
+  }
+</script>
+
+<Modal open title={`New index on ${table}`} onclose={ddl.close}>
+  <div class="flex flex-col gap-3">
+    <label class="flex flex-col gap-1">
+      <span class="text-xs tracking-wider text-fg-2 uppercase">Index name</span>
+      <Input bind:value={name} autofocus />
+    </label>
+    <div class="flex flex-col gap-1">
+      <span class="text-xs tracking-wider text-fg-2 uppercase">Columns</span>
+      <div class="flex flex-col gap-1 rounded-md border border-border bg-bg-0 p-2">
+        {#each columns as col (col)}
+          <Checkbox bind:checked={picked[col]} label={col} />
+        {/each}
+        {#if columns.length === 0}<span class="text-xs text-fg-2">No columns.</span>{/if}
+      </div>
+    </div>
+    <Checkbox bind:checked={unique} label="Unique" />
+  </div>
+
+  {#snippet footer()}
+    <Button variant="ghost" size="sm" onclick={ddl.close}>Cancel</Button>
+    <Button variant="primary" size="sm" disabled={!valid} onclick={preview}>Preview SQL</Button>
+  {/snippet}
+</Modal>
