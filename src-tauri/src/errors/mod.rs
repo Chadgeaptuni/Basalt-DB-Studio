@@ -109,7 +109,7 @@ impl AppError {
         }
     }
 
-    fn detail(&self) -> Option<Value> {
+    pub fn detail(&self) -> Option<Value> {
         match self {
             AppError::QueryError { detail, .. } => detail.clone(),
             AppError::ConfirmationRequired { detail } => Some(detail.clone()),

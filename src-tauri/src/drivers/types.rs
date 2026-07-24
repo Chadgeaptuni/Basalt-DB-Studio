@@ -168,6 +168,23 @@ pub struct BytesPreview {
     pub preview: String,
 }
 
+impl BytesPreview {
+    /// Length + lowercase hex of the first 64 bytes. The single blob-preview site,
+    /// shared by every engine's `values.rs`.
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        use std::fmt::Write;
+        let head = &bytes[..bytes.len().min(64)];
+        let mut preview = String::with_capacity(head.len() * 2);
+        for b in head {
+            let _ = write!(preview, "{b:02x}");
+        }
+        BytesPreview {
+            len: bytes.len(),
+            preview,
+        }
+    }
+}
+
 /// Geometry, ranges, custom types: their text representation plus the SQL type.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -176,10 +193,23 @@ pub struct UnknownValue {
     pub display: String,
 }
 
+/// A failing statement's error, carried on its own result so a multi-statement
+/// run renders the error on that statement's tab (mirrors the command error
+/// envelope; `kind` is `queryError` for runtime failures).
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct StatementError {
+    pub kind: String,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub detail: Option<Value>,
+}
+
 /// One statement's outcome. `columns`/`rows` are empty for non-SELECT; `rows`
-/// holds at most `limit + 1` fetched rows with `truncated` set when the extra row
-/// was seen and dropped. `ColumnInfo` is reused as the column metadata (for
-/// arbitrary results `is_pk` is false and `nullable` is best-effort).
+/// holds up to the row limit, with `truncated` set when a further row existed.
+/// `ColumnInfo` is reused as the column metadata (for arbitrary results `is_pk`
+/// is false and `nullable` is best-effort). `error` is set on the statement that
+/// failed; execution stops there.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct StatementResult {
@@ -188,6 +218,8 @@ pub struct StatementResult {
     pub rows_affected: u64,
     pub truncated: bool,
     pub duration_ms: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<StatementError>,
 }
 
 /// Session transaction state for the status bar. Pg reads it from connection

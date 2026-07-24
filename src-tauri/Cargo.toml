@@ -38,8 +38,15 @@ sqlx = { version = "0.9", default-features = false, features = [
     "runtime-tokio",
     "tls-rustls-ring-webpki",
     "chrono",
+    # Cell decode (values.rs): NUMERIC/DECIMAL precision, JSON, and UUID. serde_json
+    # + uuid are already deps; bigdecimal is the one new crate (precision > f64).
+    "bigdecimal",
+    "json",
+    "uuid",
 ] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
+# Stream `.next()` for the fetch-side row limit (buffered query results).
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
 toml = "0.8"
 dirs = "6"
 uuid = { version = "1", features = ["v4", "serde"] }
