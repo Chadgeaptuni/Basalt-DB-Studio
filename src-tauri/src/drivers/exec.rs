@@ -143,8 +143,9 @@ where
 }
 
 /// Query-execution failures carry the engine's message + SQLSTATE so the editor
-/// can surface a specific `queryError` (position underlining lands later).
-fn map_query_error(e: sqlx::Error) -> AppError {
+/// can surface a specific `queryError` (position underlining lands later). Shared
+/// with the grid-commit loop (`super::grid`).
+pub(super) fn map_query_error(e: sqlx::Error) -> AppError {
     match &e {
         sqlx::Error::Database(db) => AppError::QueryError {
             message: db.message().to_string(),
