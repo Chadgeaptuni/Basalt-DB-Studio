@@ -6,11 +6,21 @@
   import Workspace from "$lib/components/workspace/Workspace.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { keyboard } from "$lib/utils/keyboard";
+  import { zoom } from "$lib/stores/zoom.svelte";
 
   let sidebarOpen = $state(true);
 
-  // Ctrl/Cmd+B toggles the sidebar via the single shortcut registry (DESIGN §7).
-  $effect(() => keyboard.register("mod+b", () => (sidebarOpen = !sidebarOpen)));
+  // All global shortcuts go through the single registry (DESIGN §7). Zoom mirrors
+  // VSCode: Cmd/Ctrl + = (in), - (out), 0 (reset).
+  $effect(() => {
+    const offs = [
+      keyboard.register("mod+b", () => (sidebarOpen = !sidebarOpen)),
+      keyboard.register("mod+=", zoom.in),
+      keyboard.register("mod+-", zoom.out),
+      keyboard.register("mod+0", zoom.reset),
+    ];
+    return () => offs.forEach((off) => off());
+  });
 </script>
 
 <div class="flex h-full flex-col">
