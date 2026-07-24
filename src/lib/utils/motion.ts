@@ -4,7 +4,14 @@
 // ≤120 ms. Svelte transitions are JS-driven, so the app.css
 // `prefers-reduced-motion` rule (CSS-only) does NOT cover them — we honor it here
 // by collapsing the duration to 0.
-import { fade, scale, type FadeParams, type ScaleParams } from "svelte/transition";
+import {
+  fade,
+  scale,
+  slide,
+  type FadeParams,
+  type ScaleParams,
+  type SlideParams,
+} from "svelte/transition";
 
 const reduced = (): boolean =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -15,4 +22,9 @@ export function uiFade(node: Element, params: FadeParams = {}) {
 
 export function uiScale(node: Element, params: ScaleParams = {}) {
   return scale(node, { duration: reduced() ? 0 : 120, start: 0.97, ...params });
+}
+
+// Collapse along an axis — used for tab open/close (`axis: "x"`). DESIGN §7.
+export function uiSlide(node: Element, params: SlideParams = {}) {
+  return slide(node, { duration: reduced() ? 0 : 130, ...params });
 }
