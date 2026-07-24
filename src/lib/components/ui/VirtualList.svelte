@@ -9,10 +9,25 @@
     rowHeight: number;
     overscan?: number;
     row: Snippet<[T, number]>;
+    /** Sticky header rendered inside the same scroller so it aligns and co-scrolls
+     *  horizontally with the rows (used by the data grid). */
+    header?: Snippet;
+    /** Fixed inner content width (px) — enables horizontal scroll for wide grids. */
+    contentWidth?: number;
     class?: string;
   }
 
-  let { items, rowHeight, overscan = 10, row, class: cls = "" }: Props = $props();
+  let {
+    items,
+    rowHeight,
+    overscan = 10,
+    row,
+    header,
+    contentWidth,
+    class: cls = "",
+  }: Props = $props();
+
+  const widthStyle = $derived(contentWidth ? `width:${contentWidth}px;` : "");
 
   let viewport = $state<HTMLElement>();
   let scrollTop = $state(0);
@@ -41,7 +56,10 @@
 </script>
 
 <div bind:this={viewport} {onscroll} class="relative overflow-auto {cls}">
-  <div style="height:{total}px" class="relative">
+  {#if header}
+    <div class="sticky top-0 z-10" style={widthStyle}>{@render header()}</div>
+  {/if}
+  <div style="height:{total}px;{widthStyle}" class="relative">
     <div style="transform:translateY({offsetY}px)" class="absolute inset-x-0 top-0">
       {#each slice as item, i (start + i)}
         {@render row(item, start + i)}
