@@ -95,8 +95,9 @@ else`. Nothing below `services/` imports `tauri`.
   classification (shared, heavily unit-tested).
 - `config/` (TOML profiles + saved queries — the git-sync unit), `secrets/`
   (`SecretStore`: OS keychain default, encrypted-file backend opt-in), `tunnel/`
-  (russh), `history/` (local SQLite, numbered migrations), `gitsync/` (shells out
-  to system git), `errors/` (below).
+  (russh), `gitsync/` (shells out to system git), `errors/` (below). Query
+  history is session-only and lives in a frontend rune store — no backend
+  history subsystem, no local DB.
 
 Frontend layout — see DESIGN.md §9 for the import rules:
 
@@ -114,7 +115,7 @@ a distinct `kind` the frontend switches on (`connectionRefused`, `authFailed`,
 `tlsError`, `tunnelError`, `queryError`, `queryCancelled`, `readOnlyViolation`,
 `noPrimaryKey`, `ambiguousRowIdentity`, `confirmationRequired`, `secretNotFound`,
 `keychainUnavailable`, `vaultLocked`, `configIo`, `configParse`,
-`gitNotInstalled`, `gitConflict`, `gitDirty`, `importParse`, `historyDb`,
+`gitNotInstalled`, `gitConflict`, `gitDirty`, `importParse`,
 `internal`). New failure mode ⇒ new variant — never a new string matched in the
 frontend, never a collapsed generic error.
 
@@ -148,7 +149,7 @@ frontend, never a collapsed generic error.
 - Integration tests (`src-tauri/tests/`) run against real engines via
   `docker-compose.test.yml` (postgres + mysql, seeded with edge-type fixtures);
   they read `BASALT_TEST_*_URL` env vars and self-skip when unset. SQLite tests
-  always run. History-DB tests use `#[sqlx::test]` (per-test isolated DBs).
+  always run.
 - Frontend: `vitest` + `@testing-library/svelte`, co-located `*.test.ts`;
   mock IPC with the official `@tauri-apps/api/mocks` (`mockIPC`/`clearMocks`).
 - Passing tests ≠ done: run the app (`pnpm tauri dev`) and exercise the change
@@ -169,11 +170,9 @@ frontend, never a collapsed generic error.
 
 1. Commit format: `type(scope): short description` (e.g. `fix(grid): rollback
    batch on ambiguous row identity`).
-2. Migrations in `src-tauri/migrations/` are additive and numbered — never edit
-   or renumber existing ones.
-3. Do not bump version numbers (`package.json`, `tauri.conf.json`, `Cargo.toml`)
+2. Do not bump version numbers (`package.json`, `tauri.conf.json`, `Cargo.toml`)
    — done manually by the project owner.
-4. Build commands:
+3. Build commands:
    ```bash
    pnpm install            # once, or after dependency changes
    pnpm tauri dev          # run the app (frontend + Rust backend)
