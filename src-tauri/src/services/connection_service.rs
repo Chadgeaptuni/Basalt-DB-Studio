@@ -9,12 +9,14 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 
 use crate::config::connections::ConnectionProfile;
-use crate::drivers::types::{Engine, SessionInfo};
+use crate::drivers::types::{Engine, SessionInfo, SslMode};
 use crate::drivers::Driver;
 use crate::{AppError, AppResult};
 
 /// Bounds the initial connect when the profile does not set one (spec: ~10s).
 const DEFAULT_CONNECT_TIMEOUT_SECS: u64 = 10;
+/// Pool size per session — small; a GUI drives a handful of concurrent queries.
+const POOL_MAX: u32 = 4;
 
 pub struct Session {
     pub info: SessionInfo,
@@ -26,9 +28,10 @@ pub type SessionRegistry = Mutex<HashMap<String, Session>>;
 
 pub async fn connect(
     profile: &ConnectionProfile,
+    password: Option<&str>,
     registry: &SessionRegistry,
 ) -> AppResult<SessionInfo> {
-    let driver = open_driver(profile).await?;
+    let driver = open_driver(profile, password).await?;
     let info = SessionInfo {
         session_id: uuid::Uuid::new_v4().to_string(),
         profile_id: profile.id.clone(),
@@ -47,8 +50,8 @@ pub async fn connect(
 }
 
 /// Opens a throwaway connection, confirms it works, then closes it.
-pub async fn test_connection(profile: &ConnectionProfile) -> AppResult<()> {
-    let driver = open_driver(profile).await?;
+pub async fn test_connection(profile: &ConnectionProfile, password: Option<&str>) -> AppResult<()> {
+    let driver = open_driver(profile, password).await?;
     driver.close().await;
     Ok(())
 }
@@ -91,15 +94,56 @@ async fn driver_for(session_id: &str, registry: &SessionRegistry) -> AppResult<D
         .ok_or_else(|| AppError::Internal(format!("no active session '{session_id}'")))
 }
 
-async fn open_driver(profile: &ConnectionProfile) -> AppResult<Driver> {
+async fn open_driver(profile: &ConnectionProfile, password: Option<&str>) -> AppResult<Driver> {
     match profile.engine {
         Engine::Sqlite => open_sqlite(profile).await,
-        Engine::Postgres => Err(AppError::Internal(
-            "postgres support arrives in a later M1 slice".into(),
-        )),
-        Engine::MySql => Err(AppError::Internal(
-            "mysql support arrives in a later M1 slice".into(),
-        )),
+        Engine::Postgres => open_postgres(profile, password).await,
+        Engine::MySql => open_mysql(profile, password).await,
+    }
+}
+
+/// Bounds each engine's connect from the profile (default ~10s).
+fn connect_timeout(profile: &ConnectionProfile) -> Duration {
+    Duration::from_secs(
+        profile
+            .connect_timeout_secs
+            .unwrap_or(DEFAULT_CONNECT_TIMEOUT_SECS),
+    )
+}
+
+/// Wraps a network pool-open with the connect timeout, then maps the failure to
+/// the specific `AppError` kind (auth vs. TLS vs. refused) the frontend renders.
+async fn open_with_timeout<T>(
+    timeout: Duration,
+    target: &str,
+    open: impl std::future::Future<Output = Result<T, sqlx::Error>>,
+) -> AppResult<T> {
+    tokio::time::timeout(timeout, open)
+        .await
+        .map_err(|_| {
+            AppError::ConnectionRefused(format!(
+                "connection to '{target}' timed out after {}s",
+                timeout.as_secs()
+            ))
+        })?
+        .map_err(map_connect_error)
+}
+
+/// SQLSTATE class 28 = invalid authorization (pg `28P01`, mysql `28000`), so an
+/// auth failure gets its own kind; TLS handshakes get `tlsError`; everything else
+/// (refused, unknown host/db, protocol) collapses to `connectionRefused`.
+fn map_connect_error(err: sqlx::Error) -> AppError {
+    match &err {
+        sqlx::Error::Database(db) => {
+            let is_auth = db.code().map(|c| c.starts_with("28")).unwrap_or(false);
+            if is_auth {
+                AppError::AuthFailed(db.message().to_string())
+            } else {
+                AppError::ConnectionRefused(db.message().to_string())
+            }
+        }
+        sqlx::Error::Tls(_) => AppError::TlsError(err.to_string()),
+        _ => AppError::ConnectionRefused(err.to_string()),
     }
 }
 
@@ -118,16 +162,11 @@ async fn open_sqlite(profile: &ConnectionProfile) -> AppResult<Driver> {
         .read_only(profile.read_only)
         .create_if_missing(false);
 
-    let timeout = Duration::from_secs(
-        profile
-            .connect_timeout_secs
-            .unwrap_or(DEFAULT_CONNECT_TIMEOUT_SECS),
-    );
-
+    let timeout = connect_timeout(profile);
     let pool = tokio::time::timeout(
         timeout,
         SqlitePoolOptions::new()
-            .max_connections(4)
+            .max_connections(POOL_MAX)
             .connect_with(options),
     )
     .await
@@ -140,6 +179,114 @@ async fn open_sqlite(profile: &ConnectionProfile) -> AppResult<Driver> {
     .map_err(|e| AppError::ConnectionRefused(e.to_string()))?;
 
     Ok(Driver::Sqlite(pool))
+}
+
+async fn open_postgres(profile: &ConnectionProfile, password: Option<&str>) -> AppResult<Driver> {
+    use sqlx::postgres::{PgConnectOptions, PgPoolOptions, PgSslMode};
+
+    let host = profile
+        .host
+        .as_deref()
+        .ok_or_else(|| AppError::ConfigParse("postgres connection requires a host".into()))?;
+
+    // No `tls` block → libpq-style `prefer` (opportunistic, no cert check).
+    let ssl_mode = match profile.tls.as_ref().map(|t| t.mode) {
+        None => PgSslMode::Prefer,
+        Some(SslMode::Disable) => PgSslMode::Disable,
+        Some(SslMode::Require) => PgSslMode::Require,
+        Some(SslMode::VerifyCa) => PgSslMode::VerifyCa,
+        Some(SslMode::VerifyFull) => PgSslMode::VerifyFull,
+    };
+
+    let mut options = PgConnectOptions::new().host(host).ssl_mode(ssl_mode);
+    if let Some(port) = profile.port {
+        options = options.port(port);
+    }
+    if let Some(user) = profile.username.as_deref() {
+        options = options.username(user);
+    }
+    if let Some(db) = profile.database.as_deref() {
+        options = options.database(db);
+    }
+    if let Some(pw) = password {
+        options = options.password(pw);
+    }
+    if let Some(tls) = profile.tls.as_ref() {
+        if let Some(ca) = tls.ca_cert_path.as_deref() {
+            options = options.ssl_root_cert(ca);
+        }
+        if let Some(cert) = tls.client_cert_path.as_deref() {
+            options = options.ssl_client_cert(cert);
+        }
+        if let Some(key) = tls.client_key_path.as_deref() {
+            options = options.ssl_client_key(key);
+        }
+    }
+
+    let pool = open_with_timeout(
+        connect_timeout(profile),
+        host,
+        PgPoolOptions::new()
+            .max_connections(POOL_MAX)
+            .connect_with(options),
+    )
+    .await?;
+
+    Ok(Driver::Postgres(pool))
+}
+
+async fn open_mysql(profile: &ConnectionProfile, password: Option<&str>) -> AppResult<Driver> {
+    use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions, MySqlSslMode};
+
+    let host = profile
+        .host
+        .as_deref()
+        .ok_or_else(|| AppError::ConfigParse("mysql connection requires a host".into()))?;
+
+    let ssl_mode = match profile.tls.as_ref().map(|t| t.mode) {
+        None => MySqlSslMode::Preferred,
+        Some(SslMode::Disable) => MySqlSslMode::Disabled,
+        Some(SslMode::Require) => MySqlSslMode::Required,
+        Some(SslMode::VerifyCa) => MySqlSslMode::VerifyCa,
+        // MySQL folds pg's "verify-full" (hostname check) into VerifyIdentity.
+        Some(SslMode::VerifyFull) => MySqlSslMode::VerifyIdentity,
+    };
+
+    let mut options = MySqlConnectOptions::new().host(host).ssl_mode(ssl_mode);
+    if let Some(port) = profile.port {
+        options = options.port(port);
+    }
+    if let Some(user) = profile.username.as_deref() {
+        options = options.username(user);
+    }
+    if let Some(db) = profile.database.as_deref() {
+        options = options.database(db);
+    }
+    if let Some(pw) = password {
+        options = options.password(pw);
+    }
+    if let Some(tls) = profile.tls.as_ref() {
+        if let Some(ca) = tls.ca_cert_path.as_deref() {
+            options = options.ssl_ca(ca);
+        }
+        if let Some(cert) = tls.client_cert_path.as_deref() {
+            options = options.ssl_client_cert(cert);
+        }
+        if let Some(key) = tls.client_key_path.as_deref() {
+            options = options.ssl_client_key(key);
+        }
+    }
+
+    let pool = open_with_timeout(
+        connect_timeout(profile),
+        host,
+        MySqlPoolOptions::new()
+            .max_connections(POOL_MAX)
+            .connect_with(options),
+    )
+    .await?;
+
+    Ok(Driver::MySql(pool))
 }
 
 #[cfg(test)]
@@ -196,7 +343,7 @@ mod tests {
         let profile = sqlite_profile(&path);
         let registry: SessionRegistry = Mutex::new(HashMap::new());
 
-        let info = connect(&profile, &registry).await.unwrap();
+        let info = connect(&profile, None, &registry).await.unwrap();
         assert_eq!(info.engine, Engine::Sqlite);
         assert_eq!(info.profile_id, "conn-test");
 
@@ -221,15 +368,18 @@ mod tests {
     async fn connect_to_missing_file_is_connection_refused() {
         let profile = sqlite_profile("/nonexistent/basalt-missing.db");
         let registry: SessionRegistry = Mutex::new(HashMap::new());
-        let err = connect(&profile, &registry).await.unwrap_err();
+        let err = connect(&profile, None, &registry).await.unwrap_err();
         assert_eq!(err.kind(), "connectionRefused");
     }
 
     #[tokio::test]
-    async fn non_sqlite_engine_is_rejected_clearly() {
+    async fn network_engine_without_host_is_config_parse() {
+        // pg/mysql require a host; the profile type makes it optional (sqlite has
+        // none), so a missing host is a clear config error, not a connect attempt.
         let mut profile = sqlite_profile("/tmp/whatever.db");
         profile.engine = Engine::Postgres;
-        let err = test_connection(&profile).await.unwrap_err();
-        assert_eq!(err.kind(), "internal");
+        profile.file_path = None;
+        let err = test_connection(&profile, None).await.unwrap_err();
+        assert_eq!(err.kind(), "configParse");
     }
 }

@@ -26,14 +26,21 @@ pub fn delete_connection(id: String, state: State<AppState>) -> AppResult<()> {
 }
 
 #[tauri::command]
-pub async fn test_connection(profile: ConnectionProfile) -> AppResult<()> {
-    connection_service::test_connection(&profile).await
+pub async fn test_connection(
+    profile: ConnectionProfile,
+    password: Option<String>,
+) -> AppResult<()> {
+    connection_service::test_connection(&profile, password.as_deref()).await
 }
 
 #[tauri::command]
-pub async fn connect(profile_id: String, state: State<'_, AppState>) -> AppResult<SessionInfo> {
+pub async fn connect(
+    profile_id: String,
+    password: Option<String>,
+    state: State<'_, AppState>,
+) -> AppResult<SessionInfo> {
     let profile = connections::load_one(&state.paths, &profile_id)?;
-    connection_service::connect(&profile, &state.sessions).await
+    connection_service::connect(&profile, password.as_deref(), &state.sessions).await
 }
 
 #[tauri::command]

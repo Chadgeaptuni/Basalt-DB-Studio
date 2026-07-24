@@ -26,12 +26,15 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 
-# M1 — DB drivers (sqlx) + connection config/session plumbing. Only the sqlite
-# sqlx feature is enabled in this slice; postgres/mysql features are added when
-# those engines land, so per-driver bundle cost stays measurable. Combined
-# runtime-TLS features were deleted in sqlx 0.9 — runtime and TLS are separate.
+# M1 — DB drivers (sqlx) + connection config/session plumbing. All three engines
+# enabled now that pg/mysql land in this slice. Combined runtime-TLS features
+# were deleted in sqlx 0.9 — runtime and TLS are separate. Introspection reads
+# only text/int columns, so no per-type decode features (json, uuid…) yet — those
+# join `values.rs` in M2 when cells are actually decoded.
 sqlx = { version = "0.9", default-features = false, features = [
     "sqlite",
+    "postgres",
+    "mysql",
     "runtime-tokio",
     "tls-rustls-ring-webpki",
     "chrono",
@@ -42,6 +45,11 @@ dirs = "6"
 uuid = { version = "1", features = ["v4", "serde"] }
 
 # keyring, russh land in later M1 slices.
+
+[dev-dependencies]
+# The integration-test crate (tests/) drives the async service layer; dev-only,
+# no bundle impact. sqlx/uuid are already normal deps and visible to tests.
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 
 [profile.release]
 # Official Tauri size-optimized profile (spec Performance plan). Measure "s" vs
