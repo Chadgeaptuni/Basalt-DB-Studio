@@ -185,3 +185,35 @@ export interface RunResult {
   statements: StatementResult[];
   txStatus: TxStatus;
 }
+
+// ── Grid CRUD (M3) ────────────────────────────────────────────────────────────
+// Mirrors drivers/types.rs grid types. The editable table-data view; edits stage
+// on the frontend and commit as one transaction.
+
+/** The buffered table-data view. `columns` come from describe_table (authoritative
+ *  isPk/type); `keyColumns` is the row identity (PK, or all non-binary as fallback). */
+export interface BrowseResult {
+  columns: ColumnInfo[];
+  rows: CellValue[][];
+  truncated: boolean;
+  keyColumns: string[];
+  keyIsFallback: boolean;
+  editable: boolean;
+  notEditableReason?: string;
+  durationMs: number;
+}
+
+export interface CellChange {
+  column: string;
+  value: CellValue;
+}
+
+/** One staged edit. `key` is parallel to the commit's `keyColumns` (original values). */
+export type GridEdit =
+  | { op: "update"; key: CellValue[]; set: CellChange[] }
+  | { op: "insert"; set: CellChange[] }
+  | { op: "delete"; key: CellValue[] };
+
+export interface GridCommitResult {
+  rowsAffected: number;
+}
