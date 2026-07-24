@@ -6,19 +6,24 @@
 
 ## Current position
 
-**M0 COMPLETE + M1 SQLite vertical slice COMPLETE — all verified locally.**
+**M0 COMPLETE + M1 all three engines (SQLite · Postgres · MySQL) connect →
+introspect → browse COMPLETE — verified against real engines.**
 Both sides green: frontend `pnpm check` (svelte-check 0/0/0, 12 vitest) + `pnpm
-build`; backend `cargo fmt --check` / `cargo clippy -D warnings` / `cargo test`
-(14 passing, incl. connect→introspect→disconnect lifecycle). M0 bundle 2.41 MB
-DMG. End-to-end SQLite connect → introspect → browse is wired and contract-verified.
+build`; backend `cargo fmt --check` / `cargo clippy --all-targets -D warnings` /
+`cargo test` — **14 unit + 4 integration** passing. Integration ran live against
+`postgres:16` + `mysql:8` from `docker-compose.test.yml` (connect, introspect,
+describe_table type/PK/index assertions, and wrong-password → `authFailed` per
+engine). Credential path: **memory-only password** (transient command arg; the
+profile still has no password field), wired form → in-memory stash → connect.
 
-**Next increment (start here):** extend M1 to Postgres + MySQL. That needs: sqlx
-`postgres`/`mysql` features + `Driver::Pg`/`Driver::MySql` variants + per-engine
-`introspect.rs`; a credential path (spec's memory-only per-connect password prompt
-is the simplest first step, full keychain/vault after); TLS ladder mapping. **These
-should be verified against real engines via `docker-compose.test.yml` — that
-requires Docker + `BASALT_TEST_PG_URL`/`BASALT_TEST_MYSQL_URL`, not available in
-the current sandbox.** Then: secrets/, tunnel/, workspace restore, file-picker.
+**Next increment (start here):** the secrets slice. Options, roughly in order:
+- `secrets/` — Keychain default + EncryptedFile vault (argon2id + ChaCha20), so
+  passwords survive restart. Replaces the in-memory stash; keeps the no-field
+  invariant (profile stores a `secretRef` only).
+- Auto-prompt on `authFailed` at connect time (nicer than edit→save→connect).
+- TLS ladder **UI** (mode + custom CA / client cert paths) — backend mapping is
+  already done and honored by the pg/mysql openers.
+- `tunnel/` (russh), workspace restore + auto-reconnect, SQLite file-picker.
 
 ### Verification commands (all pass locally as of M0)
 - `pnpm check` — svelte-check + vitest
@@ -73,9 +78,8 @@ the current sandbox.** Then: secrets/, tunnel/, workspace restore, file-picker.
 
 ## M1 — Connect + introspect + schema browse
 
-**In progress. This session: SQLite-only vertical slice** (connect → introspect →
-browse) as the first increment. pg/mysql/TLS/SSH/secrets-vault/workspace are the
-NEXT M1 increments.
+**In progress. All three engines now connect → introspect → browse.** TLS-UI /
+SSH / secrets-vault / workspace are the NEXT M1 increments.
 
 Frontend (DONE, verified — svelte-check 0/0/0, build clean):
 - [x] api/types.ts — connection + schema wire contract (Engine, TLS, SSH, ConnectionProfile, SessionInfo, SchemaTree, ColumnInfo, TableDescription)
@@ -85,13 +89,16 @@ Frontend (DONE, verified — svelte-check 0/0/0, build clean):
 - [x] components/schema/ SchemaTree (namespaces→relations→lazy columns; loading/empty/error)
 - [x] ui/TreeItem primitive; Sidebar wired (ConnectionList + SchemaTree vertical split); StatusBar shows active connection
 
-Backend (SQLite slice — DONE, verified: cargo fmt/clippy clean, 14 tests pass):
+Backend (all three engines — DONE, verified: fmt/clippy clean, 14 unit + 4 integration):
 - [x] config/ (paths, connections [no password field; path-traversal-safe ids], settings) TOML
-- [x] drivers/ enum {Sqlite} + types.rs (mirrors types.ts field-for-field) + sqlite/introspect (pragma_* TVFs, bound params)
-- [x] connection_service (SessionRegistry, tokio Mutex, connect timeout→connectionRefused, read_only, create_if_missing(false)), state.rs AppState{sessions,paths} + app.manage
+- [x] drivers/ enum {Sqlite, Postgres, MySql} + types.rs (mirrors types.ts) — enum dispatch, no dyn
+- [x] sqlite/introspect (pragma_* TVFs, bound params)
+- [x] pg/introspect (information_schema tables grouped by schema; pg_catalog + `format_type` for canonical column types, PK via primary index, indexes incl. implicit PK index; $1/$2 bound)
+- [x] mysql/introspect (info_schema, all non-system DBs as namespaces; `column_type` for full type, `column_key='PRI'` for PK; UPPERCASE labels aliased to lowercase; `CAST(non_unique AS SIGNED)` for stable i64; `?` bound)
+- [x] connection_service: per-engine openers, connect timeout, TLS ladder → Pg/MySql ssl_mode + cert paths, `map_connect_error` (SQLSTATE 28 → authFailed, Tls → tlsError, else connectionRefused)
+- [x] credential path: memory-only password threaded through connect/test_connection commands (profile still has no password field)
 - [x] commands/ connections + introspect (thin) wired into lib.rs generate_handler!
-- [x] INTEGRATION verified: types match, command names/args align, both test suites green
-- pg/mysql `connect`/`test_connection` return clear Internal("… later M1 slice") for now
+- [x] INTEGRATION verified live vs postgres:16 + mysql:8: connect, introspect, describe_table (type/PK/index), wrong-password→authFailed per engine
 
 ### M1 decisions / gotchas
 - **`removeUnusedCommands` set to FALSE** (was true in M0). It strips commands it
@@ -101,14 +108,24 @@ Backend (SQLite slice — DONE, verified: cargo fmt/clippy clean, 14 tests pass)
   optimization unnecessary. Revisit only if we add build-time invoke annotations.
 - SQLite introspection uses `pragma_table_info(?)`/`pragma_index_list(?)`/`pragma_index_info(?)`
   table-valued fns with BOUND names (injection-safe), not string-interpolated PRAGMA.
-- **Pending manual step (can't run GUI here):** `pnpm tauri dev`, create a SQLite
-  connection, connect, expand the tree, verify columns — exercise empty/error states.
+- **`docker-compose.test.yml` host ports remapped to 55432 / 33306** (were 5432 /
+  3306) so a developer's own local Postgres/MySQL doesn't shadow the containers —
+  a local pg on 5432 silently ate the test connections. CI is unaffected (isolated
+  service containers on standard ports). Env-var examples updated in the compose header.
+- **MySQL 8 labels `information_schema` result columns UPPERCASE**; sqlx `try_get`
+  is case-sensitive, so every mysql introspection column is aliased to lowercase.
+- MySQL `mysql:8` uses `caching_sha2_password`; the container enables TLS by
+  default and our default `ssl_mode` is `Preferred`, so full auth works over the
+  auto-negotiated TLS. No extra config needed.
+- **Pending manual step (can't run GUI in sandbox):** `pnpm tauri dev`, create a
+  pg/mysql connection, enter password, Test → connect → expand tree → verify
+  columns; exercise the `authFailed`/empty/error states.
 
 Deferred to next M1 increments:
-- [ ] pg + mysql drivers/introspect (add sqlx pg/mysql features + Driver variants)
-- [ ] secrets/ (Keychain default + EncryptedFile vault argon2id+ChaCha20) + password/TLS/SSH form sections
+- [~] password form section — memory-only DONE; keychain/vault persistence remains
+- [ ] secrets/ (Keychain default + EncryptedFile vault argon2id+ChaCha20); auto-prompt on authFailed
 - [ ] tunnel/ (russh: key/passphrase/password/agent)
-- [ ] TLS ladder (disable→verify-full + custom CA/client cert)
+- [~] TLS ladder — backend mapping (mode + CA/client-cert paths) DONE & honored; **form UI** remains
 - [ ] workspace restore + auto-reconnect (workspace.toml, not git-synced)
 - [ ] file-picker for SQLite path (tauri-plugin-dialog); saved_queries config
 
