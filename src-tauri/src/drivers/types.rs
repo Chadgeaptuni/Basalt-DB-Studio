@@ -240,3 +240,67 @@ pub struct RunResult {
     pub statements: Vec<StatementResult>,
     pub tx_status: TxStatus,
 }
+
+// ── Grid CRUD (M3) ────────────────────────────────────────────────────────────
+
+/// The buffered table-data view backing the editable grid. `columns` come from
+/// `describe_table` (authoritative `isPk`/`nullable`/`typeName`), in the same
+/// order as each row's cells. `key_columns` is the row-identity used for
+/// UPDATE/DELETE — the primary key, or (fallback) every non-binary column.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BrowseResult {
+    pub columns: Vec<ColumnInfo>,
+    pub rows: Vec<Vec<CellValue>>,
+    pub truncated: bool,
+    pub key_columns: Vec<String>,
+    /// True when `key_columns` is the all-non-binary-columns fallback (no PK).
+    pub key_is_fallback: bool,
+    /// False when no usable identity exists (e.g. a view / all-binary table).
+    pub editable: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub not_editable_reason: Option<String>,
+    pub duration_ms: u64,
+}
+
+/// One column's new value in an insert or update.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CellChange {
+    pub column: String,
+    pub value: CellValue,
+}
+
+/// A single staged edit. `key` is parallel to the commit's `key_columns` and
+/// holds the row's *original* identity values (so editing a PK cell still targets
+/// the right row).
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(tag = "op", rename_all = "camelCase")]
+pub enum GridEdit {
+    Update {
+        key: Vec<CellValue>,
+        set: Vec<CellChange>,
+    },
+    Insert {
+        set: Vec<CellChange>,
+    },
+    Delete {
+        key: Vec<CellValue>,
+    },
+}
+
+impl GridEdit {
+    /// Columns this edit writes (for existence validation against the table).
+    pub fn columns(&self) -> &[CellChange] {
+        match self {
+            GridEdit::Update { set, .. } | GridEdit::Insert { set } => set,
+            GridEdit::Delete { .. } => &[],
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct GridCommitResult {
+    pub rows_affected: u64,
+}

@@ -8,7 +8,7 @@ use serde_json::Value;
 use sqlx::mysql::MySqlRow;
 use sqlx::types::chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use sqlx::types::BigDecimal;
-use sqlx::{Column, Row, TypeInfo, ValueRef};
+use sqlx::{Column, MySql, QueryBuilder, Row, TypeInfo, ValueRef};
 
 use crate::drivers::types::{BytesPreview, CellValue, ColumnInfo, UnknownValue};
 
@@ -112,4 +112,45 @@ fn unknown(type_name: &str) -> CellValue {
         type_name: type_name.to_string(),
         display: String::new(),
     })
+}
+
+/// Binds a cell for a grid write (reverse of decode). MySQL is bound by concrete
+/// Rust type — notably `Bool` as a real bool (so a `TINYINT(1)` gets 1/0, not the
+/// string "true"). Binary/Unknown/Array are read-only and map to NULL defensively.
+pub fn bind_cell(qb: &mut QueryBuilder<MySql>, value: &CellValue, _type_name: &str) {
+    match value {
+        CellValue::Null | CellValue::Bytes(_) | CellValue::Unknown(_) | CellValue::Array(_) => {
+            qb.push_bind(Option::<String>::None);
+        }
+        CellValue::Bool(b) => {
+            qb.push_bind(*b);
+        }
+        CellValue::Int(i) => {
+            qb.push_bind(*i);
+        }
+        CellValue::Float(f) => {
+            qb.push_bind(*f);
+        }
+        CellValue::Text(s) => {
+            qb.push_bind(s.clone());
+        }
+        CellValue::Decimal(s) => match s.parse::<BigDecimal>() {
+            Ok(d) => {
+                qb.push_bind(d);
+            }
+            Err(_) => {
+                qb.push_bind(s.clone());
+            }
+        },
+        CellValue::Date(s) | CellValue::Time(s) => {
+            qb.push_bind(s.clone());
+        }
+        // Our DateTime is ISO 8601 (`T` separator); MySQL's literal uses a space.
+        CellValue::DateTime(s) => {
+            qb.push_bind(s.replace('T', " "));
+        }
+        CellValue::Json(v) => {
+            qb.push_bind(v.clone());
+        }
+    }
 }

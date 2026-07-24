@@ -5,7 +5,7 @@
 //! and render as such, matching how SQLite itself sees them.
 
 use sqlx::sqlite::SqliteRow;
-use sqlx::{Column, Row, TypeInfo, ValueRef};
+use sqlx::{Column, QueryBuilder, Row, Sqlite, TypeInfo, ValueRef};
 
 use crate::drivers::types::{BytesPreview, CellValue, ColumnInfo, UnknownValue};
 
@@ -65,6 +65,36 @@ fn unknown(type_name: &str) -> CellValue {
         type_name: type_name.to_string(),
         display: String::new(),
     })
+}
+
+/// Binds a cell for a grid write (reverse of decode). SQLite has no bool/decimal
+/// type; bools store as 0/1 and decimals as text (numeric affinity coerces).
+/// Binary/Unknown/Array are read-only and map to NULL defensively.
+pub fn bind_cell(qb: &mut QueryBuilder<Sqlite>, value: &CellValue, _type_name: &str) {
+    match value {
+        CellValue::Null | CellValue::Bytes(_) | CellValue::Unknown(_) | CellValue::Array(_) => {
+            qb.push_bind(Option::<String>::None);
+        }
+        CellValue::Bool(b) => {
+            qb.push_bind(*b as i64);
+        }
+        CellValue::Int(i) => {
+            qb.push_bind(*i);
+        }
+        CellValue::Float(f) => {
+            qb.push_bind(*f);
+        }
+        CellValue::Text(s)
+        | CellValue::Decimal(s)
+        | CellValue::Date(s)
+        | CellValue::Time(s)
+        | CellValue::DateTime(s) => {
+            qb.push_bind(s.clone());
+        }
+        CellValue::Json(v) => {
+            qb.push_bind(v.to_string());
+        }
+    }
 }
 
 #[cfg(test)]

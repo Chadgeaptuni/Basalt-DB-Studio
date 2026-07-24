@@ -41,8 +41,10 @@ pub enum AppError {
     #[error("{0}")]
     NoPrimaryKey(String),
 
-    #[error("{0}")]
-    AmbiguousRowIdentity(String),
+    /// A grid UPDATE/DELETE matched ≠ 1 row (no PK, non-unique identity). `detail`
+    /// carries the failing edit `index` so the frontend can highlight that row.
+    #[error("{message}")]
+    AmbiguousRowIdentity { message: String, index: usize },
 
     /// Not rendered as an error UI — the frontend runs `confirm()` and re-invokes
     /// with `confirmed: true`. `detail` carries the classified statements.
@@ -94,7 +96,7 @@ impl AppError {
             AppError::QueryCancelled(_) => "queryCancelled",
             AppError::ReadOnlyViolation(_) => "readOnlyViolation",
             AppError::NoPrimaryKey(_) => "noPrimaryKey",
-            AppError::AmbiguousRowIdentity(_) => "ambiguousRowIdentity",
+            AppError::AmbiguousRowIdentity { .. } => "ambiguousRowIdentity",
             AppError::ConfirmationRequired { .. } => "confirmationRequired",
             AppError::SecretNotFound(_) => "secretNotFound",
             AppError::KeychainUnavailable(_) => "keychainUnavailable",
@@ -113,6 +115,9 @@ impl AppError {
         match self {
             AppError::QueryError { detail, .. } => detail.clone(),
             AppError::ConfirmationRequired { detail } => Some(detail.clone()),
+            AppError::AmbiguousRowIdentity { index, .. } => {
+                Some(serde_json::json!({ "index": index }))
+            }
             AppError::ImportParse { line, .. } => Some(serde_json::json!({ "line": line })),
             _ => None,
         }

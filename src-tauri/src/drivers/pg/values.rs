@@ -7,7 +7,7 @@ use serde_json::Value;
 use sqlx::postgres::PgRow;
 use sqlx::types::chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
 use sqlx::types::{BigDecimal, Uuid};
-use sqlx::{Column, Row, TypeInfo, ValueRef};
+use sqlx::{Column, Postgres, QueryBuilder, Row, TypeInfo, ValueRef};
 
 use crate::drivers::types::{BytesPreview, CellValue, ColumnInfo, UnknownValue};
 
@@ -53,7 +53,7 @@ fn decode_cell(row: &PgRow, i: usize, type_name: &str) -> CellValue {
         "FLOAT8" => get(row.try_get::<f64, _>(i).map(CellValue::Float), type_name),
         "NUMERIC" => get(
             row.try_get::<BigDecimal, _>(i)
-                .map(|v| CellValue::Decimal(v.to_string())),
+                .map(|v| CellValue::Decimal(trim_numeric(v.to_string()))),
             type_name,
         ),
         "TEXT" | "VARCHAR" | "BPCHAR" | "CHAR" | "NAME" | "CITEXT" => {
@@ -147,4 +147,93 @@ fn unknown(type_name: &str) -> CellValue {
         type_name: type_name.to_string(),
         display: String::new(),
     })
+}
+
+/// Postgres sends binary numeric in base-10000 groups, so sqlx's `BigDecimal` can
+/// carry more trailing zeros than the value's display scale (`2.75` → `"2.7500"`).
+/// Trim the spurious fractional zeros for display; the value is unchanged. Exact
+/// display scale (keeping `"2.50"`) would need the raw `PgNumeric` dscale — deferred.
+fn trim_numeric(s: String) -> String {
+    if !s.contains('.') {
+        return s;
+    }
+    s.trim_end_matches('0').trim_end_matches('.').to_string()
+}
+
+/// Binds a cell for a grid write (reverse of decode). Postgres is bound as text
+/// plus an explicit `::type_name` cast, which lets it coerce uniformly into
+/// numeric/json/array/enum/date columns without a per-type encoder. `type_name`
+/// is the column's introspected type (`integer`, `jsonb`, `integer[]`, …).
+pub fn bind_cell(qb: &mut QueryBuilder<Postgres>, value: &CellValue, type_name: &str) {
+    qb.push_bind(pg_text(value));
+    if !type_name.is_empty() {
+        qb.push("::").push(type_name);
+    }
+}
+
+/// The text Postgres will cast. `None` → SQL NULL. Binary/Unknown are read-only
+/// (validated out before commit) and map to NULL defensively.
+fn pg_text(value: &CellValue) -> Option<String> {
+    match value {
+        CellValue::Null | CellValue::Bytes(_) | CellValue::Unknown(_) => None,
+        CellValue::Bool(b) => Some(if *b { "true" } else { "false" }.to_string()),
+        CellValue::Int(i) => Some(i.to_string()),
+        CellValue::Float(f) => Some(f.to_string()),
+        CellValue::Text(s)
+        | CellValue::Decimal(s)
+        | CellValue::Date(s)
+        | CellValue::Time(s)
+        | CellValue::DateTime(s) => Some(s.clone()),
+        CellValue::Json(v) => Some(v.to_string()),
+        CellValue::Array(items) => Some(pg_array_literal(items)),
+    }
+}
+
+/// A Postgres array literal (`{"a","b",NULL}`); every element is double-quoted and
+/// escaped, which parses correctly for numeric element types too.
+fn pg_array_literal(items: &[CellValue]) -> String {
+    let mut out = String::from("{");
+    for (i, item) in items.iter().enumerate() {
+        if i > 0 {
+            out.push(',');
+        }
+        match pg_text(item) {
+            None => out.push_str("NULL"),
+            Some(s) => {
+                out.push('"');
+                out.push_str(&s.replace('\\', "\\\\").replace('"', "\\\""));
+                out.push('"');
+            }
+        }
+    }
+    out.push('}');
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn trim_numeric_drops_only_spurious_fractional_zeros() {
+        // Regression: pg binary numeric over-pads (2.75 → "2.7500").
+        assert_eq!(trim_numeric("2.7500".into()), "2.75");
+        assert_eq!(trim_numeric("2.5000".into()), "2.5");
+        assert_eq!(trim_numeric("2.00".into()), "2");
+        assert_eq!(trim_numeric("0.00".into()), "0");
+        assert_eq!(trim_numeric("12345.6789".into()), "12345.6789");
+        // Integer trailing zeros are significant — never touched.
+        assert_eq!(trim_numeric("1000".into()), "1000");
+        assert_eq!(trim_numeric("-0.50".into()), "-0.5");
+    }
+
+    #[test]
+    fn pg_array_literal_quotes_and_escapes() {
+        let arr = [
+            CellValue::Int(1),
+            CellValue::Null,
+            CellValue::Text("a\"b".into()),
+        ];
+        assert_eq!(pg_array_literal(&arr), "{\"1\",NULL,\"a\\\"b\"}");
+    }
 }

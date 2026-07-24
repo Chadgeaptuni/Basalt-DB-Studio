@@ -5,4 +5,4 @@ mod introspect;
 mod values;
 
 pub use introspect::{describe_table, introspect};
-pub use values::{columns, decode_row};
+pub use values::{bind_cell, columns, decode_row};
