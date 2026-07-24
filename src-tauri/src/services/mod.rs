@@ -1,0 +1,4 @@
+//! Business logic between the thin command handlers and the drivers/config.
+//! Nothing here imports `tauri`.
+
+pub mod connection_service;

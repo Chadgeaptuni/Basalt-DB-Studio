@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Basalt DB Studio",
+  "version": "0.1.0",
+  "identifier": "app.basalt.studio",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist",
+    "removeUnusedCommands": false
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Basalt DB Studio",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "DeveloperTool",
+    "shortDescription": "Lightweight cross-platform database GUI",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM0NkQxN0U1OEI2NkQzNEQKUldSTjAyYUw1UmR0eEliS3NaYmx1cktDOG5COS9LMko4OCs0eGkwR3dUQ0M3Um50MWJMSUNhL0YK",
+      "endpoints": [
+        "https://releases.basalt.studio/updater/{{target}}/{{arch}}/{{current_version}}"
+      ]
+    }
+  }
+}
