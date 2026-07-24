@@ -16,11 +16,11 @@ describe_table type/PK/index assertions, and wrong-password → `authFailed` per
 engine). Credential path: **memory-only password** (transient command arg; the
 profile still has no password field), wired form → in-memory stash → connect.
 
-**M2 started:** query-execution wire types + `sqlgen/` (split/classify/quote, 14
-tests) are done and committed. The next M2 increment — the backend run path
-(`values.rs` decode + `query_service::run`) — is fully specced in the M2 section
-below; execute it directly. (The secrets slice below is a separable M1 tail that
-can happen before or after; M2 is the active thread.)
+**M2 backend COMPLETE + verified** (types, `sqlgen/`, per-engine `values.rs`
+decode, generic batch exec, `query_service::run` + `run_query` command). 34 lib +
+6 integration tests green against real pg16/mysql8. **Next M2 = frontend** (CM6
+editor + results grid + history/tabs stores) — see the M2 section below. (The
+secrets slice below is a separable M1 tail; M2 frontend is the active thread.)
 
 **Secrets slice (separable M1 tail):**
 - `secrets/` — Keychain default + EncryptedFile vault (argon2id + ChaCha20), so
@@ -137,50 +137,46 @@ Deferred to next M1 increments:
 
 ## M2 — SQL editor + run + history
 
-**In progress. Foundation DONE + verified (28 lib tests, clippy/fmt clean):**
-- [x] wire types: `CellValue` (adjacently tagged), `StatementResult`, `TxStatus`,
-  `RunResult` in `drivers/types.rs` + `api/types.ts` mirror. `ColumnInfo` reused
-  as result column meta. **Note:** `StatementResult` will gain an
-  `error: Option<{message, detail}>` field so a failing statement carries its own
-  error in its result tab (add with query_service).
-- [x] `sqlgen/` split.rs (byte state machine: quotes, `--`/`/* */`, `$tag$`,
-  `statement_at`, `mask_noise`), classify.rs (`confirmation_reason`, `is_read_only`,
-  `tx_effect`), quote.rs (per-engine idents) — 14 corpus tests.
+**Backend DONE + verified (34 lib + 6 integration tests, clippy/fmt clean).** The
+whole run path works on all three engines against real `postgres:16`/`mysql:8`.
+- [x] wire types: `CellValue` (adjacently tagged), `StatementResult` (+`error`),
+  `StatementError`, `TxStatus`, `RunResult` in `drivers/types.rs` + `api/types.ts`.
+  `BytesPreview::from_bytes` is the shared blob-preview site.
+- [x] `sqlgen/` split.rs (quotes/comments/`$tag$`, `statement_at`, `mask_noise`),
+  classify.rs (`confirmation_reason`, `is_read_only`, `returns_rows`, `tx_effect`),
+  quote.rs — 14 corpus tests.
+- [x] per-engine `values.rs` decode. Verified specifics found the hard way:
+  **mysql `TINYINT(1)` reports type `BOOLEAN`** (→ `Bool`); **pg enums do NOT
+  decode via `try_get::<String>`** — read the raw value bytes as UTF-8 (an enum's
+  binary form is its label). NUMERIC/DECIMAL/`BIGINT UNSIGNED` → `Decimal(String)`;
+  json → `Json`; bytea/blob → hex preview; pg `INT4[]`/… → `Array`; else `Unknown`.
+- [x] `drivers/exec.rs`: one generic `run_batch` (fetch-side row limit;
+  `execute` for DML via an `Affected` adapter — sqlx exposes no generic
+  `rows_affected`; **`fetch_many` is deprecated in 0.9**, so row-returning vs DML
+  is split by `sqlgen::returns_rows`).
+- [x] `query_service::run`: split → read-only gate → confirmation gate
+  (`ConfirmationRequired{detail}`) → batch on one pooled connection → per-statement
+  `StatementResult`, stop at first error. `run_query` command + `api/query.ts`.
 
-**Next M2 increment — backend run path (design worked out, execute directly):**
-- [ ] enable sqlx features `bigdecimal` + `json` + `uuid` (uuid/serde_json already
-  deps; bigdecimal is the one new crate — justified for NUMERIC/DECIMAL precision).
-  Add `futures-util` (stream `.next()` for fetch-side limit).
-- [ ] per-engine `values.rs` decode: null-check via `try_get_raw(i).is_null()`,
-  then match `col.type_info().name()`. NUMERIC/DECIMAL/`BIGINT UNSIGNED` →
-  `BigDecimal`/`u64` → `Decimal(String)`; json/jsonb → `Json(Value)`; pg enum →
-  `Text` (decodes as String); bytea/blob → `Bytes{len, hex of first 64}`; date/
-  time/timestamp(tz) via chrono → ISO strings; pg arrays (int4/int8/text/bool/
-  float8) → `Array`; unmatched → `Unknown{type_name, display}`. Columns from the
-  first row (empty result ⇒ no columns — noted limitation).
-- [ ] `query_service::run`: `split` → confirmation gate (collect
-  `confirmation_reason`s → `ConfirmationRequired{detail}` unless `confirmed`) →
-  read-only gate (`!is_read_only` on RO conn → `readOnlyViolation`) → execute the
-  batch on **one acquired connection** (batch-level tx safety). Row-returning
-  (SELECT/WITH/SHOW/EXPLAIN/VALUES/TABLE or `has_word("RETURNING")`) → `fetch`
-  stream, keep `limit` rows, `truncated` on the next; else `execute` →
-  `rows_affected`. User SQL wrapped in `sqlx::AssertSqlSafe`. Stop at first error
-  (carry it on that `StatementResult`). tx status via `tx_effect` (MySQL/SQLite)
-  / connection status (pg).
-- [ ] `commands/query` (run_query, later cancel_query) + wire into lib.rs.
-- **Deferred within M2 (next-next):** per-session *pinned* connection for
-  cross-run transactions (current slice is batch-scoped tx only); **cancellation**
-  (capture pg `pg_backend_pid()` / mysql `CONNECTION_ID()` at connect; cancel via
-  side pool `pg_cancel_backend` / `KILL QUERY`; SQLite drop+reopen) + cancel
-  registry; **statement timeout** (auto-cancel → `queryCancelled`).
+**Deferred within M2 (backend, next-next):** per-session *pinned* connection for
+cross-run transactions (current slice is batch-scoped; `tx_status` is always
+`Idle`); **cancellation** (capture pg `pg_backend_pid()` / mysql `CONNECTION_ID()`
+at connect; cancel via side pool `pg_cancel_backend` / `KILL QUERY`; SQLite
+drop+reopen) + cancel registry; **statement timeout** (auto-cancel →
+`queryCancelled`). Also: columns are taken from the first row, so an empty result
+set has no column headers (revisit if it matters).
 
-**Then M2 frontend:**
+**Next M2 increment — frontend (editor + results):**
 - [ ] history.svelte.ts session store (pushed from frontend as results return)
-- [ ] api/query.ts; tabs store (sql/result/running/txStatus/dirty)
-- [ ] CM6 editor (`sql({ schema, dialect })` autocomplete from schema store,
-  format via lazy `sql-formatter`, run keymap ⌘↵ / run-selection / run-at-cursor)
+- [ ] tabs store (sql / results / running / txStatus / dirty)
+- [ ] CM6 editor: add `@codemirror/*` + `@codemirror/lang-sql` deps;
+  `sql({ schema, dialect })` autocomplete fed from the schema store; format via
+  lazy `sql-formatter`; run keymap ⌘↵ (run-all / run-selection) + run-at-cursor
+  (send buffer + cursor offset — `run_query` already accepts `cursorOffset`).
 - [ ] results grid (reuse `VirtualList`; per-statement result tabs; NULL badges,
-  right-aligned numbers, type tooltips from ColumnInfo), StatusBar tx indicator
+  right-aligned numbers, type tooltips from `ColumnInfo`; render a statement's
+  `error` on its tab), StatusBar tx indicator. Editor container wires
+  `queryApi.run` → results + pushes to history.
 
 ## M3 — Data grid CRUD
 - [ ] grid_service, bind direction in values.rs, CellEditor, staging commit/rollback, insert/delete, table-data view
