@@ -1,9 +1,14 @@
 # Seeded Postgres + MySQL for the Rust integration suite (src-tauri/tests/).
 #
+# Host ports are deliberately non-standard (55432 / 33306) so a developer's own
+# local Postgres/MySQL on 5432/3306 doesn't shadow these containers. Container-
+# internal ports stay standard. (CI uses isolated service containers on the
+# standard ports — see .github/workflows/ci.yml.)
+#
 # Usage:
 #   docker compose -f docker-compose.test.yml up -d
-#   export BASALT_TEST_PG_URL="postgres://postgres:postgres@localhost:5432/postgres"
-#   export BASALT_TEST_MYSQL_URL="mysql://root:mysql@localhost:3306/basalt_test"
+#   export BASALT_TEST_PG_URL="postgres://postgres:postgres@localhost:55432/postgres"
+#   export BASALT_TEST_MYSQL_URL="mysql://root:mysql@localhost:33306/basalt_test"
 #   (cd src-tauri && cargo test)
 #   docker compose -f docker-compose.test.yml down -v   # tear down
 #
@@ -16,7 +21,7 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      - "55432:5432"
     volumes:
       - ./src-tauri/tests/fixtures/pg-init.sql:/docker-entrypoint-initdb.d/pg-init.sql:ro
     healthcheck:
@@ -31,7 +36,7 @@ services:
       MYSQL_ROOT_PASSWORD: mysql
       MYSQL_DATABASE: basalt_test
     ports:
-      - "3306:3306"
+      - "33306:3306"
     volumes:
       - ./src-tauri/tests/fixtures/mysql-init.sql:/docker-entrypoint-initdb.d/mysql-init.sql:ro
     healthcheck:
