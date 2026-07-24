@@ -8,6 +8,7 @@ mod logging;
 pub mod config;
 pub mod drivers;
 pub mod services;
+pub mod sqlgen;
 pub mod state;
 
 pub use errors::{AppError, AppResult};
