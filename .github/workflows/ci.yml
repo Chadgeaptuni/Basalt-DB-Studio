@@ -1,0 +1,206 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+    # `labeled` is needed so the `build` job triggers when a PR gains the
+    # `build` label; the default (opened/synchronize/reopened) keeps `check`
+    # and `integration` running on every PR update.
+    types: [opened, synchronize, reopened, labeled]
+  schedule:
+    # Weekly bundle build (Mondays 06:00 UTC) to catch size regressions.
+    - cron: "0 6 * * 1"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Lint, typecheck, and the unit + SQLite test suites. No BASALT_TEST_* env is
+  # set, so the Rust integration tests self-skip here.
+  # ---------------------------------------------------------------------------
+  check:
+    name: Check (lint · typecheck · unit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Linux WebKit dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libgtk-3-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libssl-dev \
+            libxdo-dev
+
+      - name: cargo fmt --check
+        working-directory: src-tauri
+        run: cargo fmt --check
+
+      - name: cargo clippy
+        working-directory: src-tauri
+        run: cargo clippy -- -D warnings
+
+      - name: cargo test (unit + sqlite)
+        working-directory: src-tauri
+        run: cargo test
+
+      - name: svelte-check
+        run: pnpm svelte-check
+
+      - name: vitest
+        run: pnpm test
+
+  # ---------------------------------------------------------------------------
+  # Integration suites against real Postgres + MySQL service containers. The
+  # BASALT_TEST_*_URL env vars opt the engine-gated tests in.
+  # ---------------------------------------------------------------------------
+  integration:
+    name: Integration (postgres + mysql)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: mysql
+          MYSQL_DATABASE: basalt_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -pmysql --silent"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      BASALT_TEST_PG_URL: postgres://postgres:postgres@localhost:5432/postgres
+      BASALT_TEST_MYSQL_URL: mysql://root:mysql@localhost:3306/basalt_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Linux WebKit dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libgtk-3-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libssl-dev \
+            libxdo-dev
+
+      - name: cargo test (integration)
+        working-directory: src-tauri
+        run: cargo test
+
+  # ---------------------------------------------------------------------------
+  # Cross-platform bundle build + 30 MB size gate. Expensive, so it only runs
+  # on version tags, the weekly schedule, or PRs explicitly labelled `build`.
+  # ---------------------------------------------------------------------------
+  build:
+    name: Build (${{ matrix.os }})
+    if: >-
+      github.event_name == 'schedule' ||
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'pull_request' &&
+      contains(github.event.pull_request.labels.*.name, 'build'))
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Linux WebKit dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libgtk-3-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libssl-dev \
+            libxdo-dev
+
+      - name: Build bundle
+        run: pnpm tauri build
+
+      - name: Check bundle size
+        run: node scripts/check-bundle-size.mjs
