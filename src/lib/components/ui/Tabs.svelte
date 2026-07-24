@@ -11,6 +11,7 @@
 <script lang="ts">
   import X from "@lucide/svelte/icons/x";
   import type { Snippet } from "svelte";
+  import { uiSlide } from "$lib/utils/motion";
 
   // Shared horizontal tab strip (DESIGN §6). Used for editor tabs and per-statement
   // result tabs. Dumb primitive: selection/close are callback props.
@@ -37,6 +38,7 @@
       role="tab"
       tabindex="0"
       aria-selected={item.id === activeId}
+      transition:uiSlide={{ axis: "x" }}
       class="group flex h-full cursor-pointer items-center gap-1.5 border-r border-border px-3
         font-mono text-xs whitespace-nowrap transition-colors duration-150
         {item.id === activeId ? 'bg-bg-0 text-fg-0' : 'text-fg-2 hover:bg-bg-2 hover:text-fg-1'}"
@@ -45,6 +47,16 @@
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           onSelect(item.id);
+        }
+      }}
+      onmousedown={(e) => {
+        // Suppress the middle-click autoscroll cursor; close is fired on auxclick.
+        if (e.button === 1) e.preventDefault();
+      }}
+      onauxclick={(e) => {
+        if (e.button === 1 && item.closable && onClose) {
+          e.preventDefault();
+          onClose(item.id);
         }
       }}
     >
