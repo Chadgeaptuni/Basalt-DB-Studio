@@ -238,3 +238,19 @@ export type DdlRequest =
   | { kind: "renameColumn"; namespace: string; table: string; from: string; to: string }
   | { kind: "createIndex"; namespace: string; table: string; name: string; columns: string[]; unique: boolean }
   | { kind: "dropIndex"; namespace: string; table: string; name: string };
+
+// ── Import / export (M5) ──────────────────────────────────────────────────────
+
+export type ExportFormat = "csv" | "json";
+
+/** Streamed over the export Channel. */
+export interface ExportProgress {
+  rows: number;
+  done: boolean;
+}
+
+export type ConflictMode = "insert" | "upsert" | "skip";
+
+export interface ImportResult {
+  inserted: number;
+}

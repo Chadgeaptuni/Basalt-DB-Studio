@@ -1,6 +1,7 @@
 <script lang="ts">
   import Play from "@lucide/svelte/icons/play";
   import HistoryIcon from "@lucide/svelte/icons/history";
+  import Download from "@lucide/svelte/icons/download";
   import CircleCheck from "@lucide/svelte/icons/circle-check";
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
   import Spinner from "$lib/components/ui/Spinner.svelte";
@@ -10,7 +11,10 @@
   import Tabs, { type TabItem } from "$lib/components/ui/Tabs.svelte";
   import DataGrid from "./DataGrid.svelte";
   import HistoryPanel from "$lib/components/history/HistoryPanel.svelte";
+  import { runExport } from "$lib/components/importExport/runExport";
   import { editorTabs } from "$lib/stores/tabs.svelte";
+  import { connections } from "$lib/stores/connections.svelte";
+  import { ioApi } from "$lib/api/io";
   import type { ErrorKind, StatementResult } from "$lib/api/types";
 
   interface Props {
@@ -55,6 +59,17 @@
     tunnelError: "Tunnel error",
   };
   const title = (kind: ErrorKind): string => ERROR_TITLE[kind] ?? "Error";
+
+  // Export re-runs the tab's SQL (full result, not the row-limited page shown).
+  const canExport = $derived(Boolean(connections.active) && Boolean(tab?.sql.trim()) && !tab?.running);
+  function exportResult(): void {
+    const sess = connections.active;
+    if (!sess || !tab) return;
+    const sql = tab.sql;
+    void runExport("query.csv", (format, path, ch) =>
+      ioApi.exportQuery(sess.sessionId, sql, format, path, ch),
+    );
+  }
 </script>
 
 <div class="flex h-full flex-col bg-bg-0">
@@ -76,6 +91,7 @@
       <span>Results</span>
     {/if}
     <div class="flex-1"></div>
+    <IconButton icon={Download} title="Export query result" size="sm" disabled={!canExport} onclick={exportResult} />
     <IconButton icon={HistoryIcon} title="History" size="sm" active={showHistory} onclick={onToggleHistory} />
   </div>
 

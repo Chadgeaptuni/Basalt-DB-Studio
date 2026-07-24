@@ -4,6 +4,8 @@
   import RotateCcw from "@lucide/svelte/icons/rotate-ccw";
   import RefreshCw from "@lucide/svelte/icons/refresh-cw";
   import Check from "@lucide/svelte/icons/check";
+  import Download from "@lucide/svelte/icons/download";
+  import Upload from "@lucide/svelte/icons/upload";
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
@@ -11,10 +13,13 @@
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import DataGrid, { type EditController } from "./DataGrid.svelte";
+  import ImportWizard from "$lib/components/importExport/ImportWizard.svelte";
+  import { runExport } from "$lib/components/importExport/runExport";
   import { parseCell } from "./tableEdits";
   import { tableData } from "$lib/stores/tableData.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { confirm } from "$lib/stores/dialogs.svelte";
+  import { ioApi } from "$lib/api/io";
   import type { EditorTab } from "$lib/stores/tabs.svelte";
   import type { CellValue } from "$lib/api/types";
 
@@ -31,6 +36,15 @@
   const pending = $derived(tableData.pending(tab.id));
 
   let selectedRow = $state<number | null>(null);
+  let showImport = $state(false);
+
+  function exportTable(): void {
+    const ref = tab.ref;
+    if (!sess || !ref) return;
+    void runExport(`${ref.table}.csv`, (format, path, ch) =>
+      ioApi.exportTable(sess.sessionId, ref.namespace, ref.table, format, path, ch),
+    );
+  }
 
   // Load on first show / when the underlying session changes. Staging is keyed by
   // tab id and survives tab switches; it's dropped by editorTabs.close on close.
@@ -144,7 +158,9 @@
       >
         <Check size={13} strokeWidth={2} /> Commit
       </Button>
+      <IconButton icon={Upload} title="Import CSV" size="sm" onclick={() => (showImport = true)} />
     {/if}
+    <IconButton icon={Download} title="Export" size="sm" disabled={!browse} onclick={exportTable} />
     <IconButton icon={RefreshCw} title="Refresh" size="sm" onclick={refresh} />
   </div>
 
@@ -176,3 +192,12 @@
     {/if}
   </div>
 </div>
+
+{#if showImport && tab.ref}
+  <ImportWizard
+    namespace={tab.ref.namespace}
+    table={tab.ref.table}
+    columns={columns.map((c) => c.name)}
+    onclose={() => (showImport = false)}
+  />
+{/if}
