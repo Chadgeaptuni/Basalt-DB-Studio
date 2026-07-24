@@ -16,11 +16,13 @@ describe_table type/PK/index assertions, and wrong-password → `authFailed` per
 engine). Credential path: **memory-only password** (transient command arg; the
 profile still has no password field), wired form → in-memory stash → connect.
 
-**M2 backend COMPLETE + verified** (types, `sqlgen/`, per-engine `values.rs`
-decode, generic batch exec, `query_service::run` + `run_query` command). 34 lib +
-6 integration tests green against real pg16/mysql8. **Next M2 = frontend** (CM6
-editor + results grid + history/tabs stores) — see the M2 section below. (The
-secrets slice below is a separable M1 tail; M2 frontend is the active thread.)
+**M2 COMPLETE (backend + frontend) + verified.** Backend: types, `sqlgen/`,
+per-engine `values.rs` decode, generic batch exec, `query_service::run` +
+`run_query` (34 lib + 6 integration tests, real pg16/mysql8). Frontend: CM6 editor
+(schema autocomplete, run keymap, lazy format), virtualized results grid +
+per-statement tabs, session tabs/history stores (svelte-check 0/0/0, 23 vitest,
+build clean). **Active thread = M3 (data-grid CRUD).** (The secrets slice below is
+a separable M1 tail.)
 
 **Secrets slice (separable M1 tail):**
 - `secrets/` — Keychain default + EncryptedFile vault (argon2id + ChaCha20), so
@@ -166,17 +168,28 @@ drop+reopen) + cancel registry; **statement timeout** (auto-cancel →
 `queryCancelled`). Also: columns are taken from the first row, so an empty result
 set has no column headers (revisit if it matters).
 
-**Next M2 increment — frontend (editor + results):**
-- [ ] history.svelte.ts session store (pushed from frontend as results return)
-- [ ] tabs store (sql / results / running / txStatus / dirty)
-- [ ] CM6 editor: add `@codemirror/*` + `@codemirror/lang-sql` deps;
-  `sql({ schema, dialect })` autocomplete fed from the schema store; format via
-  lazy `sql-formatter`; run keymap ⌘↵ (run-all / run-selection) + run-at-cursor
-  (send buffer + cursor offset — `run_query` already accepts `cursorOffset`).
-- [ ] results grid (reuse `VirtualList`; per-statement result tabs; NULL badges,
-  right-aligned numbers, type tooltips from `ColumnInfo`; render a statement's
-  `error` on its tab), StatusBar tx indicator. Editor container wires
-  `queryApi.run` → results + pushes to history.
+**M2 frontend — DONE + verified** (svelte-check 0/0/0, 23 vitest, `pnpm build`
+clean; CM6 in main chunk, `sql-formatter` lazy-split):
+- [x] `stores/tabs.svelte.ts` (sql / result / running / activeStatement / runError)
+  + `stores/history.svelte.ts` (session-only, newest-first, capped 200).
+- [x] `utils/cellDisplay.ts` — pre-format CellValue once per fetch (text / isNull /
+  numeric / title). `ui/Tabs.svelte` primitive (editor + result tabs).
+- [x] CM6 editor (`components/editor/`): `cm.ts` (token-only theme + highlight,
+  per-engine dialect, cache-fed `sql({schema,dialect})` autocomplete, run keymap),
+  `CodeEditor.svelte` (thin host), `EditorPane.svelte` (tabs/toolbar/orchestration).
+  ⌘↵ run-at-cursor/selection, ⌘⇧↵ run-all, ⌘⇧F format (lazy `sql-formatter`).
+  **Cursor offset converted UTF-16→UTF-8 bytes** before `run_query` (`statement_at`
+  takes a byte offset). Destructive → `confirm()` → re-run confirmed.
+- [x] `components/grid/DataGrid.svelte` (read-only windowed grid; NULL/number/tooltip;
+  `VirtualList` extended with sticky header + `contentWidth`), `ResultsPane.svelte`
+  (loading/empty/error, per-statement tabs, live elapsed), `history/HistoryPanel.svelte`
+  (virtualized, click-to-reload), `workspace/Workspace.svelte`; StatusBar tx/rows/ms.
+
+**M2 frontend deferred (small, revisit in M3):** grid cell selection + `Ctrl+C`
+copy and editor error-position underline (needs `queryError` detail offset) land
+with the editable grid in M3. NULL renders as inline `text-grid-null italic` (exact
+DESIGN §3 token/style) rather than the pill `Badge`. Run-at-cursor logs the whole
+buffer to history (frontend never splits — splitting is backend-only).
 
 ## M3 — Data grid CRUD
 - [ ] grid_service, bind direction in values.rs, CellEditor, staging commit/rollback, insert/delete, table-data view
