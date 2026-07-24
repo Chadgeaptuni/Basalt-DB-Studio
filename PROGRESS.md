@@ -21,8 +21,10 @@ per-engine `values.rs` decode, generic batch exec, `query_service::run` +
 `run_query` (34 lib + 6 integration tests, real pg16/mysql8). Frontend: CM6 editor
 (schema autocomplete, run keymap, lazy format), virtualized results grid +
 per-statement tabs, session tabs/history stores (svelte-check 0/0/0, 23 vitest,
-build clean). **Active thread = M3 (data-grid CRUD).** (The secrets slice below is
-a separable M1 tail.)
+build clean). **M3 COMPLETE (backend + frontend) + verified** — editable table-data
+view, transactional commit, no-PK fallback + ambiguousRowIdentity (40 lib + 2
+grid_roundtrip + 6 integration). **Active thread = M4 (DDL).** (The secrets slice
+below is a separable M1 tail.)
 
 **Secrets slice (separable M1 tail):**
 - `secrets/` — Keychain default + EncryptedFile vault (argon2id + ChaCha20), so
@@ -191,9 +193,39 @@ with the editable grid in M3. NULL renders as inline `text-grid-null italic` (ex
 DESIGN §3 token/style) rather than the pill `Badge`. Run-at-cursor logs the whole
 buffer to history (frontend never splits — splitting is backend-only).
 
-## M3 — Data grid CRUD
-- [ ] grid_service, bind direction in values.rs, CellEditor, staging commit/rollback, insert/delete, table-data view
-- [ ] grid_roundtrip.rs all engines; no-PK fallback + ambiguousRowIdentity
+## M3 — Data grid CRUD — COMPLETE + verified
+
+Backend (clippy/fmt clean; 40 lib + 2 grid_roundtrip + 6 integration, real pg16/mysql8):
+- [x] Grid wire types (BrowseResult, GridEdit, CellChange, GridCommitResult);
+  AmbiguousRowIdentity carries the failing edit index.
+- [x] bind direction in each `values.rs` (reverse of decode): **Postgres = text +
+  `::type_name` cast** (uniform for numeric/json/array/enum/date); **MySQL/SQLite =
+  by CellValue kind** (TINYINT(1) bool → 1/0, not "true").
+- [x] `drivers/grid.rs`: one generic transactional commit loop (SET/WHERE/INSERT via
+  QueryBuilder; whole batch in one tx; `rows_affected == 1` per UPDATE/DELETE →
+  else rollback + `ambiguousRowIdentity`; NULL identity → `IS NULL`).
+- [x] `grid_service` browse (table-data view: describe → SELECT limit+1; identity =
+  PK or all-non-binary fallback; editable flag + noPrimaryKey reason) + commit
+  (read-only gate, column/binary validation, needs-identity gate).
+- [x] `grid_browse`/`grid_commit` commands. `grid_roundtrip.rs` (pg+mysql) + SQLite
+  unit tests cover PK CRUD, no-PK fallback, ambiguous rollback, NULL identity.
+- [x] **fix:** pg binary numeric over-pads trailing zeros (2.75→"2.7500"); trimmed
+  at the decode site (+regression test).
+
+Frontend (svelte-check 0/0/0; 32 vitest; build clean):
+- [x] tableEdits.ts (pure, tested): parseCell / buildEdits / pendingCount.
+  tableData store: per-tab browse + staging, optimistic display, one-tx commit
+  (failure keeps staging + shows error).
+- [x] DataGrid gains an optional edit controller (results grid stays read-only):
+  inline editor, arrow/Enter/Delete(→NULL)/Ctrl+C-TSV, dirty/inserted/deleted
+  styling. TableDataView: Add/Delete row, Revert, Commit (confirm on deletes),
+  read-only + no-PK notices. Shared `utils/copy.ts` (TSV, NULL→empty).
+- [x] Tabs gain kind (sql|table) + ref; tab bar moved to Workspace, which routes
+  sql→editor/results, table→TableDataView. Double-click a tree relation opens it.
+
+**Deferred (M3 tail):** Advanced Copy modal (⌘⇧C: header/delimiter/quoting);
+SQLite `rowid` fallback (all-columns fallback covers it now); grid keyboard nav is
+grid-local (role=grid), not the global registry (justified like the CM keymap).
 
 ## M4 — DDL
 - [ ] ddl_service, per-engine ddl.rs, TableDesigner/IndexEditor, DDL preview modal, tree context-menu, cache refresh
