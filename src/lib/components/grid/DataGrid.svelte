@@ -27,13 +27,33 @@
   }
   let { columns, rows, edit }: Props = $props();
 
-  const COL_W = 180;
   const ROW_H = 28;
-  const width = $derived(columns.length * COL_W);
   // Re-formats when rows change or the datetime-display setting flips (DESIGN §10).
   const display = $derived<CellDisplay[][]>(
     rows.map((r) => r.map((v) => formatCell(v, settings.datetimeDisplay))),
   );
+
+  // Autofit: size each column to its header + a sample of cell text. Cells are mono,
+  // so char-count → px is a reliable estimate with no DOM measuring/reflow. Clamped
+  // so one long cell can't blow the layout out; anything past MAX still truncates.
+  const CHAR_W = 7.3; // px per char at font-mono text-xs (~12px)
+  const CELL_PAD = 22; // px-2 both sides + border + slack
+  const MIN_COL = 64;
+  const MAX_COL = 400;
+  const SAMPLE = 200; // rows scanned per column; data is already row-limited
+  const colWidths = $derived(
+    columns.map((col, c) => {
+      let chars = Math.max(col.name.length, col.typeName.length);
+      const n = Math.min(display.length, SAMPLE);
+      for (let r = 0; r < n; r++) {
+        const cell = display[r]?.[c];
+        const len = cell?.isNull ? 4 : (cell?.text?.length ?? 0);
+        if (len > chars) chars = len;
+      }
+      return Math.min(MAX_COL, Math.max(MIN_COL, Math.round(chars * CHAR_W) + CELL_PAD));
+    }),
+  );
+  const width = $derived(colWidths.reduce((sum, w) => sum + w, 0));
 
   let sel = $state<{ r: number; c: number } | null>(null);
   let editing = $state<{ r: number; c: number } | null>(null);
@@ -111,15 +131,15 @@
   <VirtualList items={display} rowHeight={ROW_H} contentWidth={width} class="h-full">
     {#snippet header()}
       <div class="flex bg-grid-header-bg" style="width:{width}px">
-        {#each columns as col (col.name)}
+        {#each columns as col, i (col.name)}
           <div
-            class="flex h-7 shrink-0 items-center gap-1.5 border-r border-b border-border px-2
-              font-mono text-xs font-medium text-fg-1"
-            style="width:{COL_W}px"
+            class="flex h-9 shrink-0 flex-col justify-center gap-0.5 border-r border-b border-border
+              px-2 font-mono"
+            style="width:{colWidths[i]}px"
             title={`${col.name} · ${col.typeName}${col.isPk ? " · PK" : ""}`}
           >
-            <span class="truncate">{col.name}</span>
-            <span class="truncate text-fg-2">{col.typeName}</span>
+            <span class="truncate text-xs font-medium text-fg-1">{col.name}</span>
+            <span class="truncate text-[10px] leading-none text-fg-2">{col.typeName}</span>
           </div>
         {/each}
       </div>
@@ -139,7 +159,7 @@
               {dirty ? 'bg-grid-edited' : ''}
               {selected ? 'outline outline-1 -outline-offset-1 outline-accent' : ''}
               {edit?.rowState(r) === 'deleted' ? 'text-fg-2 line-through' : 'text-fg-1'}"
-            style="width:{COL_W}px"
+            style="width:{colWidths[c]}px"
             title={cell.title}
             onclick={() => edit && select(r, c)}
             ondblclick={() => startEdit(r, c)}
