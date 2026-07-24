@@ -9,8 +9,8 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Supported database engines. Only SQLite is wired end to end in this slice;
-/// `connect`/`test_connection` reject the others with a clear message.
+/// Supported database engines. All three are wired end to end (connect →
+/// introspect → describe_table); `values.rs` cell decode joins them in M2.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Engine {
