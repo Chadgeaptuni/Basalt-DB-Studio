@@ -3,6 +3,8 @@
   import Sidebar from "./Sidebar.svelte";
   import StatusBar from "./StatusBar.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
+  import Workspace from "$lib/components/workspace/Workspace.svelte";
+  import { connections } from "$lib/stores/connections.svelte";
   import { keyboard } from "$lib/utils/keyboard";
 
   let sidebarOpen = $state(true);
@@ -15,8 +17,11 @@
   <div class="flex flex-1 overflow-hidden">
     {#if sidebarOpen}<Sidebar />{/if}
     <main class="flex-1 overflow-hidden bg-bg-0">
-      <!-- M1 slots the editor/results SplitPane here. -->
-      <EmptyState icon={Terminal} message="Connect to a database to start querying." />
+      {#if connections.active}
+        <Workspace />
+      {:else}
+        <EmptyState icon={Terminal} message="Connect to a database to start querying." />
+      {/if}
     </main>
   </div>
   <StatusBar onToggleSidebar={() => (sidebarOpen = !sidebarOpen)} />

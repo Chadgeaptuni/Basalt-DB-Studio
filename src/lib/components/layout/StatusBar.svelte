@@ -6,6 +6,7 @@
   import Badge from "$lib/components/ui/Badge.svelte";
   import { theme } from "$lib/stores/theme.svelte";
   import { connections } from "$lib/stores/connections.svelte";
+  import { editorTabs } from "$lib/stores/tabs.svelte";
   import type { Engine } from "$lib/api/types";
 
   interface Props {
@@ -14,6 +15,11 @@
   let { onToggleSidebar }: Props = $props();
 
   const ENGINE_TAG: Record<Engine, string> = { postgres: "PG", mysql: "MY", sqlite: "SQ" };
+
+  // Query stats for the active editor tab's shown statement (DESIGN §5).
+  const tab = $derived(editorTabs.active);
+  const stmt = $derived(tab && tab.result ? tab.result.statements[tab.activeStatement] : undefined);
+  const tx = $derived(tab?.result?.txStatus ?? "idle");
   const isDark = $derived(theme.current === "basalt-dark");
   function toggleTheme(): void {
     theme.set(isDark ? "basalt-light" : "basalt-dark");
@@ -31,6 +37,22 @@
   {:else}
     <span>Not connected</span>
   {/if}
+
+  {#if tx === "inTx"}
+    <Badge variant="warn">TX</Badge>
+  {:else if tx === "error"}
+    <Badge variant="danger">TX ERR</Badge>
+  {/if}
+  {#if stmt && !stmt.error}
+    <span class="tabular-nums">
+      {#if stmt.columns.length > 0}
+        {stmt.rows.length} rows{stmt.truncated ? " (limit)" : ""} · {stmt.durationMs} ms
+      {:else}
+        {stmt.rowsAffected} affected · {stmt.durationMs} ms
+      {/if}
+    </span>
+  {/if}
+
   <div class="flex-1"></div>
   <span class="tabular-nums">{theme.current}</span>
   <IconButton
