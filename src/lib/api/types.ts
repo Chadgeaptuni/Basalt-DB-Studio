@@ -128,3 +128,51 @@ export interface TableDescription {
   columns: ColumnInfo[];
   indexes: IndexInfo[];
 }
+
+// ── Query execution (M2) ─────────────────────────────────────────────────────
+// Mirrors the CellValue enum + result types in drivers/types.rs. CellValue is
+// adjacently tagged — switch on `kind`. `int`/`float` are JS numbers (bigint past
+// 2^53 loses display precision — tracked); `decimal` stays a string.
+
+export interface BytesPreview {
+  len: number;
+  /** Lowercase hex of the first 64 bytes. */
+  preview: string;
+}
+
+export interface UnknownValue {
+  typeName: string;
+  display: string;
+}
+
+export type CellValue =
+  | { kind: "null" }
+  | { kind: "bool"; value: boolean }
+  | { kind: "int"; value: number }
+  | { kind: "float"; value: number }
+  | { kind: "text"; value: string }
+  | { kind: "decimal"; value: string }
+  | { kind: "date"; value: string }
+  | { kind: "time"; value: string }
+  | { kind: "dateTime"; value: string }
+  | { kind: "json"; value: unknown }
+  | { kind: "bytes"; value: BytesPreview }
+  | { kind: "array"; value: CellValue[] }
+  | { kind: "unknown"; value: UnknownValue };
+
+/** One statement's outcome; `columns`/`rows` are empty for non-SELECT. */
+export interface StatementResult {
+  columns: ColumnInfo[];
+  rows: CellValue[][];
+  rowsAffected: number;
+  truncated: boolean;
+  durationMs: number;
+}
+
+export type TxStatus = "idle" | "inTx" | "error";
+
+/** The `run_query` response: one result per statement, plus resulting tx state. */
+export interface RunResult {
+  statements: StatementResult[];
+  txStatus: TxStatus;
+}

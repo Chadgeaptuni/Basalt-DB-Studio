@@ -8,6 +8,7 @@
 //! here so the connection form and the driver speak one vocabulary.
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 /// Supported database engines. All three are wired end to end (connect →
 /// introspect → describe_table); `values.rs` cell decode joins them in M2.
@@ -127,4 +128,83 @@ pub struct IndexInfo {
 pub struct TableDescription {
     pub columns: Vec<ColumnInfo>,
     pub indexes: Vec<IndexInfo>,
+}
+
+// ── Query execution (M2) ─────────────────────────────────────────────────────
+
+/// A single decoded cell. Adjacently serde-tagged (`{ "kind", "value" }`) so the
+/// grid switches on `kind` without guessing. Decode lives in each engine's
+/// `values.rs` — the single edge-type site. `Int(i64)` stays exact on the Rust
+/// side (JS loses precision past 2^53 — a display caveat, tracked); NUMERIC /
+/// DECIMAL / u64 are `Decimal(String)`, never f64. Unmatched engine types fall
+/// back to a text cast, else `Unknown`.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(tag = "kind", content = "value", rename_all = "camelCase")]
+pub enum CellValue {
+    Null,
+    Bool(bool),
+    Int(i64),
+    Float(f64),
+    Text(String),
+    Decimal(String),
+    /// ISO 8601, exactly as the engine returns it (offset preserved, naive stays
+    /// naive). The datetime-display setting transforms rendering only.
+    Date(String),
+    Time(String),
+    DateTime(String),
+    Json(Value),
+    Bytes(BytesPreview),
+    /// Postgres arrays, recursive.
+    Array(Vec<CellValue>),
+    Unknown(UnknownValue),
+}
+
+/// A blob shown by length + a hex head; full bytes are not shipped in v1.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct BytesPreview {
+    pub len: usize,
+    /// Lowercase hex of the first 64 bytes.
+    pub preview: String,
+}
+
+/// Geometry, ranges, custom types: their text representation plus the SQL type.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct UnknownValue {
+    pub type_name: String,
+    pub display: String,
+}
+
+/// One statement's outcome. `columns`/`rows` are empty for non-SELECT; `rows`
+/// holds at most `limit + 1` fetched rows with `truncated` set when the extra row
+/// was seen and dropped. `ColumnInfo` is reused as the column metadata (for
+/// arbitrary results `is_pk` is false and `nullable` is best-effort).
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct StatementResult {
+    pub columns: Vec<ColumnInfo>,
+    pub rows: Vec<Vec<CellValue>>,
+    pub rows_affected: u64,
+    pub truncated: bool,
+    pub duration_ms: u64,
+}
+
+/// Session transaction state for the status bar. Pg reads it from connection
+/// status; MySQL/SQLite infer it from statement classification.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum TxStatus {
+    Idle,
+    InTx,
+    Error,
+}
+
+/// The `run_query` response: one result per statement, plus the resulting tx
+/// state. Execution stops at the first failing statement (surfaced as its error).
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RunResult {
+    pub statements: Vec<StatementResult>,
+    pub tx_status: TxStatus,
 }
