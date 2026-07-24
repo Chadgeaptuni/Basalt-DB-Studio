@@ -1,10 +1,8 @@
 <script lang="ts">
   import Play from "@lucide/svelte/icons/play";
-  import Plus from "@lucide/svelte/icons/plus";
   import WrapText from "@lucide/svelte/icons/wrap-text";
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
-  import Tabs, { type TabItem } from "$lib/components/ui/Tabs.svelte";
   import CodeEditor from "./CodeEditor.svelte";
   import { schemaFrom } from "./cm";
   import { editorTabs } from "$lib/stores/tabs.svelte";
@@ -29,10 +27,6 @@
     schemaFrom(sess ? schema.get(sess.sessionId)?.tree : undefined, (ns, table) =>
       sess ? schema.describeCached(sess.sessionId, ns, table)?.columns.map((c) => c.name) : undefined,
     ),
-  );
-
-  const tabItems = $derived<TabItem[]>(
-    editorTabs.list.map((t) => ({ id: t.id, label: t.title, closable: editorTabs.list.length > 1 })),
   );
 
   const FORMATTER_LANG: Record<Engine, "postgresql" | "mysql" | "sqlite"> = {
@@ -115,23 +109,9 @@
     }
   }
 
-  // App-level tab shortcuts go through the single registry; editor-context keys
-  // (run, format) are owned by the CodeMirror keymap where the cursor lives.
-  $effect(() => keyboard.register("mod+t", () => editorTabs.open()));
-  $effect(() =>
-    keyboard.register("mod+w", () => {
-      if (editorTabs.active && editorTabs.list.length > 1) editorTabs.close(editorTabs.active.id);
-    }),
-  );
 </script>
 
 <div class="flex h-full flex-col bg-bg-0">
-  <Tabs items={tabItems} activeId={tab?.id ?? null} onSelect={editorTabs.select} onClose={editorTabs.close}>
-    {#snippet trailing()}
-      <IconButton icon={Plus} title={`New tab · ${keyboard.label("mod+t")}`} size="sm" onclick={() => editorTabs.open()} />
-    {/snippet}
-  </Tabs>
-
   <div class="flex h-9 shrink-0 items-center gap-1.5 border-b border-border px-2">
     <Button
       variant="primary"

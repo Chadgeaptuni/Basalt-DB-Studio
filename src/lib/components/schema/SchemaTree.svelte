@@ -9,6 +9,7 @@
   import Button from "$lib/components/ui/Button.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { schema } from "$lib/stores/schema.svelte";
+  import { editorTabs } from "$lib/stores/tabs.svelte";
 
   const sessionId = $derived(connections.active?.sessionId ?? null);
   let expanded = $state<Record<string, boolean>>({});
@@ -69,8 +70,9 @@
                 depth={1}
                 expandable
                 expanded={expanded[tkey]}
-                title={rel.kind}
+                title={`${rel.kind} · double-click to open data`}
                 onclick={() => toggleTable(ns.name, rel.name)}
+                ondblclick={() => editorTabs.openTable(ns.name, rel.name)}
                 ontoggle={() => toggleTable(ns.name, rel.name)}
               />
               {#if expanded[tkey] && sessionId}

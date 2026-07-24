@@ -12,6 +12,7 @@
     selected?: boolean;
     title?: string;
     onclick?: () => void;
+    ondblclick?: () => void;
     ontoggle?: () => void;
   }
 
@@ -24,6 +25,7 @@
     selected = false,
     title,
     onclick,
+    ondblclick,
     ontoggle,
   }: Props = $props();
 </script>
@@ -38,6 +40,7 @@
     duration-150 {selected ? 'bg-bg-2 text-fg-0' : 'text-fg-1 hover:bg-bg-2'}"
   style="padding-left:{depth * 12 + 4}px"
   onclick={() => onclick?.()}
+  ondblclick={() => ondblclick?.()}
   onkeydown={(e) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
