@@ -1,0 +1,97 @@
+import { connectionsApi } from "$lib/api/connections";
+import type { ApiError } from "$lib/api/client";
+import type { ConnectionProfile, SessionInfo } from "$lib/api/types";
+
+export type ConnStatus = "disconnected" | "connecting" | "connected" | "error";
+
+export interface ConnState {
+  status: ConnStatus;
+  session?: SessionInfo;
+  error?: ApiError;
+}
+
+let profiles = $state<ConnectionProfile[]>([]);
+let statuses = $state<Record<string, ConnState>>({});
+let loaded = $state(false);
+let loadError = $state<ApiError | null>(null);
+/** The session whose schema/editor the main area is showing. */
+let active = $state<SessionInfo | null>(null);
+
+function statusFor(id: string): ConnState {
+  return statuses[id] ?? { status: "disconnected" };
+}
+
+async function load(): Promise<void> {
+  try {
+    profiles = await connectionsApi.list();
+    loadError = null;
+    loaded = true;
+  } catch (e) {
+    loadError = e as ApiError;
+    loaded = true;
+  }
+}
+
+async function save(profile: ConnectionProfile): Promise<void> {
+  await connectionsApi.save(profile);
+  await load();
+}
+
+async function remove(id: string): Promise<void> {
+  const s = statusFor(id);
+  if (s.session) {
+    if (active?.sessionId === s.session.sessionId) active = null;
+    await connectionsApi.disconnect(s.session.sessionId).catch(() => undefined);
+  }
+  await connectionsApi.remove(id);
+  delete statuses[id];
+  await load();
+}
+
+async function connect(id: string): Promise<SessionInfo | null> {
+  statuses[id] = { status: "connecting" };
+  try {
+    const session = await connectionsApi.connect(id);
+    statuses[id] = { status: "connected", session };
+    active = session;
+    return session;
+  } catch (e) {
+    statuses[id] = { status: "error", error: e as ApiError };
+    return null;
+  }
+}
+
+async function disconnect(id: string): Promise<void> {
+  const s = statusFor(id);
+  if (s.session) {
+    if (active?.sessionId === s.session.sessionId) active = null;
+    await connectionsApi.disconnect(s.session.sessionId).catch(() => undefined);
+  }
+  statuses[id] = { status: "disconnected" };
+}
+
+function setActive(session: SessionInfo): void {
+  active = session;
+}
+
+export const connections = {
+  get profiles() {
+    return profiles;
+  },
+  get loaded() {
+    return loaded;
+  },
+  get loadError() {
+    return loadError;
+  },
+  get active() {
+    return active;
+  },
+  statusFor,
+  load,
+  save,
+  remove,
+  connect,
+  disconnect,
+  setActive,
+};
