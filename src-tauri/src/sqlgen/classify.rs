@@ -52,6 +52,26 @@ pub fn is_read_only(text: &str) -> bool {
     )
 }
 
+/// Whether a statement produces a result set (so it should be `fetch`ed rather
+/// than `execute`d): the read verbs, or any statement with a `RETURNING` clause.
+pub fn returns_rows(text: &str) -> bool {
+    let masked = mask_noise(text);
+    matches!(
+        first_word(&masked).as_deref(),
+        Some(
+            "SELECT"
+                | "WITH"
+                | "SHOW"
+                | "EXPLAIN"
+                | "VALUES"
+                | "TABLE"
+                | "DESCRIBE"
+                | "DESC"
+                | "PRAGMA"
+        )
+    ) || has_word(&masked, "RETURNING")
+}
+
 pub fn tx_effect(text: &str) -> TxEffect {
     let masked = mask_noise(text);
     let mut words = masked.split_whitespace();

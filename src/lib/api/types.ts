@@ -160,6 +160,13 @@ export type CellValue =
   | { kind: "array"; value: CellValue[] }
   | { kind: "unknown"; value: UnknownValue };
 
+/** A failing statement's error, carried on its own result tab. */
+export interface StatementError {
+  kind: ErrorKind;
+  message: string;
+  detail?: unknown;
+}
+
 /** One statement's outcome; `columns`/`rows` are empty for non-SELECT. */
 export interface StatementResult {
   columns: ColumnInfo[];
@@ -167,6 +174,8 @@ export interface StatementResult {
   rowsAffected: number;
   truncated: boolean;
   durationMs: number;
+  /** Set on the statement that failed; execution stops there. */
+  error?: StatementError;
 }
 
 export type TxStatus = "idle" | "inTx" | "error";

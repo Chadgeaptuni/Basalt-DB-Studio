@@ -12,6 +12,6 @@ mod classify;
 mod quote;
 mod split;
 
-pub use classify::{confirmation_reason, is_read_only, tx_effect, TxEffect};
+pub use classify::{confirmation_reason, is_read_only, returns_rows, tx_effect, TxEffect};
 pub use quote::{quote_ident, quote_qualified};
 pub use split::{split, statement_at, Statement};

@@ -86,11 +86,20 @@ pub async fn describe_table(
 
 /// Clones the session's driver handle out under a short lock.
 async fn driver_for(session_id: &str, registry: &SessionRegistry) -> AppResult<Driver> {
+    Ok(session_driver(session_id, registry).await?.0)
+}
+
+/// The session's driver handle plus its read-only flag (for the query service's
+/// read-only gate), cloned out under a short lock.
+pub async fn session_driver(
+    session_id: &str,
+    registry: &SessionRegistry,
+) -> AppResult<(Driver, bool)> {
     registry
         .lock()
         .await
         .get(session_id)
-        .map(|s| s.driver.clone())
+        .map(|s| (s.driver.clone(), s.read_only))
         .ok_or_else(|| AppError::Internal(format!("no active session '{session_id}'")))
 }
 

@@ -43,6 +43,7 @@ pub fn run() {
             commands::connections::disconnect,
             commands::introspect::introspect,
             commands::introspect::describe_table,
+            commands::query::run_query,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
