@@ -1,8 +1,11 @@
 // Theme = which `[data-theme]` block is active on <html>. Presets only swap CSS
 // variables (DESIGN §3), so switching is a single attribute write.
 
-export const THEMES = ["basalt-dark", "basalt-light"] as const;
+export const THEMES = ["basalt-dark", "basalt-light", "basalt-nord", "basalt-paper"] as const;
 export type ThemeName = (typeof THEMES)[number];
+
+/** Which presets are dark — drives the StatusBar quick sun/moon toggle target. */
+export const DARK_THEMES: readonly ThemeName[] = ["basalt-dark", "basalt-nord"];
 
 const STORAGE_KEY = "basalt.theme";
 const DEFAULT: ThemeName = "basalt-dark";

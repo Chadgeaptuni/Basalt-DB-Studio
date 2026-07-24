@@ -254,3 +254,15 @@ export type ConflictMode = "insert" | "upsert" | "skip";
 export interface ImportResult {
   inserted: number;
 }
+
+// ── Settings (M7) ─────────────────────────────────────────────────────────────
+// Mirrors src-tauri/src/config/settings.rs. `datetimeDisplay` transforms only how
+// a timestamptz cell renders (never the stored/edited value); `defaultRowLimit`
+// is the fetch cap the editor passes per run.
+
+export type DatetimeDisplay = "stored" | "local" | "utc";
+
+export interface AppSettings {
+  defaultRowLimit: number;
+  datetimeDisplay: DatetimeDisplay;
+}

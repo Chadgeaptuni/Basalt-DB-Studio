@@ -8,6 +8,7 @@
   import { schemaFrom } from "./cm";
   import { editorTabs } from "$lib/stores/tabs.svelte";
   import { saveQuery } from "$lib/stores/saveQuery.svelte";
+  import { settings } from "$lib/stores/settings.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { schema } from "$lib/stores/schema.svelte";
   import { history } from "$lib/stores/history.svelte";
@@ -49,6 +50,7 @@
     const result = await queryApi.run(sess.sessionId, payload.sql, {
       cursorOffset: payload.cursorOffset,
       confirmed,
+      limit: settings.defaultRowLimit,
     });
     tab.result = result;
     tab.activeStatement = 0;

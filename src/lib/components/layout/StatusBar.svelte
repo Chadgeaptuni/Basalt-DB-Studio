@@ -2,9 +2,11 @@
   import PanelLeft from "@lucide/svelte/icons/panel-left";
   import Sun from "@lucide/svelte/icons/sun";
   import Moon from "@lucide/svelte/icons/moon";
+  import SettingsIcon from "@lucide/svelte/icons/settings";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import Badge from "$lib/components/ui/Badge.svelte";
-  import { theme } from "$lib/stores/theme.svelte";
+  import SettingsModal from "$lib/components/settings/SettingsModal.svelte";
+  import { theme, DARK_THEMES } from "$lib/stores/theme.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { editorTabs } from "$lib/stores/tabs.svelte";
   import type { Engine } from "$lib/api/types";
@@ -20,7 +22,9 @@
   const tab = $derived(editorTabs.active);
   const stmt = $derived(tab && tab.result ? tab.result.statements[tab.activeStatement] : undefined);
   const tx = $derived(tab?.result?.txStatus ?? "idle");
-  const isDark = $derived(theme.current === "basalt-dark");
+  const isDark = $derived(DARK_THEMES.includes(theme.current));
+  let showSettings = $state(false);
+  // Quick toggle jumps between the two defaults; the picker (settings) has the rest.
   function toggleTheme(): void {
     theme.set(isDark ? "basalt-light" : "basalt-dark");
   }
@@ -55,10 +59,10 @@
 
   <div class="flex-1"></div>
   <span class="tabular-nums">{theme.current}</span>
-  <IconButton
-    icon={isDark ? Sun : Moon}
-    title="Toggle theme"
-    size="sm"
-    onclick={toggleTheme}
-  />
+  <IconButton icon={isDark ? Sun : Moon} title="Toggle light/dark" size="sm" onclick={toggleTheme} />
+  <IconButton icon={SettingsIcon} title="Settings" size="sm" onclick={() => (showSettings = true)} />
 </footer>
+
+{#if showSettings}
+  <SettingsModal onclose={() => (showSettings = false)} />
+{/if}

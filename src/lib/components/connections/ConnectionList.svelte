@@ -13,7 +13,22 @@
   import ConnectionForm from "./ConnectionForm.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { confirm } from "$lib/stores/dialogs.svelte";
-  import type { ConnectionProfile, Engine } from "$lib/api/types";
+  import type { ConnectionProfile, Engine, ErrorKind } from "$lib/api/types";
+
+  // Kind-specific, actionable headings for connect failures (DESIGN §8) — the
+  // backend message follows below. secretNotFound/keychainUnavailable/vaultLocked
+  // land here once the secrets slice can produce them.
+  const CONNECT_TITLE: Partial<Record<ErrorKind, string>> = {
+    connectionRefused: "Can't reach the server",
+    authFailed: "Authentication failed — check user/password",
+    tlsError: "TLS error — check SSL mode and certificates",
+    tunnelError: "SSH tunnel failed — check the tunnel settings",
+    secretNotFound: "No stored password — edit the connection to add one",
+    keychainUnavailable: "OS keychain unavailable",
+    vaultLocked: "Vault is locked",
+    configParse: "Connection file is malformed",
+  };
+  const connectTitle = (k: ErrorKind): string => CONNECT_TITLE[k] ?? "Connection error";
 
   let form = $state<{ profile: ConnectionProfile | null } | null>(null);
 
@@ -115,7 +130,10 @@
             </div>
             {#if st.status === "error" && st.error}
               <div class="flex items-start gap-2 bg-danger-bg px-3 py-1.5 text-xs text-danger">
-                <span class="flex-1">{st.error.message}</span>
+                <div class="min-w-0 flex-1">
+                  <div class="font-medium">{connectTitle(st.error.kind)}</div>
+                  <div class="mt-0.5 font-mono text-[11px] break-words opacity-90">{st.error.message}</div>
+                </div>
                 <IconButton icon={RotateCw} title="Retry" size="sm" onclick={() => connections.connect(p.id)} />
               </div>
             {/if}

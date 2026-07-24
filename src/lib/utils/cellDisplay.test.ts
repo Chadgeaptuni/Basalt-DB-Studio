@@ -42,4 +42,28 @@ describe("formatCell", () => {
       "geometry",
     );
   });
+
+  it("leaves datetimes untouched under the default (stored) mode", () => {
+    const v = { kind: "dateTime", value: "2024-01-02T05:00:00+02:00" } as const;
+    expect(formatCell(v)).toEqual({ text: "2024-01-02T05:00:00+02:00", isNull: false, numeric: false, title: undefined });
+  });
+
+  it("converts an offset datetime to UTC and keeps the raw value as tooltip", () => {
+    const v = { kind: "dateTime", value: "2024-01-02T05:00:00+02:00" } as const;
+    // 05:00+02:00 == 03:00Z.
+    expect(formatCell(v, "utc")).toMatchObject({
+      text: "2024-01-02 03:00:00",
+      title: "2024-01-02T05:00:00+02:00",
+    });
+  });
+
+  it("never rewrites a naive datetime, even in UTC mode", () => {
+    const v = { kind: "dateTime", value: "2024-01-02 05:00:00" } as const;
+    expect(formatCell(v, "utc").text).toBe("2024-01-02 05:00:00");
+  });
+
+  it("leaves date and time (no offset) as-is regardless of mode", () => {
+    expect(formatCell({ kind: "date", value: "2024-01-02" }, "utc").text).toBe("2024-01-02");
+    expect(formatCell({ kind: "time", value: "05:00:00" }, "local").text).toBe("05:00:00");
+  });
 });

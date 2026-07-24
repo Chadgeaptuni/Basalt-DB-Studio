@@ -31,6 +31,16 @@
   );
   // Save the active SQL tab (DESIGN §7). Bound tabs overwrite; new ones prompt.
   $effect(() => keyboard.register("mod+s", () => void saveQuery.trigger()));
+
+  // Ctrl+PgUp/PgDn cycle tabs (DESIGN §7 — literal Ctrl on every platform).
+  function switchTab(delta: number): void {
+    const list = editorTabs.list;
+    if (list.length < 2 || !editorTabs.active) return;
+    const i = list.findIndex((t) => t.id === editorTabs.active!.id);
+    editorTabs.select(list[(i + delta + list.length) % list.length].id);
+  }
+  $effect(() => keyboard.register("ctrl+pageup", () => switchTab(-1)));
+  $effect(() => keyboard.register("ctrl+pagedown", () => switchTab(1)));
 </script>
 
 <div class="flex h-full flex-col">

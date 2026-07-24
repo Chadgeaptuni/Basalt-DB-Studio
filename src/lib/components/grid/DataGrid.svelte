@@ -14,6 +14,7 @@
   import VirtualList from "$lib/components/ui/VirtualList.svelte";
   import { formatCell, type CellDisplay } from "$lib/utils/cellDisplay";
   import { copyCellsTsv } from "$lib/utils/copy";
+  import { settings } from "$lib/stores/settings.svelte";
   import type { CellValue, ColumnInfo } from "$lib/api/types";
 
   // The one grid: read-only results (no `edit`) and the editable table-data view
@@ -29,7 +30,10 @@
   const COL_W = 180;
   const ROW_H = 28;
   const width = $derived(columns.length * COL_W);
-  const display = $derived<CellDisplay[][]>(rows.map((r) => r.map(formatCell)));
+  // Re-formats when rows change or the datetime-display setting flips (DESIGN §10).
+  const display = $derived<CellDisplay[][]>(
+    rows.map((r) => r.map((v) => formatCell(v, settings.datetimeDisplay))),
+  );
 
   let sel = $state<{ r: number; c: number } | null>(null);
   let editing = $state<{ r: number; c: number } | null>(null);

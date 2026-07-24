@@ -10,6 +10,7 @@ pub mod import;
 pub mod introspect;
 pub mod query;
 pub mod saved_queries;
+pub mod settings;
 
 /// Liveness smoke-test command. Real domains land in M1+.
 #[tauri::command]
