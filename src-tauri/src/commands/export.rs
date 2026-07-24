@@ -31,3 +31,34 @@ pub async fn export_query(
     });
     Ok(total)
 }
+
+#[tauri::command]
+pub async fn export_table(
+    session_id: String,
+    namespace: String,
+    table: String,
+    format: ExportFormat,
+    path: String,
+    on_progress: Channel<ExportProgress>,
+    state: State<'_, AppState>,
+) -> AppResult<u64> {
+    let channel = on_progress.clone();
+    let progress = move |rows: u64| {
+        let _ = channel.send(ExportProgress { rows, done: false });
+    };
+    let total = export_service::export_table(
+        &session_id,
+        &namespace,
+        &table,
+        format,
+        &path,
+        &progress,
+        &state.sessions,
+    )
+    .await?;
+    let _ = on_progress.send(ExportProgress {
+        rows: total,
+        done: true,
+    });
+    Ok(total)
+}

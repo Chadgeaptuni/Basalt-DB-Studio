@@ -49,6 +49,7 @@ pub fn run() {
             commands::grid::grid_commit,
             commands::ddl::ddl_generate,
             commands::export::export_query,
+            commands::export::export_table,
             commands::import::import_csv,
         ])
         .run(tauri::generate_context!())

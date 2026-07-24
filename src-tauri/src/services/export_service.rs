@@ -11,9 +11,37 @@ use serde_json::Value;
 use crate::drivers::export::RowSink;
 use crate::drivers::types::{CellValue, ColumnInfo, ExportFormat};
 use crate::services::connection_service::{session_driver, SessionRegistry};
+use crate::sqlgen::{quote_ident, quote_qualified};
 use crate::{AppError, AppResult};
 
 const PROGRESS_EVERY: u64 = 5000;
+
+/// Exports a whole table (all rows) — builds the engine-quoted `SELECT` so the
+/// frontend needn't know quoting, then streams like any query.
+pub async fn export_table(
+    session_id: &str,
+    namespace: &str,
+    table: &str,
+    format: ExportFormat,
+    path: &str,
+    progress: &(dyn Fn(u64) + Send + Sync),
+    registry: &SessionRegistry,
+) -> AppResult<u64> {
+    let (driver, _read_only) = session_driver(session_id, registry).await?;
+    let engine = driver.engine();
+    let desc = driver.describe_table(namespace, table).await?;
+    let cols = desc
+        .columns
+        .iter()
+        .map(|c| quote_ident(engine, &c.name))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let sql = format!(
+        "SELECT {cols} FROM {}",
+        quote_qualified(engine, namespace, table)
+    );
+    export(session_id, &sql, format, path, progress, registry).await
+}
 
 pub async fn export(
     session_id: &str,
