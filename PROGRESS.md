@@ -23,8 +23,10 @@ per-engine `values.rs` decode, generic batch exec, `query_service::run` +
 per-statement tabs, session tabs/history stores (svelte-check 0/0/0, 23 vitest,
 build clean). **M3 COMPLETE (backend + frontend) + verified** — editable table-data
 view, transactional commit, no-PK fallback + ambiguousRowIdentity (40 lib + 2
-grid_roundtrip + 6 integration). **Active thread = M4 (DDL).** (The secrets slice
-below is a separable M1 tail.)
+grid_roundtrip + 6 integration). **M4 COMPLETE (backend + frontend) + verified** —
+DDL generation (create/alter/drop table + index), preview-before-execute, tree
+actions (47 lib + 2 ddl_roundtrip). **Active thread = M5 (import / export).** (The
+secrets slice below is a separable M1 tail.)
 
 **Secrets slice (separable M1 tail):**
 - `secrets/` — Keychain default + EncryptedFile vault (argon2id + ChaCha20), so
@@ -227,8 +229,31 @@ Frontend (svelte-check 0/0/0; 32 vitest; build clean):
 SQLite `rowid` fallback (all-columns fallback covers it now); grid keyboard nav is
 grid-local (role=grid), not the global registry (justified like the CM keymap).
 
-## M4 — DDL
-- [ ] ddl_service, per-engine ddl.rs, TableDesigner/IndexEditor, DDL preview modal, tree context-menu, cache refresh
+## M4 — DDL — COMPLETE + verified
+
+Backend (47 lib + 2 ddl_roundtrip, real pg16/mysql8; clippy/fmt clean):
+- [x] `DdlRequest`/`ColumnSpec` wire types; **`sqlgen/ddl.rs`** generates SQL for
+  create/alter/drop table + create/drop index, parameterized by engine (one tested
+  corpus, not three driver files — deviation from the map, justified: pure text +
+  DRY). Dialect facts learned: `RENAME TO` takes a **bare** name; **SQLite CREATE
+  INDEX's ON target must be unqualified** (schema attaches to the index name);
+  DROP INDEX needs `ON <table>` (MySQL), schema-qualified (pg), bare (SQLite).
+- [x] `ddl_service::generate` + `ddl_generate` command. **Execution reuses the run
+  path** (`run_query` confirmed) + schema refresh on the frontend — no separate
+  execute command. Gate met: generate→execute→introspect roundtrip all engines.
+
+Frontend (svelte-check 0/0/0; 32 vitest; build clean):
+- [x] `stores/ddl.svelte.ts` routes the active dialog; `DdlHost` renders it (like
+  ToastHost). **Every DDL flows through `DdlPreviewModal`** (generate → show exact
+  SQL → Execute → refresh cache) — the spec's "SQL preview before execute" gate.
+- [x] TableDesigner (new table), ColumnDialog (add column), IndexDialog (create
+  index), RenameDialog. `ui/ContextMenu` primitive (deferred from M0); schema tree
+  right-click → Open data / Add column / Create index / Rename / Drop; header
+  'New table'.
+
+**Deferred (M4 tail):** full ALTER COLUMN type-change, drop-index UI, editable
+preview SQL, namespace picker in the designer (uses the first namespace / the
+right-clicked one). Drop uses the preview modal as its confirmation.
 
 ## M5 — Import / export
 - [ ] streamed CSV/JSON export (re-run query, ipc::Channel progress), CSV import wizard (insert/upsert/skip), file dialogs
