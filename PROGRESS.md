@@ -23,10 +23,13 @@ per-engine `values.rs` decode, generic batch exec, `query_service::run` +
 per-statement tabs, session tabs/history stores (svelte-check 0/0/0, 23 vitest,
 build clean). **M3 COMPLETE (backend + frontend) + verified** — editable table-data
 view, transactional commit, no-PK fallback + ambiguousRowIdentity (40 lib + 2
-grid_roundtrip + 6 integration). **M4 COMPLETE (backend + frontend) + verified** —
-DDL generation (create/alter/drop table + index), preview-before-execute, tree
-actions (47 lib + 2 ddl_roundtrip). **Active thread = M5 (import / export).** (The
-secrets slice below is a separable M1 tail.)
+grid_roundtrip + 6 integration). **M4 COMPLETE** — DDL generation, preview-before-
+execute, tree actions. **M5 COMPLETE (backend + frontend) + verified** — streaming
+CSV/JSON export (ipc::Channel), CSV import with per-engine conflict modes + line
+errors. **M2–M5 all done.** Full backend gate green: **66 tests** (54 lib + 2 ddl +
+2 grid + 2 import roundtrip + 6 integration) vs real pg16/mysql8; frontend
+svelte-check 0/0/0, 32 vitest, build clean. **Remaining: M6 (git-sync), M7 (theming
+polish + release hardening), and the separable M1 secrets slice.**
 
 **Secrets slice (separable M1 tail):**
 - `secrets/` — Keychain default + EncryptedFile vault (argon2id + ChaCha20), so
@@ -255,8 +258,30 @@ Frontend (svelte-check 0/0/0; 32 vitest; build clean):
 preview SQL, namespace picker in the designer (uses the first namespace / the
 right-clicked one). Drop uses the preview modal as its confirmation.
 
-## M5 — Import / export
-- [ ] streamed CSV/JSON export (re-run query, ipc::Channel progress), CSV import wizard (insert/upsert/skip), file dialogs
+## M5 — Import / export — COMPLETE + verified
+
+Backend (54 lib + 2 import_roundtrip, real pg16/mysql8; clippy/fmt clean):
+- [x] **Streaming export** (`drivers/export.rs` RowSink + `export_service`): re-runs
+  the query and streams the FULL result (never buffered) to CSV/JSON, progress over
+  `ipc::Channel` — 100k rows use flat memory, no UI freeze. CSV/JSON hand-written;
+  JSON preserves column order. `export_query` + `export_table` commands.
+- [x] **CSV import** (`drivers/import.rs` + `import_service`): small RFC4180 parser
+  → per-row parameterized INSERT with each engine's native conflict form (pg
+  `ON CONFLICT DO NOTHING|UPDATE`; mysql `INSERT IGNORE`/`ON DUPLICATE KEY UPDATE`;
+  sqlite `INSERT OR IGNORE`/`ON CONFLICT`), one transaction; a rejected row rolls
+  back + reports its line (`importParse`). Binding reuses each `values.rs` bind.
+- [x] `tauri-plugin-dialog` for file pickers; `dialog:default` capability.
+
+Frontend (svelte-check 0/0/0; 32 vitest; build clean):
+- [x] `runExport`: save dialog (format = extension) → stream over a Channel → toast.
+  Wired to Export a whole table (TableDataView) and a query result (ResultsPane).
+- [x] `ImportWizard`: open dialog, target-column mapping, header + conflict mode;
+  errors surface with the offending line.
+
+**Deferred (M5 tail):** live progress bar (Channel wired, currently a sticky
+toast); multi-row VALUES batching (per-row INSERT in one tx now); CSV header
+auto-mapping / column reorder (needs the fs plugin to read the header); quoted-empty
+vs NULL distinction (empty field → NULL in v1).
 
 ## M6 — Git-sync
 - [ ] gitsync/ (system git), saved-queries UI, sync panel + status badge; leak test
