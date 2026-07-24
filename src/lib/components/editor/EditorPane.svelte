@@ -1,11 +1,13 @@
 <script lang="ts">
   import Play from "@lucide/svelte/icons/play";
   import WrapText from "@lucide/svelte/icons/wrap-text";
+  import Save from "@lucide/svelte/icons/save";
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import CodeEditor from "./CodeEditor.svelte";
   import { schemaFrom } from "./cm";
   import { editorTabs } from "$lib/stores/tabs.svelte";
+  import { saveQuery } from "$lib/stores/saveQuery.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { schema } from "$lib/stores/schema.svelte";
   import { history } from "$lib/stores/history.svelte";
@@ -124,6 +126,13 @@
     </Button>
     <span class="font-mono text-[11px] text-fg-2">{keyboard.label("mod+enter")} at cursor</span>
     <div class="flex-1"></div>
+    <IconButton
+      icon={Save}
+      title={`Save query · ${keyboard.label("mod+s")}`}
+      size="sm"
+      onclick={() => void saveQuery.trigger()}
+      disabled={!tab}
+    />
     <IconButton icon={WrapText} title={`Format · ${keyboard.label("mod+shift+f")}`} size="sm" onclick={format} disabled={!tab} />
   </div>
 

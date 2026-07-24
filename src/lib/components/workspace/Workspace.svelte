@@ -7,6 +7,7 @@
   import ResultsPane from "$lib/components/grid/ResultsPane.svelte";
   import TableDataView from "$lib/components/grid/TableDataView.svelte";
   import { editorTabs } from "$lib/stores/tabs.svelte";
+  import { saveQuery } from "$lib/stores/saveQuery.svelte";
   import { keyboard } from "$lib/utils/keyboard";
 
   // Shared tab bar over both tab kinds; SQL tabs get the editor/results split,
@@ -28,6 +29,8 @@
       if (editorTabs.active && editorTabs.list.length > 1) editorTabs.close(editorTabs.active.id);
     }),
   );
+  // Save the active SQL tab (DESIGN §7). Bound tabs overwrite; new ones prompt.
+  $effect(() => keyboard.register("mod+s", () => void saveQuery.trigger()));
 </script>
 
 <div class="flex h-full flex-col">

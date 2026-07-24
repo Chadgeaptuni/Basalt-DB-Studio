@@ -20,6 +20,8 @@ export interface EditorTab {
   kind: TabKind;
   /** Set for `table` tabs; the browse/staging state lives in the tableData store. */
   ref: TableRef | null;
+  /** Folder-relative path of the saved query this tab is bound to, if any (M6). */
+  savedPath: string | null;
   sql: string;
   /** Last run's per-statement results, or null before the first run. */
   result: RunResult | null;
@@ -46,6 +48,7 @@ function base(id: string, title: string, kind: TabKind, ref: TableRef | null, sq
     title,
     kind,
     ref,
+    savedPath: null,
     sql,
     result: null,
     running: false,
@@ -77,6 +80,31 @@ function openTable(namespace: string, table: string): string {
   return id;
 }
 
+/** Opens a saved query in a new SQL tab (or focuses the tab already bound to it). */
+function openSaved(path: string, name: string, sql: string): string {
+  const existing = tabs.find((t) => t.kind === "sql" && t.savedPath === path);
+  if (existing) {
+    existing.sql = sql;
+    activeId = existing.id;
+    return existing.id;
+  }
+  const id = `tab-${++seq}`;
+  const tab = base(id, name, "sql", null, sql);
+  tab.savedPath = path;
+  tabs.push(tab);
+  activeId = id;
+  return id;
+}
+
+/** Binds a tab to a saved-query path after a save-as (drives Ctrl+S overwrite). */
+function markSaved(id: string, path: string, title: string): void {
+  const tab = find(id);
+  if (tab) {
+    tab.savedPath = path;
+    tab.title = title;
+  }
+}
+
 function close(id: string): void {
   const i = tabs.findIndex((t) => t.id === id);
   if (i === -1) return;
@@ -98,6 +126,8 @@ export const editorTabs = {
   },
   open,
   openTable,
+  openSaved,
+  markSaved,
   close,
   select,
   find,

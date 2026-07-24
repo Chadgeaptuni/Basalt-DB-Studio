@@ -4,10 +4,12 @@
 pub mod connections;
 pub mod ddl;
 pub mod export;
+pub mod gitsync;
 pub mod grid;
 pub mod import;
 pub mod introspect;
 pub mod query;
+pub mod saved_queries;
 
 /// Liveness smoke-test command. Real domains land in M1+.
 #[tauri::command]

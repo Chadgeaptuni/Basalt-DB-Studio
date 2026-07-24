@@ -109,12 +109,7 @@ mod tests {
     use crate::drivers::types::{SshAuthKind, SslMode};
 
     fn temp_paths() -> Paths {
-        let dir = std::env::temp_dir().join(format!("basalt-cfg-{}", uuid::Uuid::new_v4()));
-        Paths {
-            connections_dir: dir.join("connections"),
-            settings_file: dir.join("settings.toml"),
-            config_dir: dir,
-        }
+        Paths::under(std::env::temp_dir().join(format!("basalt-cfg-{}", uuid::Uuid::new_v4())))
     }
 
     #[test]

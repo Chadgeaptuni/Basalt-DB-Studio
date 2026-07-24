@@ -3,6 +3,7 @@
 
 pub mod connections;
 pub mod paths;
+pub mod saved_queries;
 pub mod settings;
 
 pub use paths::Paths;

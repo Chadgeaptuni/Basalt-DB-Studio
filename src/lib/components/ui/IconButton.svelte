@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { IconComponent } from "./icon";
+  import Spinner from "./Spinner.svelte";
 
   interface Props {
     icon: IconComponent;
@@ -8,11 +9,20 @@
     size?: "sm" | "md";
     disabled?: boolean;
     active?: boolean;
+    /** Shows a spinner in place of the icon and blocks clicks while pending. */
+    loading?: boolean;
     onclick?: (e: MouseEvent) => void;
   }
 
-  let { icon: Icon, title, size = "md", disabled = false, active = false, onclick }: Props =
-    $props();
+  let {
+    icon: Icon,
+    title,
+    size = "md",
+    disabled = false,
+    active = false,
+    loading = false,
+    onclick,
+  }: Props = $props();
 
   const box = $derived(size === "sm" ? "h-6 w-6" : "h-7 w-7");
   const px = $derived(size === "sm" ? 14 : 16);
@@ -23,11 +33,15 @@
   {title}
   aria-label={title}
   aria-pressed={active}
-  {disabled}
+  disabled={disabled || loading}
   {onclick}
   class="inline-flex items-center justify-center rounded-md {box} transition-colors duration-150
     hover:bg-bg-2 hover:text-fg-0 disabled:opacity-50 disabled:pointer-events-none
     {active ? 'bg-bg-2 text-fg-0' : 'text-fg-1'}"
 >
-  <Icon size={px} strokeWidth={2} />
+  {#if loading}
+    <Spinner size="sm" />
+  {:else}
+    <Icon size={px} strokeWidth={2} />
+  {/if}
 </button>

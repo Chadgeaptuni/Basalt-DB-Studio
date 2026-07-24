@@ -7,6 +7,7 @@ mod logging;
 // `config::settings`) is part of the crate surface rather than dead code.
 pub mod config;
 pub mod drivers;
+pub mod gitsync;
 pub mod services;
 pub mod sqlgen;
 pub mod state;
@@ -51,6 +52,12 @@ pub fn run() {
             commands::export::export_query,
             commands::export::export_table,
             commands::import::import_csv,
+            commands::gitsync::git_status,
+            commands::gitsync::git_sync,
+            commands::saved_queries::list_saved_queries,
+            commands::saved_queries::read_saved_query,
+            commands::saved_queries::save_query,
+            commands::saved_queries::delete_saved_query,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

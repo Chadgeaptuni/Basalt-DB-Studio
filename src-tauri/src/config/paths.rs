@@ -11,6 +11,8 @@ use crate::{AppError, AppResult};
 pub struct Paths {
     pub config_dir: PathBuf,
     pub connections_dir: PathBuf,
+    /// Saved queries (`.sql` files under nestable folders) — the other git-sync unit.
+    pub queries_dir: PathBuf,
     pub settings_file: PathBuf,
 }
 
@@ -19,11 +21,16 @@ impl Paths {
         let base = dirs::config_dir().ok_or_else(|| {
             AppError::ConfigIo("could not determine the OS config directory".into())
         })?;
-        let config_dir = base.join("basalt");
-        Ok(Self {
+        Ok(Self::under(base.join("basalt")))
+    }
+
+    /// All paths under one config dir. `resolve()` picks the OS dir; tests pass a temp.
+    pub fn under(config_dir: PathBuf) -> Self {
+        Self {
             connections_dir: config_dir.join("connections"),
+            queries_dir: config_dir.join("queries"),
             settings_file: config_dir.join("settings.toml"),
             config_dir,
-        })
+        }
     }
 }
