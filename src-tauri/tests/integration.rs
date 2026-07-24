@@ -7,8 +7,11 @@
 use std::collections::HashMap;
 
 use basalt_db_studio_lib::config::connections::ConnectionProfile;
-use basalt_db_studio_lib::drivers::types::Engine;
-use basalt_db_studio_lib::services::connection_service::{self, SessionRegistry};
+use basalt_db_studio_lib::drivers::types::{CellValue, Engine};
+use basalt_db_studio_lib::services::{
+    connection_service::{self, SessionRegistry},
+    query_service,
+};
 use tokio::sync::Mutex;
 
 /// Parses `scheme://user:pass@host:port/db` into a profile plus the memory-only
@@ -200,4 +203,91 @@ async fn mysql_wrong_password_is_auth_failed() {
         .await
         .expect_err("wrong password must fail");
     assert_eq!(err.kind(), "authFailed", "got: {err}");
+}
+
+#[tokio::test]
+async fn postgres_run_query_decodes_edge_types() {
+    let Ok(url) = std::env::var("BASALT_TEST_PG_URL") else {
+        eprintln!("BASALT_TEST_PG_URL unset — skipping postgres run_query test");
+        return;
+    };
+    let (profile, password) = profile_from_url(&url);
+    let reg = registry();
+    let info = connection_service::connect(&profile, password.as_deref(), &reg)
+        .await
+        .unwrap();
+
+    let out = query_service::run(
+        &info.session_id,
+        "SELECT id, amount, feeling, tags FROM edge_types WHERE id = 1",
+        None,
+        false,
+        None,
+        &reg,
+    )
+    .await
+    .expect("run select");
+    let row = &out.statements[0].rows[0];
+    assert_eq!(row[0], CellValue::Int(1));
+    assert_eq!(row[1], CellValue::Decimal("12345.6789".into()));
+    assert_eq!(
+        row[2],
+        CellValue::Text("happy".into()),
+        "pg enum decodes as text"
+    );
+    assert_eq!(
+        row[3],
+        CellValue::Array(vec![
+            CellValue::Int(1),
+            CellValue::Int(2),
+            CellValue::Int(3)
+        ]),
+        "int[] decodes as an array of ints"
+    );
+
+    // NULLs decode as Null (row 3 is all-NULL except id).
+    let nulls = query_service::run(
+        &info.session_id,
+        "SELECT amount, feeling FROM edge_types WHERE id = 3",
+        None,
+        false,
+        None,
+        &reg,
+    )
+    .await
+    .unwrap();
+    assert_eq!(nulls.statements[0].rows[0][0], CellValue::Null);
+}
+
+#[tokio::test]
+async fn mysql_run_query_decodes_edge_types() {
+    let Ok(url) = std::env::var("BASALT_TEST_MYSQL_URL") else {
+        eprintln!("BASALT_TEST_MYSQL_URL unset — skipping mysql run_query test");
+        return;
+    };
+    let (profile, password) = profile_from_url(&url);
+    let reg = registry();
+    let info = connection_service::connect(&profile, password.as_deref(), &reg)
+        .await
+        .unwrap();
+
+    let out = query_service::run(
+        &info.session_id,
+        "SELECT id, amount, flag, feeling FROM edge_types WHERE id = 1",
+        None,
+        false,
+        None,
+        &reg,
+    )
+    .await
+    .expect("run select");
+    let row = &out.statements[0].rows[0];
+    assert_eq!(row[0], CellValue::Int(1));
+    assert_eq!(row[1], CellValue::Decimal("12345.6789".into()));
+    assert_eq!(row[2], CellValue::Bool(true), "tinyint(1) decodes as bool");
+    assert_eq!(
+        row[3],
+        CellValue::Text("happy".into()),
+        "enum decodes as text"
+    );
 }
