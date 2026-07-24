@@ -17,6 +17,12 @@ let loadError = $state<ApiError | null>(null);
 /** The session whose schema/editor the main area is showing. */
 let active = $state<SessionInfo | null>(null);
 
+// Per-connection passwords, in memory only. A plain Map (not `$state`) on
+// purpose: secrets must never become observable/serializable UI state. Set from
+// the connection form, consumed at connect time, dropped on delete and on
+// reload. The keychain/vault backend replaces this in the secrets slice.
+const secrets = new Map<string, string>();
+
 function statusFor(id: string): ConnState {
   return statuses[id] ?? { status: "disconnected" };
 }
@@ -44,14 +50,21 @@ async function remove(id: string): Promise<void> {
     await connectionsApi.disconnect(s.session.sessionId).catch(() => undefined);
   }
   await connectionsApi.remove(id);
+  secrets.delete(id);
   delete statuses[id];
   await load();
+}
+
+/** Stash a connection's password in memory (empty clears it). Never persisted. */
+function setSecret(id: string, password: string): void {
+  if (password) secrets.set(id, password);
+  else secrets.delete(id);
 }
 
 async function connect(id: string): Promise<SessionInfo | null> {
   statuses[id] = { status: "connecting" };
   try {
-    const session = await connectionsApi.connect(id);
+    const session = await connectionsApi.connect(id, secrets.get(id));
     statuses[id] = { status: "connected", session };
     active = session;
     return session;
@@ -91,6 +104,7 @@ export const connections = {
   load,
   save,
   remove,
+  setSecret,
   connect,
   disconnect,
   setActive,

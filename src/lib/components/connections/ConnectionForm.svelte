@@ -37,6 +37,9 @@
   let database = $state(seed?.database ?? "");
   let username = $state(seed?.username ?? "");
   let filePath = $state(seed?.filePath ?? "");
+  // Memory-only: never seeded from a saved profile (it holds no password) and
+  // never written back. Blank on save leaves any existing stashed password.
+  let password = $state("");
   let readOnly = $state(seed?.readOnly ?? false);
   const id = seed?.id ?? crypto.randomUUID();
 
@@ -79,7 +82,7 @@
     testing = true;
     testResult = null;
     try {
-      await connectionsApi.test(toProfile());
+      await connectionsApi.test(toProfile(), password || undefined);
       testResult = { ok: true, message: "Connection succeeded." };
     } catch (e) {
       testResult = { ok: false, message: (e as ApiError).message };
@@ -92,6 +95,7 @@
     saving = true;
     try {
       await connections.save(toProfile());
+      if (password) connections.setSecret(id, password);
       toast.success("Connection saved.");
       close();
     } catch (e) {
@@ -137,8 +141,18 @@
         <label for="conn-user" class="mb-1 block text-xs text-fg-2">Username</label>
         <Input id="conn-user" bind:value={username} />
       </div>
+      <div>
+        <label for="conn-pass" class="mb-1 block text-xs text-fg-2">Password</label>
+        <Input
+          id="conn-pass"
+          type="password"
+          bind:value={password}
+          placeholder="Kept in memory for this session only"
+        />
+      </div>
       <p class="text-xs text-fg-2">
-        Password, TLS, and SSH tunnel options arrive with the secrets/tunnel slice.
+        The password is held in memory only, never written to disk. TLS and SSH
+        tunnel options arrive with the secrets/tunnel slice.
       </p>
     {/if}
 
