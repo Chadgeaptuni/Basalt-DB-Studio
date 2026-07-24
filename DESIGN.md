@@ -53,10 +53,12 @@ Depth comes from **contrast and 1px borders**, never shadows.
 ## 3. Design Tokens (the only source of color)
 
 Tailwind v4, CSS-first. Utility-generating tokens are declared in `src/app.css`
-under `@theme`; theme presets override the underlying CSS variables in
-`[data-theme="..."]` blocks in `src/themes/*.css` (imported from `app.css`).
-`src/themes/tokens.css` documents the contract. **Adding a color = adding a
-token**, never a literal.
+under `@theme inline`, each mapping a raw CSS variable (`--bg-0`, …) into a
+utility (`bg-bg-0`, …). The raw variables are computed per theme+variant in
+`src/lib/stores/themeData.ts` and written onto `<html>` as inline
+variables by `stores/theme.svelte.ts`. `src/themes/tokens.css` holds the
+contract doc + a basalt-dark fallback (pre-JS / no-JS). **Adding a color = adding
+a token to the contract and deriving it in `themeData.ts`**, never a literal.
 
 Token contract (every preset must define all of these):
 
@@ -71,10 +73,15 @@ Token contract (every preset must define all of these):
 | `--grid-header-bg` `--grid-row-alt` `--grid-sel` `--grid-null` `--grid-edited` | Data grid: header, zebra, selection, NULL badge, dirty-cell marker |
 | `--syntax-kw` `--syntax-str` `--syntax-num` `--syntax-comment` `--syntax-fn` `--syntax-ident` | SQL editor highlighting (fed to the CodeMirror theme) |
 
-v1 ships preset themes as `[data-theme]` blocks: `basalt-dark` (default),
-`basalt-light`, plus 2–3 variants. `stores/theme.svelte.ts` sets the `data-theme`
-attribute on `<html>` and persists the choice. A future theme editor only writes
-variables — zero component rework.
+Every theme is a seed in `themeData.ts` (4 house themes — `basalt-dark`
+(default), `basalt-light`, `basalt-nord`, `basalt-paper` — plus the ported Flow
+palettes: catppuccin, dracula, gruvbox, nord, tokyo-night, …). Each seed carries
+a light and dark base palette; `themeTokens(seed, variant)` derives the full
+contract above for all three variants — **light**, **dark**, and **amoled** (OLED
+true-black). `stores/theme.svelte.ts` persists the theme + variant choice, sets
+`data-theme`/`data-variant` on `<html>`, and applies the resolved tokens. Custom
+themes are user-defined seeds. The theme editor only writes seed colors — zero
+component rework.
 
 ## 4. Typography
 

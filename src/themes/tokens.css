@@ -1,15 +1,15 @@
 /*
  * DESIGN TOKEN CONTRACT (DESIGN.md §3) — the only source of color.
  *
- * This file documents the variables every `[data-theme]` preset MUST define.
- * The presets (basalt-dark.css, basalt-light.css, …) set these raw variables;
- * app.css maps them into Tailwind utilities via `@theme inline` so that
- * `bg-bg-0`, `text-fg-1`, `border-border`, etc. resolve to `var(--…)` and swap
- * live when `data-theme` changes on <html>.
+ * The actual per-theme values are computed in `src/lib/stores/themeData.ts`
+ * and written onto
+ * <html> as inline CSS variables by `stores/theme.svelte.ts` on load and on
+ * every theme/variant change. app.css maps these raw variables into Tailwind
+ * utilities via `@theme inline`, so `bg-bg-0`, `text-fg-1`, `border-border`,
+ * etc. resolve to `var(--…)` and swap live.
  *
- * Adding a color = adding a token here + in every preset. Never a literal in a
- * component. A future theme editor only writes these variables — zero component
- * rework.
+ * Adding a color = adding a token to the contract below + deriving it in
+ * themeData.ts. Never a literal in a component.
  *
  *   Surfaces (darkest→lightest):  --bg-0  --bg-1  --bg-2
  *   Text (primary→muted label):   --fg-0  --fg-1  --fg-2
@@ -21,4 +21,43 @@
  *                                 --grid-null  --grid-edited
  *   SQL syntax (CodeMirror):      --syntax-kw  --syntax-str  --syntax-num
  *                                 --syntax-comment  --syntax-fn  --syntax-ident
+ *
+ * The :root block below is the pre-JS / JS-failure fallback (the basalt-dark
+ * default). The theme store overrides these inline before first paint, so it is
+ * only ever visible if scripting is unavailable.
  */
+:root {
+  --bg-0: #0e1116;
+  --bg-1: #151a21;
+  --bg-2: #1e242e;
+
+  --fg-0: #e6e9ef;
+  --fg-1: #b6bdc9;
+  --fg-2: #7d8695;
+
+  --border: #232a34;
+  --border-strong: #323b47;
+
+  --accent: #4e8cd9;
+  --accent-fg: #ffffff;
+
+  --danger: #e06c75;
+  --danger-fg: #ffffff;
+  --danger-bg: #2a1b1e;
+
+  --ok: #6cc070;
+  --warn: #d6a55c;
+
+  --grid-header-bg: #12161d;
+  --grid-row-alt: #12151b;
+  --grid-sel: #24344d;
+  --grid-null: #6a7280;
+  --grid-edited: #2c2617;
+
+  --syntax-kw: #7aa2f7;
+  --syntax-str: #9ece6a;
+  --syntax-num: #ff9e64;
+  --syntax-comment: #5c6370;
+  --syntax-fn: #7dcfff;
+  --syntax-ident: #c0caf5;
+}

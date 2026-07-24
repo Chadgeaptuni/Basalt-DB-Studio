@@ -6,7 +6,7 @@
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import Badge from "$lib/components/ui/Badge.svelte";
   import SettingsModal from "$lib/components/settings/SettingsModal.svelte";
-  import { theme, DARK_THEMES } from "$lib/stores/theme.svelte";
+  import { theme } from "$lib/stores/theme.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { editorTabs } from "$lib/stores/tabs.svelte";
   import type { Engine } from "$lib/api/types";
@@ -22,11 +22,12 @@
   const tab = $derived(editorTabs.active);
   const stmt = $derived(tab && tab.result ? tab.result.statements[tab.activeStatement] : undefined);
   const tx = $derived(tab?.result?.txStatus ?? "idle");
-  const isDark = $derived(DARK_THEMES.includes(theme.current));
+  const isDark = $derived(theme.variant !== "light");
   let showSettings = $state(false);
-  // Quick toggle jumps between the two defaults; the picker (settings) has the rest.
+  // Quick toggle flips the light/dark variant of the active theme; the picker
+  // (settings) exposes the full theme + OLED choices.
   function toggleTheme(): void {
-    theme.set(isDark ? "basalt-light" : "basalt-dark");
+    theme.setVariant(isDark ? "light" : "dark");
   }
 </script>
 

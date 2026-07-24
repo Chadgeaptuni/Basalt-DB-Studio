@@ -1,12 +1,10 @@
 @import "tailwindcss";
 
-/* Token contract + presets. Presets set raw --bg-0 etc.; @theme inline below
-   maps them into Tailwind utilities that resolve to var(), so themes swap live. */
+/* Token contract + basalt-dark fallback. The theme store (stores/theme.svelte.ts,
+   fed by stores/themeData.ts) writes the resolved per-variant tokens onto <html>
+   before first paint; @theme inline below maps the raw --bg-0 etc. into Tailwind
+   utilities that resolve to var(), so themes swap live. */
 @import "./themes/tokens.css";
-@import "./themes/basalt-dark.css";
-@import "./themes/basalt-light.css";
-@import "./themes/basalt-nord.css";
-@import "./themes/basalt-paper.css";
 
 @theme inline {
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
