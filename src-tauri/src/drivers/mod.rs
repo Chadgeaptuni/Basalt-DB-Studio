@@ -7,7 +7,9 @@
 //! and then await the database without holding it.
 
 mod exec;
+pub mod export;
 mod grid;
+mod import;
 mod mysql;
 mod pg;
 mod sqlite;
@@ -19,7 +21,10 @@ use sqlx::{MySqlPool, PgPool, SqlitePool};
 
 use crate::sqlgen::Statement;
 use crate::AppResult;
-use types::{Engine, GridCommitResult, GridEdit, SchemaTree, StatementResult, TableDescription};
+use types::{
+    CellValue, ConflictMode, Engine, GridCommitResult, GridEdit, ImportResult, SchemaTree,
+    StatementResult, TableDescription,
+};
 
 #[derive(Clone)]
 pub enum Driver {
@@ -104,6 +109,63 @@ impl Driver {
             Driver::MySql(pool) => grid::commit(pool, &write, mysql::bind_cell).await,
             Driver::Sqlite(pool) => grid::commit(pool, &write, sqlite::bind_cell).await,
         }
+    }
+
+    /// Re-runs `sql` and streams its full result into `sink` (CSV/JSON export).
+    /// Returns the row count. No row limit — the caller controls memory via the sink.
+    pub async fn export_rows(
+        &self,
+        sql: &str,
+        sink: &mut (dyn export::RowSink + Send),
+    ) -> AppResult<u64> {
+        match self {
+            Driver::Postgres(pool) => {
+                export::stream(pool, sql, pg::columns, pg::decode_row, sink).await
+            }
+            Driver::MySql(pool) => {
+                export::stream(pool, sql, mysql::columns, mysql::decode_row, sink).await
+            }
+            Driver::Sqlite(pool) => {
+                export::stream(pool, sql, sqlite::columns, sqlite::decode_row, sink).await
+            }
+        }
+    }
+
+    /// Imports `rows` into a table with the given conflict handling, in one
+    /// transaction. `first_line` is the CSV line of `rows[0]` (for error reports).
+    #[allow(clippy::too_many_arguments)]
+    pub async fn import_rows(
+        &self,
+        namespace: &str,
+        table: &str,
+        columns: &[String],
+        pk: &[String],
+        conflict: ConflictMode,
+        types_map: &HashMap<String, String>,
+        rows: &[Vec<CellValue>],
+        first_line: usize,
+    ) -> AppResult<ImportResult> {
+        let plan = import::ImportPlan {
+            engine: self.engine(),
+            namespace,
+            table,
+            columns,
+            pk,
+            conflict,
+            types: types_map,
+        };
+        let inserted = match self {
+            Driver::Postgres(pool) => {
+                import::run(pool, &plan, rows, first_line, pg::bind_cell).await?
+            }
+            Driver::MySql(pool) => {
+                import::run(pool, &plan, rows, first_line, mysql::bind_cell).await?
+            }
+            Driver::Sqlite(pool) => {
+                import::run(pool, &plan, rows, first_line, sqlite::bind_cell).await?
+            }
+        };
+        Ok(ImportResult { inserted })
     }
 
     /// Release the connection(s). Called on explicit disconnect and after a

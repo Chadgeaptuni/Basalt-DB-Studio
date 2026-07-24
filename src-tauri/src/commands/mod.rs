@@ -3,7 +3,9 @@
 
 pub mod connections;
 pub mod ddl;
+pub mod export;
 pub mod grid;
+pub mod import;
 pub mod introspect;
 pub mod query;
 

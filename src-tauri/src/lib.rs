@@ -20,6 +20,7 @@ use tauri::Manager;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             // File logging comes up first so startup is captured. The guard lives
             // in app state so the async writer flushes on shutdown.
@@ -47,6 +48,8 @@ pub fn run() {
             commands::grid::grid_browse,
             commands::grid::grid_commit,
             commands::ddl::ddl_generate,
+            commands::export::export_query,
+            commands::import::import_csv,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

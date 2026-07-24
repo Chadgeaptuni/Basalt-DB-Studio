@@ -370,3 +370,35 @@ pub enum DdlRequest {
         name: String,
     },
 }
+
+// ── Import / export (M5) ──────────────────────────────────────────────────────
+
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ExportFormat {
+    Csv,
+    Json,
+}
+
+/// Streamed to the frontend over an `ipc::Channel` as an export runs.
+#[derive(Serialize, Clone, Copy, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ExportProgress {
+    pub rows: u64,
+    pub done: bool,
+}
+
+/// CSV-import conflict handling, emitted as each engine's native form.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ConflictMode {
+    Insert,
+    Upsert,
+    Skip,
+}
+
+#[derive(Serialize, Clone, Copy, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportResult {
+    pub inserted: u64,
+}
