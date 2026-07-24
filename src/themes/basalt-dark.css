@@ -1,0 +1,36 @@
+/* basalt-dark — default preset. Flat, low-chroma, high text contrast. */
+[data-theme="basalt-dark"] {
+  --bg-0: #0e1116;
+  --bg-1: #151a21;
+  --bg-2: #1e242e;
+
+  --fg-0: #e6e9ef;
+  --fg-1: #b6bdc9;
+  --fg-2: #7d8695;
+
+  --border: #232a34;
+  --border-strong: #323b47;
+
+  --accent: #4e8cd9;
+  --accent-fg: #ffffff;
+
+  --danger: #e06c75;
+  --danger-fg: #ffffff;
+  --danger-bg: #2a1b1e;
+
+  --ok: #6cc070;
+  --warn: #d6a55c;
+
+  --grid-header-bg: #12161d;
+  --grid-row-alt: #12151b;
+  --grid-sel: #24344d;
+  --grid-null: #6a7280;
+  --grid-edited: #2c2617;
+
+  --syntax-kw: #7aa2f7;
+  --syntax-str: #9ece6a;
+  --syntax-num: #ff9e64;
+  --syntax-comment: #5c6370;
+  --syntax-fn: #7dcfff;
+  --syntax-ident: #c0caf5;
+}

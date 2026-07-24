@@ -1,0 +1,24 @@
+/*
+ * DESIGN TOKEN CONTRACT (DESIGN.md §3) — the only source of color.
+ *
+ * This file documents the variables every `[data-theme]` preset MUST define.
+ * The presets (basalt-dark.css, basalt-light.css, …) set these raw variables;
+ * app.css maps them into Tailwind utilities via `@theme inline` so that
+ * `bg-bg-0`, `text-fg-1`, `border-border`, etc. resolve to `var(--…)` and swap
+ * live when `data-theme` changes on <html>.
+ *
+ * Adding a color = adding a token here + in every preset. Never a literal in a
+ * component. A future theme editor only writes these variables — zero component
+ * rework.
+ *
+ *   Surfaces (darkest→lightest):  --bg-0  --bg-1  --bg-2
+ *   Text (primary→muted label):   --fg-0  --fg-1  --fg-2
+ *   Lines:                        --border  --border-strong
+ *   Accent:                       --accent  --accent-fg
+ *   Destructive:                  --danger  --danger-fg  --danger-bg
+ *   Status:                       --ok  --warn
+ *   Data grid:                    --grid-header-bg  --grid-row-alt  --grid-sel
+ *                                 --grid-null  --grid-edited
+ *   SQL syntax (CodeMirror):      --syntax-kw  --syntax-str  --syntax-num
+ *                                 --syntax-comment  --syntax-fn  --syntax-ident
+ */

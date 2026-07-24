@@ -1,0 +1,36 @@
+/* basalt-light — light preset. Same contract, inverted surfaces. */
+[data-theme="basalt-light"] {
+  --bg-0: #ffffff;
+  --bg-1: #f4f5f7;
+  --bg-2: #e9ebef;
+
+  --fg-0: #1c2530;
+  --fg-1: #3d4757;
+  --fg-2: #6b7482;
+
+  --border: #e2e5ea;
+  --border-strong: #cdd2da;
+
+  --accent: #2f6fd0;
+  --accent-fg: #ffffff;
+
+  --danger: #c0392b;
+  --danger-fg: #ffffff;
+  --danger-bg: #fbeaea;
+
+  --ok: #2e8b57;
+  --warn: #b8860b;
+
+  --grid-header-bg: #f0f1f4;
+  --grid-row-alt: #f7f8fa;
+  --grid-sel: #d6e4ff;
+  --grid-null: #9aa2ad;
+  --grid-edited: #fff4d6;
+
+  --syntax-kw: #0b5fb3;
+  --syntax-str: #297a3a;
+  --syntax-num: #b25000;
+  --syntax-comment: #8a919e;
+  --syntax-fn: #0a7ea4;
+  --syntax-ident: #24303f;
+}
