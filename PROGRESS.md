@@ -336,9 +336,15 @@ Frontend (svelte-check 0/0/0; **36 vitest**; build clean):
 - [x] keyboard audit: added `Ctrl+PgUp/PgDn` tab cycling (map now complete minus the
   deferred cancel + `Ctrl+K` palette). error-state audit: connect failures get
   kind-specific actionable headings in `ConnectionList`.
-- [x] app metadata: `createUpdaterArtifacts`, macOS 13 floor, longDescription;
-  `.github/workflows/release.yml` (tag-driven, tauri-action, signs + notarizes +
-  draft release with updater artifacts).
+- [x] app metadata: macOS 13 floor, longDescription; `.github/workflows/release.yml`
+  (tag-driven, tauri-action, signs + notarizes + draft release with updater
+  artifacts). **Gotcha:** `createUpdaterArtifacts` must NOT live in the base config —
+  it forces the updater tarball to be signed, so every unsigned `tauri build` (local
+  + the CI size-gate) fails "no private key". It's enabled only in `release.yml` via
+  an inline `--config` where the signing key exists.
+- [x] **Release bundle re-measured (macOS aarch64, this arc's deps):** DMG **4.13 MB**
+  · .app **7.93 MB** · binary 8.1 MB — vs the 30 MB ceiling. `scripts/check-bundle-
+  size.mjs` passes. (M0 was 2.41/4.69; sqlx×3 + rustls account for the growth.)
 
 **Deferred / NOT verifiable in this environment (owner + CI):** actual code-signing
 (Apple Developer ID / Windows Authenticode), notarization, the **real updater key +

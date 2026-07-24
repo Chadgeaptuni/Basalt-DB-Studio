@@ -4,8 +4,9 @@ name: Release
 # notarized bundles on all three OSes and publish a DRAFT GitHub release with the
 # Tauri updater artifacts (latest.json + per-target signatures).
 #
-# Signing needs owner-held secrets — the workflow is a no-op-safe scaffold until
-# they're set (tauri-action just produces unsigned bundles if they're absent):
+# Signing needs owner-held secrets. Updater artifacts are enabled ONLY here (via
+# --config) so a normal `tauri build` / the CI size-gate stays green without a
+# signing key — createUpdaterArtifacts forces the tarball to be signed.
 #   TAURI_SIGNING_PRIVATE_KEY / _PASSWORD   updater key (minisign)
 #   APPLE_CERTIFICATE / _PASSWORD           Developer ID cert (.p12, base64)
 #   APPLE_SIGNING_IDENTITY                  "Developer ID Application: …"
@@ -85,4 +86,5 @@ jobs:
           releaseDraft: true
           prerelease: false
           includeUpdaterJson: true
-          args: ${{ matrix.args }}
+          # Enable updater artifacts only for the signed release build.
+          args: '${{ matrix.args }} --config {"bundle":{"createUpdaterArtifacts":true}}'
