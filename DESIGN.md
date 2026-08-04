@@ -36,6 +36,13 @@ AI models default to outdated "Dribbble-style" trends. The following are
 If proposed code contains `shadow-`, `bg-gradient-`, `backdrop-blur`, a color
 literal, or any item above — **rewrite it before presenting it**.
 
+**Single exception — the brand mark.** `public/icon.svg`, `public/icon-mark.svg`,
+and the icons generated from them (`src-tauri/icons/`) are brand assets, not UI:
+they carry their own fixed palette and gradients and are exempt from the color
+token and no-gradient rules. The exemption covers those files only — it never
+extends to components that render them, and no other SVG or component may embed
+literal colors on the grounds of being "logo-like".
+
 ## 2. Depth & Surface Model
 
 Depth comes from **contrast and 1px borders**, never shadows.
@@ -266,7 +273,8 @@ components/ui/        →  (props/events only — nothing below)
 Before presenting any UI code, self-check the diff for:
 
 1. `shadow-`, `bg-gradient-`, `backdrop-blur`, blur scrims
-2. Color literals (`#`, `rgb(`, `hsl(`, `oklch(`) outside `themes/` and `app.css`
+2. Color literals (`#`, `rgb(`, `hsl(`, `oklch(`) outside `themes/`, `app.css`,
+   and the brand-mark SVGs (§1 exception)
 3. `invoke(` outside `src/lib/api/`
 4. Business logic, store imports, or fetching inside `components/ui/`
 5. Legacy Svelte: `on:click`, slots, `createEventDispatcher`, `$:` statements
