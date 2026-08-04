@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Terminal from "@lucide/svelte/icons/terminal";
+  import BrandMark from "$lib/components/ui/BrandMark.svelte";
   import Sidebar from "./Sidebar.svelte";
   import StatusBar from "./StatusBar.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
@@ -30,7 +30,11 @@
       {#if connections.active}
         <Workspace />
       {:else}
-        <EmptyState icon={Terminal} message="Connect to a database to start querying." />
+        <EmptyState
+          icon={BrandMark}
+          iconSize={24}
+          message="Connect to a database to start querying."
+        />
       {/if}
     </main>
   </div>
