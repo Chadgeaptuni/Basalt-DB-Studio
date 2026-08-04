@@ -1,41 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Basalt DB Studio">
-  <title>Basalt DB Studio</title>
-
-  <g transform="translate(128 128) scale(1.12) translate(-128 -115)">
-    <!-- Outer frame: the stack's own silhouette hexagon, offset 12px outward on
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" aria-label="Basalt DB Studio" viewBox="0 0 256 256"><title>Basalt DB Studio</title><g transform="translate(-15.36 -.8)scale(1.12)"><!--Outer frame: the stack's own silhouette hexagon, offset 12px outward on
          every edge, so it stays parallel to the mark all the way round. Three
          passes on one path build the band outwards from the centre:
-         grey 2.5 | dark 2 | light 6 | dark 2 | grey 2.5. -->
-    <g fill="none" stroke-linejoin="round">
-      <path d="M46 60.1 128 35.5 210 60.1 210 169.9 128 194.5 46 169.9Z" stroke="#5b6674" stroke-width="15" />
-      <path d="M46 60.1 128 35.5 210 60.1 210 169.9 128 194.5 46 169.9Z" stroke="#070a0d" stroke-width="10" />
-      <path d="M46 60.1 128 35.5 210 60.1 210 169.9 128 194.5 46 169.9Z" stroke="#dfe5ec" stroke-width="6" />
-    </g>
-
-    <!-- Left/right faces are separate fills that butt at x=128; each slab's
-         silhouette is one stroked path so the centre seam stays bare. -->
-    <!-- Top face, hollowed at the hexagon inset 10px so the backdrop shows
-         through the ring band. -->
-    <path fill="#dfe5ec" fill-rule="evenodd"
-          d="M58 69 128 48 198 69 198 107 128 128 58 107Z
-             M68 76.4 128 58.4 188 76.4 188 99.6 128 117.6 68 99.6Z" />
-
-    <!-- Inner hexagon (inset 15px). -->
-    <path d="M73 80.2 128 63.7 183 80.2 183 95.8 128 112.3 73 95.8Z" fill="#31629e" />
-
-    <path d="M58 112 128 133 128 155 58 134Z" fill="#9aa5b3" />
-    <path d="M198 112 198 134 128 155 128 133Z" fill="#6c7683" />
-
-    <path d="M58 139 128 160 128 182 58 161Z" fill="#4e8cd9" />
-    <path d="M198 139 198 161 128 182 128 160Z" fill="#31629e" />
-
-    <!-- 2.5 = half the 5px slab spacing, so stroke and visible gap are equal. -->
-    <g fill="none" stroke="#5b6674" stroke-width="2.5" stroke-linejoin="round">
-      <path d="M58 69 128 48 198 69 198 107 128 128 58 107Z" />
-      <path d="M58 112 128 133 198 112 198 134 128 155 58 134Z" />
-      <path d="M58 139 128 160 198 139 198 161 128 182 58 161Z" stroke="#1f4576" />
-      <path d="M68 76.4 128 58.4 188 76.4 188 99.6 128 117.6 68 99.6Z" />
-      <path d="M73 80.2 128 63.7 183 80.2 183 95.8 128 112.3 73 95.8Z" stroke="#1f4576" />
-    </g>
-  </g>
-</svg>
+         grey 2.5 | dark 2 | light 6 | dark 2 | grey 2.5.--><g fill="none" stroke-linejoin="round"><path stroke="#5b6674" stroke-width="15" d="m46 60.1 82-24.6 82 24.6v109.8l-82 24.6-82-24.6Z"/><path stroke="#070a0d" stroke-width="10" d="m46 60.1 82-24.6 82 24.6v109.8l-82 24.6-82-24.6Z"/><path stroke="#dfe5ec" stroke-width="6" d="m46 60.1 82-24.6 82 24.6v109.8l-82 24.6-82-24.6Z"/></g><!--Left/right faces are separate fills that butt at x=128; each slab's
+         silhouette is one stroked path so the centre seam stays bare.--><!--Top face, hollowed at the hexagon inset 10px so the backdrop shows
+         through the ring band.--><path fill="#dfe5ec" fill-rule="evenodd" d="m58 69 70-21 70 21v38l-70 21-70-21Zm10 7.4 60-18 60 18v23.2l-60 18-60-18Z"/><!--Inner hexagon (inset 15px).--><path fill="#31629e" d="m73 80.2 55-16.5 55 16.5v15.6l-55 16.5-55-16.5Z"/><path fill="#9aa5b3" d="m58 112 70 21v22l-70-21Z"/><path fill="#6c7683" d="M198 112v22l-70 21v-22Z"/><path fill="#4e8cd9" d="m58 139 70 21v22l-70-21Z"/><path fill="#31629e" d="M198 139v22l-70 21v-22Z"/><!--2.5 = half the 5px slab spacing, so stroke and visible gap are equal.--><g fill="none" stroke="#5b6674" stroke-linejoin="round" stroke-width="2.5"><path d="m58 69 70-21 70 21v38l-70 21-70-21Z"/><path d="m58 112 70 21 70-21v22l-70 21-70-21Z"/><path stroke="#1f4576" d="m58 139 70 21 70-21v22l-70 21-70-21Z"/><path d="m68 76.4 60-18 60 18v23.2l-60 18-60-18Z"/><path stroke="#1f4576" d="m73 80.2 55-16.5 55 16.5v15.6l-55 16.5-55-16.5Z"/></g></g></svg>
