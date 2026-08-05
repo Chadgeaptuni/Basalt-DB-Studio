@@ -20,7 +20,7 @@
   const DOT: Record<string, string> = {
     connected: "bg-ok",
     connecting: "bg-warn",
-    error: "bg-danger",
+    error: "bg-error",
     disconnected: "bg-on-surface-muted",
   };
 
@@ -33,8 +33,8 @@
 </script>
 
 <div
-  class="group flex h-9 items-center gap-2 px-3 text-sm transition-colors duration-150
-    {selected ? 'bg-surface-container-high' : 'hover:bg-surface-container-high'}"
+  class="group flex h-9 items-center gap-2 px-3 text-sm transition-colors duration-200 ease-standard
+    {selected ? 'bg-surface-container-high' : 'hover:bg-on-surface/8'}"
 >
   <span class="h-1.5 w-1.5 shrink-0 rounded-full {DOT[status]}"></span>
   <Badge>{ENGINE_TAG[profile.engine]}</Badge>

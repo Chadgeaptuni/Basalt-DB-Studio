@@ -15,8 +15,8 @@ describe("theme store (DOM application)", () => {
 
   it("writes the selected appearance's tokens onto <html>", () => {
     theme.set("dracula-dark");
-    expect(tok("--accent")).toBe("#bd93f9");
-    expect(tok("--danger")).toBe("#ff5555");
+    expect(tok("--primary")).toBe("#bd93f9");
+    expect(tok("--error")).toBe("#ff5555");
     expect(root.getAttribute("data-theme")).toBe("dracula-dark");
     expect(root.style.colorScheme).toBe("dark");
   });
@@ -24,7 +24,7 @@ describe("theme store (DOM application)", () => {
   it("uses a true-black base for the OLED preset", () => {
     theme.set("basalt-oled");
     expect(tok("--surface")).toBe("#000000");
-    expect(tok("--accent")).toBe("#4e8cd9"); // Basalt dark accent retained
+    expect(tok("--primary")).toBe("#4e8cd9"); // Basalt dark accent retained
     expect(root.style.colorScheme).toBe("dark");
   });
 
@@ -54,7 +54,7 @@ describe("theme store (DOM application)", () => {
       { id: "custom-1", name: "Mine", colors: { primary: "#ff8800", surface: "#101418", border: "#2a2f36", text: "#eef2f6" } },
     ]);
     theme.set("custom-1");
-    expect(tok("--accent")).toBe("#ff8800");
+    expect(tok("--primary")).toBe("#ff8800");
     expect(tok("--on-surface")).toBe("#eef2f6");
     expect(tok("--surface-container-high")).toBe("#101418");
     expect(root.getAttribute("data-theme")).toBe("custom-1");
@@ -85,6 +85,6 @@ describe("theme store (DOM application)", () => {
     theme.set("custom-2");
     theme.deleteCustomTheme("custom-2");
     expect(theme.current).toBe("basalt-dark");
-    expect(tok("--accent")).toBe("#4e8cd9"); // Basalt dark primary
+    expect(tok("--primary")).toBe("#4e8cd9"); // Basalt dark primary
   });
 });

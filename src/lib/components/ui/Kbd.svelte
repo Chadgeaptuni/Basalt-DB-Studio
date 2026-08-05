@@ -19,7 +19,7 @@
       <span aria-hidden="true" class="font-mono text-[10px] leading-none text-on-surface-muted">+</span>
     {/if}
     <kbd
-      class="inline-flex h-4 min-w-4 items-center justify-center rounded border border-outline-variant
+      class="inline-flex h-4 min-w-4 items-center justify-center rounded-xs border border-outline-variant
         bg-surface-container-high px-1 font-mono text-[10px] leading-none text-on-surface-muted"
     >
       {key}

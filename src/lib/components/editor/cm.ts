@@ -140,8 +140,8 @@ const theme = EditorView.theme({
   },
   ".cm-tooltip.cm-tooltip-autocomplete > ul": { fontFamily: "var(--font-mono)", fontSize: "12px" },
   ".cm-tooltip-autocomplete ul li[aria-selected]": {
-    backgroundColor: "var(--accent)",
-    color: "var(--accent-fg)",
+    backgroundColor: "var(--primary)",
+    color: "var(--on-primary)",
   },
 });
 

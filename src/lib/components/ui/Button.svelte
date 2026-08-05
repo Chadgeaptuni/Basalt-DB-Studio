@@ -1,8 +1,19 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import Spinner from "./Spinner.svelte";
+  import { stateLayer, focusRing } from "./stateLayer";
 
-  type Variant = "primary" | "secondary" | "ghost" | "danger";
+  // The M3 button family (DESIGN §6). `primary`/`secondary`/`ghost` are kept as
+  // aliases of `filled`/`outlined`/`text` so call sites migrate incrementally.
+  type Variant =
+    | "filled"
+    | "tonal"
+    | "outlined"
+    | "text"
+    | "danger"
+    | "primary"
+    | "secondary"
+    | "ghost";
   type Size = "sm" | "md";
 
   interface Props {
@@ -17,7 +28,7 @@
   }
 
   let {
-    variant = "secondary",
+    variant = "outlined",
     size = "md",
     type = "button",
     disabled = false,
@@ -27,16 +38,21 @@
     children,
   }: Props = $props();
 
+  // M3 buttons are pills. Heights are M3 small (32) and standard (40) — the
+  // densest values that still clear M3's 32px minimum target.
   const base =
-    "inline-flex items-center justify-center gap-1.5 rounded-md font-medium whitespace-nowrap select-none " +
-    "transition-[background-color,border-color,color,opacity] duration-150 " +
-    "disabled:opacity-50 disabled:pointer-events-none";
-  const sizes: Record<Size, string> = { sm: "h-6 px-2 text-xs", md: "h-7 px-3 text-sm" };
+    "inline-flex items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap " +
+    `select-none ${stateLayer} ${focusRing}`;
+  const sizes: Record<Size, string> = { sm: "h-8 px-3 text-xs", md: "h-10 px-6 text-sm" };
   const variants: Record<Variant, string> = {
-    primary: "bg-accent text-accent-fg hover:opacity-90",
-    secondary: "bg-surface-container-high text-on-surface border border-outline-variant hover:border-outline",
-    ghost: "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface",
-    danger: "bg-danger-bg text-danger border border-danger/40 hover:border-danger",
+    filled: "bg-primary text-on-primary",
+    tonal: "bg-primary-container text-on-primary-container",
+    outlined: "border border-outline text-on-surface",
+    text: "text-primary",
+    danger: "bg-error-container text-on-error-container",
+    primary: "bg-primary text-on-primary",
+    secondary: "border border-outline text-on-surface",
+    ghost: "text-on-surface-variant",
   };
 </script>
 

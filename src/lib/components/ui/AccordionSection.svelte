@@ -72,7 +72,7 @@
 
   <!-- grid 1fr↔0fr = the open/close animation; inner clips while it runs. -->
   <div
-    class="grid min-h-0 transition-[grid-template-rows] duration-150
+    class="grid min-h-0 transition-[grid-template-rows] duration-200 ease-standard
       {open ? 'flex-1 grid-rows-[1fr]' : 'grid-rows-[0fr]'}"
   >
     <div class="flex min-h-0 flex-col overflow-hidden">{@render children()}</div>
@@ -86,7 +86,7 @@
       onpointerdown={startResize}
       onpointermove={onResize}
       onpointerup={endResize}
-      class="absolute inset-x-0 -bottom-0.5 z-10 h-1 cursor-row-resize hover:bg-accent/40"
+      class="absolute inset-x-0 -bottom-0.5 z-10 h-1 cursor-row-resize hover:bg-primary/40"
     ></div>
   {/if}
 </section>

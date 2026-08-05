@@ -57,9 +57,9 @@
           aria-current={activeTab === dest.id}
           onclick={() => (activeTab = dest.id)}
           class="flex h-8 shrink-0 items-center gap-2 px-3 text-left text-xs transition-colors
-            {activeTab === dest.id ? 'bg-surface-container-high text-on-surface' : 'text-on-surface-muted hover:bg-surface-container-high hover:text-on-surface-variant'}"
+            {activeTab === dest.id ? 'bg-surface-container-high text-on-surface' : 'text-on-surface-muted hover:bg-on-surface/8 hover:text-on-surface-variant'}"
         >
-          <dest.icon size={14} class={activeTab === dest.id ? "text-accent" : "text-on-surface-muted"} />
+          <dest.icon size={14} class={activeTab === dest.id ? "text-primary" : "text-on-surface-muted"} />
           {dest.label}
         </button>
       {/each}

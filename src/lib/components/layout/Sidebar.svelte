@@ -76,6 +76,6 @@
     onpointerdown={startResize}
     onpointermove={onResize}
     onpointerup={endResize}
-    class="absolute inset-y-0 -right-1 z-20 w-2 cursor-col-resize hover:bg-accent/40"
+    class="absolute inset-y-0 -right-1 z-20 w-2 cursor-col-resize hover:bg-primary/40"
   ></div>
 </aside>

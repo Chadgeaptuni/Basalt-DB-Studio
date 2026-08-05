@@ -36,7 +36,7 @@
     {#if !connections.loaded}
       <div class="flex items-center gap-2 px-3 text-sm text-on-surface-muted"><Spinner size="sm" /> Loading…</div>
     {:else if connections.loadError}
-      <div class="px-3 text-sm text-danger">
+      <div class="px-3 text-sm text-error">
         Couldn't read your saved connections.
         <div class="mt-0.5 font-mono text-[11px] break-words opacity-90">
           {connections.loadError.message}
@@ -52,7 +52,7 @@
             <li>
               <ConnectionRow profile={p} onclick={() => void connections.activate(p.id)} />
               {#if st.status === "error" && st.error}
-                <div class="flex items-start gap-2 bg-danger-bg px-3 py-1.5 text-xs text-danger">
+                <div class="flex items-start gap-2 bg-error-container px-3 py-1.5 text-xs text-error">
                   <div class="min-w-0 flex-1">
                     <div class="font-medium">{connectErrorTitle(st.error.kind)}</div>
                     <div class="mt-0.5 font-mono text-[11px] break-words opacity-90">

@@ -117,7 +117,7 @@
       <div class="flex items-center gap-2 p-3 text-sm text-on-surface-muted"><Spinner size="sm" /> Running query…</div>
     {:else if tab.runError}
       <div class="flex items-start gap-2 p-3 text-sm">
-        <TriangleAlert size={16} strokeWidth={2} class="mt-0.5 shrink-0 text-danger" />
+        <TriangleAlert size={16} strokeWidth={2} class="mt-0.5 shrink-0 text-error" />
         <div class="min-w-0">
           <div class="text-on-surface">{title(tab.runError.kind)}</div>
           <div class="mt-0.5 font-mono text-xs whitespace-pre-wrap text-on-surface-muted">{tab.runError.message}</div>
@@ -127,7 +127,7 @@
       <EmptyState icon={Play} message="Run a query to see results." />
     {:else if current?.error}
       <div class="flex items-start gap-2 p-3 text-sm">
-        <TriangleAlert size={16} strokeWidth={2} class="mt-0.5 shrink-0 text-danger" />
+        <TriangleAlert size={16} strokeWidth={2} class="mt-0.5 shrink-0 text-error" />
         <div class="min-w-0">
           <div class="text-on-surface">{title(current.error.kind)}</div>
           <div class="mt-0.5 font-mono text-xs whitespace-pre-wrap text-on-surface-muted">{current.error.message}</div>

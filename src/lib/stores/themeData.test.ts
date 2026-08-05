@@ -17,8 +17,9 @@ const CONTRACT = [
   "--surface-container-high", "--surface-container-highest",
   "--on-surface", "--on-surface-variant", "--on-surface-muted",
   "--outline-variant", "--outline",
-  "--accent", "--accent-fg",
-  "--danger", "--danger-fg", "--danger-bg",
+  "--primary", "--on-primary", "--primary-container", "--on-primary-container",
+  "--secondary-container", "--on-secondary-container",
+  "--error", "--on-error", "--error-container", "--on-error-container",
   "--ok", "--warn",
   "--grid-header-bg", "--grid-row-alt", "--grid-sel", "--grid-null", "--grid-edited",
   "--syntax-kw", "--syntax-str", "--syntax-num", "--syntax-comment", "--syntax-fn", "--syntax-ident",
@@ -82,12 +83,12 @@ describe("themeData", () => {
     const catppuccin = THEME_SEEDS.find((s) => s.id === "catppuccin")!;
     const darkTokens = themeTokens(catppuccin, "dark");
     expect(darkTokens["--surface"]).toBe("#11111b"); // background
-    expect(darkTokens["--accent"]).toBe("#cba6f7"); // primary
-    expect(darkTokens["--danger"]).toBe("#f38ba8"); // error
+    expect(darkTokens["--primary"]).toBe("#cba6f7"); // primary
+    expect(darkTokens["--error"]).toBe("#f38ba8"); // error
     expect(themeTokens(catppuccin, "light")["--surface"]).toBe("#eff1f5");
 
     const dracula = THEME_SEEDS.find((s) => s.id === "dracula")!;
-    expect(themeTokens(dracula, "dark")["--accent"]).toBe("#bd93f9");
+    expect(themeTokens(dracula, "dark")["--primary"]).toBe("#bd93f9");
   });
 
   it("uses a seed's authored light accents instead of nudging them", () => {
@@ -106,7 +107,7 @@ describe("themeData", () => {
     const seed = customSeed("custom-x", "Mine", colors);
     const tokens = themeTokens(seed, customCategory(colors));
     expect(Object.keys(tokens).sort()).toEqual([...CONTRACT].sort());
-    expect(tokens["--accent"]).toBe("#4e8cd9");
+    expect(tokens["--primary"]).toBe("#4e8cd9");
   });
 
   it("classifies a custom theme from its authored surface", () => {

@@ -23,12 +23,18 @@
   --color-outline-variant: var(--outline-variant);
   --color-outline: var(--outline);
 
-  --color-accent: var(--accent);
-  --color-accent-fg: var(--accent-fg);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary-container: var(--on-primary-container);
 
-  --color-danger: var(--danger);
-  --color-danger-fg: var(--danger-fg);
-  --color-danger-bg: var(--danger-bg);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary-container: var(--on-secondary-container);
+
+  --color-error: var(--error);
+  --color-on-error: var(--on-error);
+  --color-error-container: var(--error-container);
+  --color-on-error-container: var(--on-error-container);
 
   --color-ok: var(--ok);
   --color-warn: var(--warn);
@@ -38,6 +44,25 @@
   --color-grid-sel: var(--grid-sel);
   --color-grid-null: var(--grid-null);
   --color-grid-edited: var(--grid-edited);
+
+  /* M3 shape scale — the only radii in the app. Pixel values are Material 3's
+     own scale, which is also what Flow Desktop renders. */
+  --radius-none: 0px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 28px;
+
+  /* M3 elevation. Dialogs/menus/snackbars only — surfaces still get their depth
+     from the tonal ladder (DESIGN §2), never from a shadow. */
+  --shadow-e1: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 1px 3px 1px rgb(0 0 0 / 0.15);
+  --shadow-e2: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 2px 6px 2px rgb(0 0 0 / 0.15);
+  --shadow-e3: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 4px 8px 3px rgb(0 0 0 / 0.15);
+
+  /* M3 motion — `standard` for everything routine, `emphasized` for entrances. */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
 }
 
 @layer base {
@@ -60,7 +85,7 @@
 
   /* Keyboard focus ring only — never on mouse click (DESIGN §7). */
   :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--primary);
     outline-offset: 1px;
   }
   :focus:not(:focus-visible) {

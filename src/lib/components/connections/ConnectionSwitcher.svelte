@@ -61,7 +61,7 @@
 <Popover.Root bind:open>
   <Popover.Trigger
     class="flex h-7 min-w-56 max-w-96 items-center gap-2 rounded-md border border-outline-variant
-      bg-surface px-2 text-xs transition-colors hover:bg-surface-container-high"
+      bg-surface px-2 text-xs transition-colors hover:bg-on-surface/8"
     title="Connection"
   >
     {#if connections.active && activeProfile}
@@ -79,13 +79,13 @@
   <Popover.Portal>
     <Popover.Content
       sideOffset={4}
-      class="z-50 max-h-[min(28rem,calc(100dvh-4rem))] w-96 overflow-auto rounded-lg border
-        border-outline-variant bg-surface-container-high outline-none"
+      class="z-50 max-h-[min(28rem,calc(100dvh-4rem))] w-96 overflow-auto rounded-md border
+        border-outline-variant bg-surface-container-high shadow-e2 outline-none"
     >
       {#if !connections.loaded}
         <div class="flex items-center gap-2 p-3 text-sm text-on-surface-muted"><Spinner size="sm" /> Loading…</div>
       {:else if connections.loadError}
-        <div class="p-3 text-sm text-danger">
+        <div class="p-3 text-sm text-error">
           Couldn't read your saved connections.
           <div class="mt-0.5 font-mono text-[11px] break-words opacity-90">
             {connections.loadError.message}
@@ -116,7 +116,7 @@
                 {/snippet}
               </ConnectionRow>
               {#if st.status === "error" && st.error}
-                <div class="flex items-start gap-2 bg-danger-bg px-3 py-1.5 text-xs text-danger">
+                <div class="flex items-start gap-2 bg-error-container px-3 py-1.5 text-xs text-error">
                   <div class="min-w-0 flex-1">
                     <div class="font-medium">{connectErrorTitle(st.error.kind)}</div>
                     <div class="mt-0.5 font-mono text-[11px] break-words opacity-90">

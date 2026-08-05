@@ -159,7 +159,7 @@
     <Checkbox bind:checked={readOnly} label="Read-only connection" />
 
     {#if testResult}
-      <p class="text-xs {testResult.ok ? 'text-ok' : 'text-danger'}">{testResult.message}</p>
+      <p class="text-xs {testResult.ok ? 'text-ok' : 'text-error'}">{testResult.message}</p>
     {/if}
   </div>
 

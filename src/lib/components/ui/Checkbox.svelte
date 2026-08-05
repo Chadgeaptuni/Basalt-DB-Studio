@@ -23,7 +23,7 @@
       checked = e.currentTarget.checked;
       onchange?.(checked);
     }}
-    class="h-4 w-4 rounded border-outline-variant bg-surface accent-accent"
+    class="h-4 w-4 rounded-xs border-outline-variant bg-surface accent-primary"
   />
   {#if label}<span>{label}</span>{/if}
 </label>

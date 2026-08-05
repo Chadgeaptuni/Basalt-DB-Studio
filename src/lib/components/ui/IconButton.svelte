@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { IconComponent } from "./icon";
   import Spinner from "./Spinner.svelte";
+  import { stateLayer, focusRing } from "./stateLayer";
 
   interface Props {
     icon: IconComponent;
@@ -25,8 +26,9 @@
     onclick,
   }: Props = $props();
 
-  const box = $derived(size === "sm" ? "h-6 w-6" : "h-7 w-7");
-  const px = $derived(size === "sm" ? 14 : 16);
+  // M3 icon buttons are circular; 32/40px are the dense and standard targets.
+  const box = $derived(size === "sm" ? "h-8 w-8" : "h-10 w-10");
+  const px = $derived(size === "sm" ? 16 : 20);
 </script>
 
 <button
@@ -36,9 +38,10 @@
   aria-pressed={active}
   disabled={disabled || loading}
   {onclick}
-  class="inline-flex items-center justify-center rounded-md {box} transition-colors duration-150
-    hover:bg-surface-container-high hover:text-on-surface disabled:opacity-50 disabled:pointer-events-none
-    {active === true ? 'bg-surface-container-high text-on-surface' : 'text-on-surface-variant'}"
+  class="grid place-items-center rounded-full {box} {stateLayer} {focusRing}
+    {active === true
+    ? 'bg-secondary-container text-on-secondary-container'
+    : 'text-on-surface-variant'}"
 >
   {#if loading}
     <Spinner size="sm" />

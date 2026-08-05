@@ -56,7 +56,7 @@
           type="color"
           aria-label="Primary Accent"
           bind:value={primary}
-          class="h-8 w-10 cursor-pointer rounded border-0 bg-transparent"
+          class="h-8 w-10 cursor-pointer rounded-xs border-0 bg-transparent"
         />
         <div class="flex flex-1 flex-col">
           <span class="text-xs font-medium text-on-surface">Primary Accent</span>
@@ -69,7 +69,7 @@
           type="color"
           aria-label="Surface Background"
           bind:value={surface}
-          class="h-8 w-10 cursor-pointer rounded border-0 bg-transparent"
+          class="h-8 w-10 cursor-pointer rounded-xs border-0 bg-transparent"
         />
         <div class="flex flex-1 flex-col">
           <span class="text-xs font-medium text-on-surface">Surface Background</span>
@@ -82,7 +82,7 @@
           type="color"
           aria-label="Border Color"
           bind:value={border}
-          class="h-8 w-10 cursor-pointer rounded border-0 bg-transparent"
+          class="h-8 w-10 cursor-pointer rounded-xs border-0 bg-transparent"
         />
         <div class="flex flex-1 flex-col">
           <span class="text-xs font-medium text-on-surface">Border Color</span>
@@ -95,7 +95,7 @@
           type="color"
           aria-label="Text Color"
           bind:value={text}
-          class="h-8 w-10 cursor-pointer rounded border-0 bg-transparent"
+          class="h-8 w-10 cursor-pointer rounded-xs border-0 bg-transparent"
         />
         <div class="flex flex-1 flex-col">
           <span class="text-xs font-medium text-on-surface">Text Color</span>

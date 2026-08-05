@@ -70,7 +70,7 @@
             aria-pressed={theme.current === preset.id}
             onclick={() => theme.set(preset.id)}
             class="flex h-9 min-w-0 items-center gap-2 border-b border-outline-variant px-2 text-left
-              transition-colors duration-150 hover:bg-surface-container {i % 2 === 0 ? 'sm:border-r' : ''}
+              transition-colors duration-200 ease-standard hover:bg-on-surface/8 {i % 2 === 0 ? 'sm:border-r' : ''}
               {theme.current === preset.id ? 'bg-surface-container text-on-surface' : 'text-on-surface-variant'}"
           >
             <span
@@ -83,12 +83,12 @@
               <span class="h-3.5 w-1.5 rounded-full" style="background-color: {preset.colors[2]}"></span>
             </span>
             <span class="min-w-0 flex-1 truncate text-xs font-medium">{preset.name}</span>
-            {#if theme.current === preset.id}<Check size={14} class="shrink-0 text-accent" />{/if}
+            {#if theme.current === preset.id}<Check size={14} class="shrink-0 text-primary" />{/if}
           </button>
         {/each}
 
         {#each section.customs as custom (custom.id)}
-          <div class="flex h-9 items-center border-b border-outline-variant transition-colors hover:bg-surface-container">
+          <div class="flex h-9 items-center border-b border-outline-variant transition-colors hover:bg-on-surface/8">
             <button
               type="button"
               aria-pressed={theme.current === custom.id}
@@ -105,7 +105,7 @@
                 <span class="h-3.5 w-1.5 rounded-full" style="background-color: {custom.colors.border}"></span>
               </span>
               <span class="min-w-0 flex-1 truncate text-xs font-medium text-on-surface">{custom.name}</span>
-              {#if theme.current === custom.id}<Check size={14} class="shrink-0 text-accent" />{/if}
+              {#if theme.current === custom.id}<Check size={14} class="shrink-0 text-primary" />{/if}
             </button>
             <div class="flex shrink-0 items-center pr-1">
               <IconButton icon={Pencil} title={`Edit ${custom.name}`} size="sm" onclick={() => handleEditCustom(custom)} />

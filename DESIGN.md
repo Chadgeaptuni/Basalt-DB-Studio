@@ -4,37 +4,55 @@ This document is the **absolute source of truth** for all UI/UX design and Svelt
 architecture in Basalt DB Studio. Read it before writing or editing any Svelte or
 Tailwind code. On any conflict or ambiguity, this file governs.
 
-**Aesthetic:** flat, dense, utilitarian, keyboard-driven. The reference family is
-Linear / DataGrip / lazygit — a professional data tool, not a marketing site.
-Every pixel earns its place; data is the interface.
+**Aesthetic:** Material 3, applied to a dense professional data tool. The
+reference implementation is the sibling project **Flow Desktop** — same role
+tokens, same shape scale, same motion. Chrome is Material; the data grid is
+Material's *dense* end of the scale, not a second design language.
 
 ---
 
-## 1. The Anti-Slop Manifesto (zero tolerance)
+## 1. Material 3 is the law
 
-AI models default to outdated "Dribbble-style" trends. The following are
-**strictly forbidden** in this codebase:
+Basalt implements Material 3 — roles, shape, state layers, elevation, and motion —
+not a house style that borrows from it. When a question is not answered here,
+the answer is whatever M3 specifies, cross-checked against Flow Desktop.
 
-- ❌ **No gradients.** No `bg-gradient-*`, no gradient text, no gradient borders.
-- ❌ **No glassmorphism.** No `backdrop-blur`, no semi-transparent milky panels.
-- ❌ **No shadows or glows.** No `shadow-*`, no neon box-shadows, no "elevation".
-- ❌ **No colored card borders.** All borders are muted neutral (`--outline-variant`).
-- ❌ **No arbitrary colors.** No hex/rgb/hsl literals in components — every color
-  maps to a design token (§3). `text-[#8b5cf6]` is a build-blocking review failure.
+**The five systems, all mandatory:**
+
+1. **Colour roles (§3).** Every colour is an M3 role token. A component names the
+   role it means (`bg-primary-container`, `text-on-surface-variant`), never a raw
+   value and never a Tailwind palette colour.
+2. **Shape (§2).** Radii come from the M3 shape scale only: `rounded-xs` 4px ·
+   `rounded-sm` 8px · `rounded-md` 12px · `rounded-lg` 16px · `rounded-xl` 28px ·
+   `rounded-full`. No arbitrary radius, no `rounded` bare.
+3. **State layers (§7).** Interaction is a translucent overlay of the *content*
+   colour over the container: hover 8%, focus/pressed 10% — `hover:bg-on-surface/8`,
+   or `hover:bg-primary/8` on primary-coloured content. Never a hand-picked
+   hover colour, never an opacity change on the whole control.
+4. **Elevation (§2).** Depth is the tonal surface ladder. `shadow-e1/e2/e3` exist
+   and are used **only** by floating containers that escape the layout — dialog,
+   menu, snackbar, dropdown. A panel, card, row, or toolbar never carries a shadow.
+5. **Motion (§7).** `transition-* duration-200 ease-standard` is the default for
+   everything. Entrances use `ease-emphasized`. No spring, no bounce, no stagger.
+
+**Still forbidden** (these are M3 violations too, not leftovers from an older doc):
+
+- ❌ **No gradients.** M3 surfaces are flat tonal fills. No `bg-gradient-*`.
+- ❌ **No glassmorphism.** No `backdrop-blur`, no milky translucent panels.
+- ❌ **No arbitrary colours.** No hex/rgb/hsl literal in a component — every colour
+  is a role token (§3). `text-[#8b5cf6]` is a build-blocking review failure.
+- ❌ **No arbitrary radii or shadows.** `rounded-[7px]`, `shadow-lg`,
+  `shadow-primary/20` are all failures — the scale in §4 and the three elevation
+  tokens are the complete set.
 - ❌ **No emoji in the UI.** Icons are Lucide, monochrome, sized deliberately.
-- ❌ **No bouncy/delayed entry animations.** No fade-in-up cascades, no spring
-  wobble, no staggered reveals. Simple transitions only (§7).
-- ❌ **No hero empty states.** No centered illustrations with friendly copy filling
-  a pane. Empty states are one line + one action, top-aligned like content (§8).
-- ❌ **No skeleton-shimmer theater.** Local loads under ~150 ms render nothing;
-  longer loads show a `Spinner` or a static placeholder row — never animated
-  shimmer blocks approximating fake content.
-- ❌ **No oversized padded cards** wrapping what should be a dense list or table row.
+- ❌ **No skeleton-shimmer theater.** Loads under ~150 ms render nothing; longer
+  loads show a `Spinner` or a static placeholder row.
 - ❌ **No generic error toasts.** "Something went wrong" is forbidden — every
   backend error `kind` renders a specific, actionable state (§8).
 
-If proposed code contains `shadow-`, `bg-gradient-`, `backdrop-blur`, a color
-literal, or any item above — **rewrite it before presenting it**.
+If proposed code contains `bg-gradient-`, `backdrop-blur`, a colour literal, an
+off-scale radius, or a shadow on a non-floating element — **rewrite it before
+presenting it**.
 
 **Single exception — the brand mark.** `public/icon.svg`, `public/icon-mark.svg`,
 and the icons generated from them (`src-tauri/icons/`) are brand assets, not UI:
@@ -45,13 +63,18 @@ literal colors on the grounds of being "logo-like".
 
 ## 2. Depth & Surface Model
 
-Depth comes from **contrast and 1px borders**, never shadows.
+Depth is M3's **tonal surface ladder**. A container is raised by moving up the
+ladder, not by a shadow. Shadows exist for one job only: telling the user that a
+container is *floating over* the layout rather than part of it.
 
-Surface roles follow Material 3's naming, but only its *tonal* model: a container
-is raised by moving up the ladder, never by an elevation shadow, tint overlay, or
-ripple. The role names are shared with Flow Desktop so one vocabulary covers both
-apps; nothing else of Material's visual language applies here (§1 still governs
-radii, shadows, gradients, and motion).
+| | Raised by | Example |
+|---|---|---|
+| In-layout surface | Tonal ladder + 1px `--outline-variant` | sidebar, results header, card, toolbar |
+| Floating container | Tonal ladder + `shadow-e2` | dialog, menu, dropdown, snackbar |
+
+`shadow-e1/e2/e3` are the complete set. `shadow-e2` covers almost everything;
+`e3` is for a dialog over another dialog. Any `shadow-*` on an in-layout element
+is a review failure.
 
 - Five surface levels, base → most raised (in dark themes):
   `--surface` (app base: editor, grid body) → `--surface-container-low` (inset
@@ -61,12 +84,32 @@ radii, shadows, gradients, and motion).
   menu rows, modal list rows).
 - Reach for a new level only when two surfaces genuinely stack. A flat screen
   using two levels is correct; using all five to look layered is not.
-- Adjacent surfaces are separated by `1px` `--outline-variant` lines, not gaps or shadows.
-- Lists use row separators (`divide-y` with `--outline-variant`) or plain hover highlight —
-  not per-item cards.
-- The accent color (`--accent`) is used **sparingly**: primary buttons, active/
-  selected states, focused rings, the running-query indicator, connection-alive
-  dots. If a screen is >5% accent-colored, it's wrong.
+
+### Shape scale
+
+The M3 scale is declared once in `app.css` and overrides Tailwind's defaults, so
+`rounded-md` *is* M3 medium. These are the only radii in the app:
+
+| Utility | Size | Used by |
+|---|---|---|
+| `rounded-xs` | 4px | badge, `Kbd`, cell-level affordances, tag |
+| `rounded-sm` | 8px | text field, select, button, tree row, list row |
+| `rounded-md` | 12px | card, panel section, context menu, dropdown |
+| `rounded-lg` | 16px | dialog, modal, snackbar |
+| `rounded-xl` | 28px | full-height sheet, large surface (rare) |
+| `rounded-full` | — | icon button, chip, avatar, status dot, spinner |
+
+The data grid is the one deliberate exception: cells and grid rows are square
+(`rounded-none`). M3's own dense/data guidance keeps tabular cells rectangular —
+rounding a 24px row wastes horizontal space and breaks the column rhythm.
+- Adjacent surfaces are separated by `1px` `--outline-variant` lines, not gaps.
+- Lists use row separators (`divide-y` with `--outline-variant`) or a state-layer
+  hover — not per-item cards.
+- `--primary` is used **sparingly**: filled buttons, selected states, focus rings,
+  the running-query indicator, connection-alive dots. Tonal surfaces
+  (`--primary-container`, `--secondary-container`) carry the softer cases —
+  selected rows, active tabs, chips. If a screen is >5% full-strength primary,
+  it's wrong.
 
 ## 3. Design Tokens (the only source of color)
 
@@ -85,8 +128,10 @@ Token contract (every preset must define all of these):
 | `--surface` `--surface-container-low` `--surface-container` `--surface-container-high` `--surface-container-highest` | Surface levels (§2) |
 | `--on-surface` `--on-surface-variant` `--on-surface-muted` | Text: primary / secondary / muted-label |
 | `--outline-variant` `--outline` | Hairlines / emphasized separators (focus-adjacent) |
-| `--accent` `--accent-fg` | Accent surface + text on accent |
-| `--danger` `--danger-fg` `--danger-bg` | Destructive text / on-danger / muted danger surface |
+| `--primary` `--on-primary` | Filled primary surface + text on it |
+| `--primary-container` `--on-primary-container` | Tonal primary: filled-tonal buttons, selected rows, assist chips |
+| `--secondary-container` `--on-secondary-container` | Neutral tonal: active tab, toggled icon button, hovered menu row |
+| `--error` `--on-error` `--error-container` `--on-error-container` | Destructive: text, on-error, tonal error surface, text on it |
 | `--ok` `--warn` | Success / warning indicators (dots, badges) |
 | `--grid-header-bg` `--grid-row-alt` `--grid-sel` `--grid-null` `--grid-edited` | Data grid: header, zebra, selection, NULL badge, dirty-cell marker |
 | `--syntax-kw` `--syntax-str` `--syntax-num` `--syntax-comment` `--syntax-fn` `--syntax-ident` | SQL editor highlighting (fed to the CodeMirror theme) |
@@ -143,27 +188,35 @@ Every interactive element comes from `src/lib/components/ui/` — never restyle 
 hoc at a call site. Variants are props; if a needed variant is missing, **extend
 the primitive**, don't fork it locally.
 
-- **Radii:** controls & inputs `rounded-md` · menus, popovers & modals
-  `rounded-lg` · badges/pills `rounded-full` · grid cells & tree rows `rounded-none`.
-- **Button** — `variant: 'primary' | 'secondary' | 'ghost' | 'danger'`,
-  `size: 'sm' | 'md'`, optional `icon`. Primary = `--accent`/`--accent-fg`;
-  secondary = `--surface-container-high` + border; ghost = transparent, hover `--surface-container-high`; danger =
-  `--danger-bg` surface + `--danger` text + danger border (muted, not alarm-red).
-- **IconButton** — square ghost button for toolbars; `title` (tooltip) required.
-- **Input / Select / Checkbox** — `--surface` field on `--surface-container` panels, 1px border,
-  focus = accent ring (§7). Error state: danger border + `text-xs` danger message
+- **Button** — the M3 button family, one prop:
+  `variant: 'filled' | 'tonal' | 'outlined' | 'text' | 'danger'`, `size: 'sm' | 'md'`,
+  `rounded-full` (M3 buttons are pills). Filled = `--primary`/`--on-primary`;
+  tonal = `--primary-container`/`--on-primary-container`; outlined = transparent +
+  1px `--outline`; text = transparent, state layer only; danger =
+  `--error-container`/`--on-error-container`. `Button` owns the state layer — call
+  sites never add hover classes.
+- **IconButton** — `rounded-full`, `place-items-center`, state layer on hover
+  (Flow's `grid h-9 w-9 place-items-center rounded-full` idiom). `title` required
+  (doubles as `aria-label`). Toggled state = `--secondary-container` fill.
+- **Input / Select / Checkbox** — M3 **outlined text field**: `rounded-sm`, 1px
+  `--outline-variant` resting → `--primary` 2px on focus, label `text-xs`
+  `--on-surface-variant`. Error: `--error` border + `text-xs` `--error` message
   below; never a toast for field validation.
-- **Badge** — `variant: 'neutral' | 'accent' | 'ok' | 'warn' | 'danger'`. Used
-  for: `NULL` cells (`--grid-null`, italic mono), tx state (`TX` in status bar),
-  read-only connections, engine tags (`PG` `MY` `SQ`).
-- **Modal / ConfirmDialog** — centered, `max-w-md`/`max-w-lg`, `--surface-container-high`, 1px
-  border, dimmed scrim (`--surface` at ~60% opacity, **no blur**). ConfirmDialog is
-  invoked only via the global `confirm()` store (§9) — never instantiated inline.
-- **Toast / ToastHost** — bottom-right stack, dense single-line rows with icon +
-  message + optional action; auto-dismiss 4s (errors 8s, or sticky with action).
-  Created only via the global `toast.*` API (§9).
-- **ContextMenu / DropdownMenu** — `--surface-container-high`, 1px border, 24px rows, `Kbd` hints
-  right-aligned, danger items use `--danger` text.
+- **Badge / Chip** — `rounded-full`. `variant: 'neutral' | 'primary' | 'ok' | 'warn' | 'error'`.
+  Neutral = `--secondary-container`; primary = `--primary-container`; error =
+  `--error-container`. Used for: `NULL` cells (`--grid-null`, italic mono), tx
+  state (`TX`), read-only connections, engine tags (`PG` `MY` `SQ`).
+- **Modal / ConfirmDialog** — M3 dialog: centered, `max-w-md`/`max-w-lg`,
+  `rounded-lg`, `--surface-container-high`, `shadow-e3`, scrim `--surface` at 60%
+  (**no blur**). Actions bottom-right, text/tonal buttons. ConfirmDialog is invoked
+  only via the global `confirm()` store (§9) — never instantiated inline.
+- **Toast / ToastHost** — M3 **snackbar**: bottom-left stack, `rounded-sm`,
+  `--surface-container-highest`, `shadow-e2`, single line + optional text action;
+  auto-dismiss 4s (errors 8s, or sticky with action). Created only via the global
+  `toast.*` API (§9).
+- **ContextMenu / DropdownMenu** — M3 menu: `rounded-md`,
+  `--surface-container-high`, `shadow-e2`, 32px rows with a state-layer hover,
+  `Kbd` hints right-aligned, destructive items use `--error` text.
 - **Tooltip** — delay 400 ms, `text-xs`, no arrow.
 - **EmptyState** — icon (16px, `--on-surface-muted`) + one sentence + at most one action.
 - **Spinner** — 3 sizes; inline in buttons while pending (`Button` handles it via
@@ -176,16 +229,37 @@ the primitive**, don't fork it locally.
 
 ## 7. Interaction & Keyboard
 
-- **Every interactive element has hover + focus-visible states.** Hover =
-  background shift to `--surface-container-high` via `transition-colors duration-150`. Focus =
-  2px accent ring (`outline`), visible only via `:focus-visible`.
-- **Simple transitions only — no fancy motion.** Allowed: `transition-colors`,
-  `opacity`/fade, modal & menu fade-scale (≤120 ms), and short height/width slides
-  for collapsing surfaces (accordion sections, tab open/close). All motion is
-  100–150 ms with plain easing. **Forbidden:** spring/bounce, staggered or
-  cascading reveals, fade-in-up hero entrances, skeleton shimmer, parallax, and
-  anything over ~150 ms. Respect `prefers-reduced-motion` — it disables all of the
-  above.
+### State layers (M3)
+
+Interaction is expressed as a **translucent layer of the content colour over the
+container**, never as a swapped-in background colour and never as opacity on the
+control itself.
+
+| State | Layer | Written as |
+|---|---|---|
+| Hover | content colour @ 8% | `hover:bg-on-surface/8` |
+| Focus / pressed | content colour @ 10% | `focus-visible:bg-on-surface/10` |
+| Hover on primary content | primary @ 8% | `hover:bg-primary/8` |
+| Disabled | 38% content, no layer | `disabled:opacity-38` |
+
+Filled buttons are the exception M3 makes: their state layer is `on-primary` over
+`primary`, so they use `hover:brightness-110`-free overlays via a `::before` layer
+or the `secondary-container` fallback — in this codebase `Button` owns that and no
+call site reimplements it.
+
+Focus is **additionally** a 2px `--primary` ring via `:focus-visible` (app.css
+`@layer base`). State layer and focus ring coexist; neither replaces the other.
+
+### Motion
+
+- Default: `transition-* duration-200 ease-standard` — matches Flow Desktop's
+  `transition-colors duration-200 ease-out` idiom and M3's standard easing.
+- Entrances (dialog, menu, snackbar): `ease-emphasized`, ≤300 ms, fade + a small
+  scale or slide. No spring, no bounce, no stagger, no parallax.
+- **Forbidden:** cascading/staggered reveals, fade-in-up hero entrances, skeleton
+  shimmer, anything over 300 ms.
+- `prefers-reduced-motion` disables all of it (already enforced globally in
+  `app.css`).
 - **The app is fully keyboard-operable.** Core map (Cmd on macOS = Ctrl elsewhere):
   - `Ctrl+Enter` run statement at cursor / selection · `Ctrl+Shift+Enter` run whole script
   - `Ctrl+T` / `Ctrl+W` new / close editor tab · `Ctrl+PgUp/PgDn` switch tabs

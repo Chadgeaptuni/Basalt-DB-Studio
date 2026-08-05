@@ -20,8 +20,11 @@
  *                                 --surface-container-highest
  *   Text (primary→muted label):   --on-surface  --on-surface-variant  --on-surface-muted
  *   Lines:                        --outline-variant  --outline
- *   Accent:                       --accent  --accent-fg
- *   Destructive:                  --danger  --danger-fg  --danger-bg
+ *   Primary:                      --primary  --on-primary
+ *                                 --primary-container  --on-primary-container
+ *   Tonal/selected:               --secondary-container  --on-secondary-container
+ *   Destructive:                  --error  --on-error
+ *                                 --error-container  --on-error-container
  *   Status:                       --ok  --warn
  *   Data grid:                    --grid-header-bg  --grid-row-alt  --grid-sel
  *                                 --grid-null  --grid-edited
@@ -46,12 +49,18 @@
   --outline-variant: #232a34;
   --outline: #323b47;
 
-  --accent: #4e8cd9;
-  --accent-fg: #ffffff;
+  --primary: #4e8cd9;
+  --on-primary: #ffffff;
+  --primary-container: #253243;
+  --on-primary-container: #4e8cd9;
 
-  --danger: #e06c75;
-  --danger-fg: #ffffff;
-  --danger-bg: #2a1b1e;
+  --secondary-container: #1f2731;
+  --on-secondary-container: #e6e9ef;
+
+  --error: #e06c75;
+  --on-error: #ffffff;
+  --error-container: #2a1b1e;
+  --on-error-container: #e06c75;
 
   --ok: #6cc070;
   --warn: #d6a55c;

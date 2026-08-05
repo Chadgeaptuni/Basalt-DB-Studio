@@ -76,7 +76,7 @@
           <div {...props}>
             <div
               class="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-lg border
-                border-outline-variant bg-surface-container-high"
+                border-outline-variant bg-surface-container-high shadow-e3"
               transition:uiScale
             >
               {#if !headerHidden}

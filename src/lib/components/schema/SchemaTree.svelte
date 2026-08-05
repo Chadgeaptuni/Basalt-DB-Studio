@@ -79,7 +79,7 @@
     {:else if !view || view.loading}
       <div class="flex items-center gap-2 p-3 text-sm text-on-surface-muted"><Spinner size="sm" /> Introspecting…</div>
     {:else if view.error}
-      <div class="p-3 text-sm text-danger">
+      <div class="p-3 text-sm text-error">
         {view.error.message}
         <div class="mt-2">
           <Button size="sm" onclick={() => sessionId && schema.loadTree(sessionId)}>Retry</Button>

@@ -23,8 +23,9 @@
     value = e.currentTarget.value;
     onchange?.(value);
   }}
-  class="h-7 w-full rounded-md border border-outline-variant bg-surface px-2 text-sm text-on-surface
-    transition-colors duration-150 focus:border-outline disabled:opacity-50"
+  class="h-10 w-full rounded-sm border border-outline-variant bg-surface px-4 text-sm
+    text-on-surface transition-colors duration-200 ease-standard disabled:opacity-[0.38]
+    focus:outline-2 focus:-outline-offset-1 focus:outline-primary"
 >
   {#each options as opt (opt.value)}
     <option value={opt.value}>{opt.label}</option>

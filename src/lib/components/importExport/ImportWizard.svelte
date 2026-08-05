@@ -96,7 +96,7 @@
     </div>
 
     {#if error}
-      <p class="font-mono text-xs whitespace-pre-wrap text-danger">{error}</p>
+      <p class="font-mono text-xs whitespace-pre-wrap text-error">{error}</p>
     {/if}
   </div>
 

@@ -26,14 +26,14 @@
       {#snippet row(e)}
         <button
           class="flex h-6 w-full items-center gap-2 px-2 text-left font-mono text-xs text-on-surface-variant
-            transition-colors duration-150 hover:bg-surface-container-high"
+            transition-colors duration-200 ease-standard hover:bg-on-surface/8"
           title={e.sql}
           onclick={() => editorTabs.open(e.sql)}
         >
           {#if e.ok}
             <CircleCheck size={12} strokeWidth={2} class="shrink-0 text-ok" />
           {:else}
-            <CircleX size={12} strokeWidth={2} class="shrink-0 text-danger" />
+            <CircleX size={12} strokeWidth={2} class="shrink-0 text-error" />
           {/if}
           <span class="w-20 shrink-0 tabular-nums text-on-surface-muted">{fmtTime(e.ranAt)}</span>
           <span class="flex-1 truncate">{e.sql.replace(/\s+/g, " ").trim()}</span>

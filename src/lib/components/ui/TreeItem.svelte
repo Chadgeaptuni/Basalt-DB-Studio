@@ -39,7 +39,7 @@
   aria-selected={selected}
   {title}
   class="flex h-6 cursor-pointer items-center gap-1 pr-2 font-mono text-xs transition-colors
-    duration-150 {selected ? 'bg-surface-container-high text-on-surface' : 'text-on-surface-variant hover:bg-surface-container-high'}"
+    duration-200 ease-standard {selected ? 'bg-surface-container-high text-on-surface' : 'text-on-surface-variant hover:bg-on-surface/8'}"
   style="padding-left:{depth * 12 + 4}px"
   onclick={() => onclick?.()}
   ondblclick={() => ondblclick?.()}

@@ -27,14 +27,16 @@
     <ContextMenuPrimitive.Content
       loop
       sideOffset={2}
-      class="z-50 min-w-44 rounded-lg border border-outline-variant bg-surface-container-high py-1 outline-none"
+      class="z-50 min-w-44 rounded-md border border-outline-variant
+        bg-surface-container-high py-2 shadow-e2 outline-none"
     >
       {#each items as item (item.label)}
         <ContextMenuPrimitive.Item
           onSelect={item.onselect}
-          class="flex h-6 cursor-default items-center px-3 font-mono text-xs outline-none
-            transition-colors duration-150 data-[highlighted]:bg-surface
-            {item.danger ? 'text-danger' : 'text-on-surface-variant'}"
+          class="flex h-8 cursor-default items-center px-3 font-mono text-xs outline-none
+            transition-colors duration-200 ease-standard
+            data-[highlighted]:bg-secondary-container
+            {item.danger ? 'text-error' : 'text-on-surface-variant'}"
         >
           {item.label}
         </ContextMenuPrimitive.Item>

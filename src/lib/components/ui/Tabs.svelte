@@ -30,7 +30,7 @@
 
   const tone: Record<NonNullable<TabItem["tone"]>, string> = {
     default: "",
-    danger: "text-danger",
+    danger: "text-error",
     ok: "text-ok",
   };
 
@@ -60,8 +60,8 @@
     <div
       transition:uiSlide={{ axis: "x" }}
       class="group flex h-full items-center border-r border-outline-variant font-mono text-xs whitespace-nowrap
-        transition-colors duration-150
-        {item.id === activeId ? 'bg-surface text-on-surface' : 'text-on-surface-muted hover:bg-surface-container-high hover:text-on-surface-variant'}"
+        transition-colors duration-200 ease-standard
+        {item.id === activeId ? 'bg-surface text-on-surface' : 'text-on-surface-muted hover:bg-on-surface/8 hover:text-on-surface-variant'}"
     >
       <button
         type="button"
@@ -87,8 +87,8 @@
         <button
           type="button"
           aria-label={`Close ${item.label}`}
-          class="flex h-4 w-4 items-center justify-center rounded text-on-surface-muted opacity-0
-            transition-opacity hover:bg-surface-container-high hover:text-on-surface group-hover:opacity-100
+          class="flex h-4 w-4 items-center justify-center rounded-xs text-on-surface-muted opacity-0
+            transition-opacity hover:bg-on-surface/8 hover:text-on-surface group-hover:opacity-100
             group-focus-within:opacity-100"
           onclick={() => onClose?.(item.id)}
         >

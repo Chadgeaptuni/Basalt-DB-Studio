@@ -50,7 +50,7 @@
   </div>
 
   {#if errText}
-    <div class="mt-0.5 flex items-start gap-1 whitespace-pre-wrap text-danger">
+    <div class="mt-0.5 flex items-start gap-1 whitespace-pre-wrap text-error">
       <TriangleAlert size={11} strokeWidth={2} class="mt-0.5 shrink-0" />
       <span>{errText}</span>
     </div>

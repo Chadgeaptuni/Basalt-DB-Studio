@@ -62,7 +62,7 @@
 
 <Modal open title="Preview SQL" size="lg" onclose={ddl.close}>
   {#if genError}
-    <p class="font-mono text-xs text-danger">{genError.message}</p>
+    <p class="font-mono text-xs text-error">{genError.message}</p>
   {:else if sql === null}
     <div class="flex items-center gap-2 text-on-surface-muted"><Spinner size="sm" /> Generating…</div>
   {:else}
@@ -70,7 +70,7 @@
       class="max-h-80 overflow-auto rounded-md border border-outline-variant bg-surface p-3 font-mono
         text-xs whitespace-pre-wrap text-on-surface-variant">{sql}</pre>
     {#if runError}
-      <p class="mt-2 font-mono text-xs whitespace-pre-wrap text-danger">{runError}</p>
+      <p class="mt-2 font-mono text-xs whitespace-pre-wrap text-error">{runError}</p>
     {/if}
   {/if}
   {#snippet footer()}

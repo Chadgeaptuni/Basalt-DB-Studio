@@ -173,7 +173,7 @@
     {/if}
     <div class="flex-1"></div>
     {#if pending > 0}
-      <span class="font-mono text-[11px] text-accent tabular-nums">{pending} pending</span>
+      <span class="font-mono text-[11px] text-primary tabular-nums">{pending} pending</span>
     {/if}
     {#if browse?.editable && !queryMode}
       <IconButton icon={Plus} title="Add row" size="sm" onclick={() => tableData.addRow(tab.id)} />
@@ -226,8 +226,8 @@
   {/if}
   {#if view?.commitError}
     <div class="flex items-start gap-2 border-b border-outline-variant px-3 py-1.5 text-xs">
-      <TriangleAlert size={13} strokeWidth={2} class="mt-0.5 shrink-0 text-danger" />
-      <span class="font-mono whitespace-pre-wrap text-danger">{view.commitError.message}</span>
+      <TriangleAlert size={13} strokeWidth={2} class="mt-0.5 shrink-0 text-error" />
+      <span class="font-mono whitespace-pre-wrap text-error">{view.commitError.message}</span>
     </div>
   {/if}
 
@@ -238,7 +238,7 @@
       <div class="flex items-center gap-2 p-3 text-sm text-on-surface-muted"><Spinner size="sm" /> Loading rows…</div>
     {:else if view.error}
       <div class="flex items-start gap-2 p-3 text-sm">
-        <TriangleAlert size={16} strokeWidth={2} class="mt-0.5 shrink-0 text-danger" />
+        <TriangleAlert size={16} strokeWidth={2} class="mt-0.5 shrink-0 text-error" />
         <span class="font-mono text-xs whitespace-pre-wrap text-on-surface-muted">{view.error.message}</span>
       </div>
     {:else if gridRows.length === 0}

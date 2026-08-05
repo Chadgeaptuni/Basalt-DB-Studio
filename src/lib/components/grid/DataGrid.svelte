@@ -137,7 +137,7 @@
 
   const rowBg = (r: number): string => {
     const state = edit?.rowState(r);
-    if (state === "deleted") return "bg-danger-bg";
+    if (state === "deleted") return "bg-error-container";
     if (state === "inserted") return "bg-grid-edited";
     return r % 2 ? "bg-grid-row-alt" : "";
   };
@@ -175,7 +175,7 @@
       </div>
     {/snippet}
     {#snippet row(cells, r)}
-      <div role="row" aria-rowindex={r + 2} class="flex {rowBg(r)} hover:bg-surface-container-high" style="width:{width}px">
+      <div role="row" aria-rowindex={r + 2} class="flex {rowBg(r)} hover:bg-on-surface/8" style="width:{width}px">
         {#each cells as cell, c (c)}
           {@const selected = sel?.r === r && sel?.c === c}
           {@const dirty = edit?.isDirty(r, c)}
@@ -189,7 +189,7 @@
             class="relative flex h-7 shrink-0 items-center border-r border-b border-outline-variant px-2
               font-mono text-xs {cell.numeric ? 'justify-end tabular-nums' : ''}
               {dirty ? 'bg-grid-edited' : ''}
-              {selected ? 'outline outline-1 -outline-offset-1 outline-accent' : ''}
+              {selected ? 'outline outline-1 -outline-offset-1 outline-primary' : ''}
               {edit?.rowState(r) === 'deleted' ? 'text-on-surface-muted line-through' : 'text-on-surface-variant'}"
             style="width:{colWidths[c]}px"
             title={cell.title}
@@ -200,7 +200,7 @@
               <input
                 use:focusSelect
                 bind:value={draft}
-                class="absolute inset-0 h-full w-full border border-accent bg-surface-container-high px-2 font-mono
+                class="absolute inset-0 h-full w-full border border-primary bg-surface-container-high px-2 font-mono
                   text-xs text-on-surface outline-none"
                 onkeydown={(e) => {
                   if (e.key === "Enter") {

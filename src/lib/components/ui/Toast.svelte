@@ -21,20 +21,21 @@
   let { kind, message, action, ondismiss }: Props = $props();
 
   const icons = { success: CircleCheck, error: CircleX, info: Info };
-  const tone = { success: "text-ok", error: "text-danger", info: "text-accent" };
+  const tone = { success: "text-ok", error: "text-error", info: "text-primary" };
   const Icon = $derived(icons[kind]);
 </script>
 
 <div
-  class="flex w-80 items-center gap-2 rounded-md border border-outline-variant bg-surface-container-high px-2.5 py-2
-    text-sm text-on-surface-variant"
+  class="flex w-80 items-center gap-2 rounded-sm border border-outline-variant
+    bg-surface-container-highest px-4 py-3 text-sm text-on-surface shadow-e2"
 >
   <Icon size={16} strokeWidth={2} class={tone[kind]} />
   <span class="flex-1 truncate">{message}</span>
   {#if action}
     <button
       type="button"
-      class="text-xs font-medium text-accent hover:underline"
+      class="rounded-full px-2 py-1 text-xs font-medium text-primary
+        transition-colors duration-200 ease-standard hover:bg-primary/8"
       onclick={() => {
         action.run();
         ondismiss();

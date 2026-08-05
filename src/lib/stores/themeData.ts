@@ -272,12 +272,21 @@ export function themeTokens(seed: ThemeSeed, category: ThemeCategory): Record<st
     "--outline-variant": mix(base.outline, 58, surface),
     "--outline": base.outline,
 
-    "--accent": base.primary,
-    "--accent-fg": base.onPrimary,
+    "--primary": base.primary,
+    "--on-primary": base.onPrimary,
+    // Tonal (filled-tonal buttons, chips, selected rows): a low-chroma wash of
+    // primary over the panel. On a dark palette `primary` is already light
+    // enough to read on that wash; on a light one it must be pulled darker.
+    "--primary-container": mix(base.primary, light ? 14 : 22, surface),
+    "--on-primary-container": light ? mix(base.primary, 82, base.onSurface) : base.primary,
 
-    "--danger": base.error,
-    "--danger-fg": light ? "#ffffff" : background,
-    "--danger-bg": mix(base.error, 15, background),
+    "--secondary-container": mix(base.primary, light ? 7 : 10, surface),
+    "--on-secondary-container": base.onSurface,
+
+    "--error": base.error,
+    "--on-error": light ? "#ffffff" : background,
+    "--error-container": mix(base.error, 15, background),
+    "--on-error-container": light ? mix(base.error, 82, base.onSurface) : base.error,
 
     "--ok": forLight(accents.ok),
     "--warn": forLight(accents.warn),
