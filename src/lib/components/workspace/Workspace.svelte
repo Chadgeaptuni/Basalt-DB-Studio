@@ -54,7 +54,7 @@
     {#if active?.kind === "table"}
       <TableDataView tab={active} />
     {:else}
-      <SplitPane direction="vertical" initial={0.5} min={120}>
+      <SplitPane direction="vertical" initial={0.5} min={120} label="Resize editor and results">
         {#snippet a()}<EditorPane />{/snippet}
         {#snippet b()}<ResultsPane {showHistory} onToggleHistory={() => (showHistory = !showHistory)} />{/snippet}
       </SplitPane>

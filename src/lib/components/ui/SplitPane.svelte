@@ -7,13 +7,21 @@
     initial?: number;
     /** Minimum px for each pane. */
     min?: number;
+    label?: string;
     a: Snippet;
     b: Snippet;
     class?: string;
   }
 
-  let { direction = "horizontal", initial = 0.5, min = 120, a, b, class: cls = "" }: Props =
-    $props();
+  let {
+    direction = "horizontal",
+    initial = 0.5,
+    min = 120,
+    label = "Resize panes",
+    a,
+    b,
+    class: cls = "",
+  }: Props = $props();
 
   let container = $state<HTMLElement>();
   // svelte-ignore state_referenced_locally
@@ -30,9 +38,30 @@
     if (!dragging || !container) return;
     const rect = container.getBoundingClientRect();
     const size = isH ? rect.width : rect.height;
+    if (size <= 0) return;
     const pos = isH ? e.clientX - rect.left : e.clientY - rect.top;
     const clamped = Math.min(size - min, Math.max(min, pos));
     ratio = clamped / size;
+  }
+
+  function setRatio(next: number): void {
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const size = isH ? rect.width : rect.height;
+    if (size <= 0) return;
+    const minimum = Math.min(0.5, min / size);
+    ratio = Math.min(1 - minimum, Math.max(minimum, next));
+  }
+
+  function onKeydown(e: KeyboardEvent): void {
+    const decrement = isH ? "ArrowLeft" : "ArrowUp";
+    const increment = isH ? "ArrowRight" : "ArrowDown";
+    if (e.key === decrement) setRatio(ratio - 0.02);
+    else if (e.key === increment) setRatio(ratio + 0.02);
+    else if (e.key === "Home") setRatio(0);
+    else if (e.key === "End") setRatio(1);
+    else return;
+    e.preventDefault();
   }
   function endDrag(e: PointerEvent): void {
     dragging = false;
@@ -53,12 +82,20 @@
   <div class="overflow-hidden {isH ? 'h-full' : 'w-full'}" style={firstStyle}>
     {@render a()}
   </div>
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions (The WAI-ARIA window-splitter pattern makes a value-bearing separator focusable.) -->
   <div
     role="separator"
+    tabindex="0"
+    aria-label={label}
     aria-orientation={isH ? "vertical" : "horizontal"}
+    aria-valuemin={0}
+    aria-valuemax={100}
+    aria-valuenow={Math.round(ratio * 100)}
     onpointerdown={startDrag}
     onpointermove={onMove}
     onpointerup={endDrag}
+    onpointercancel={endDrag}
+    onkeydown={onKeydown}
     class="relative shrink-0 bg-border transition-colors hover:bg-accent
       {isH ? 'w-px cursor-col-resize' : 'h-px cursor-row-resize'}"
   >
