@@ -31,6 +31,21 @@ function fromEvent(e: KeyboardEvent): string {
   return [...mods, e.key.toLowerCase()].join("+");
 }
 
+// Named keys whose Title-Case form reads badly ("Pageup") or has a conventional
+// glyph. Anything absent falls through to Title Case.
+const KEY_LABELS: Record<string, string> = {
+  enter: "↵",
+  escape: "Esc",
+  pageup: "PgUp",
+  pagedown: "PgDn",
+  delete: "Del",
+  backspace: "⌫",
+  arrowup: "↑",
+  arrowdown: "↓",
+  arrowleft: "←",
+  arrowright: "→",
+};
+
 const registry = new Map<string, ShortcutHandler>();
 let listening = false;
 
@@ -64,9 +79,7 @@ export const keyboard = {
       if (p === "alt") return IS_MAC ? "⌥" : "Alt";
       if (p === "ctrl") return IS_MAC ? "⌃" : "Ctrl";
       if (p === "meta") return IS_MAC ? "⌘" : "Win";
-      if (p === "enter") return "↵";
-      if (p === "escape") return "Esc";
-      return p.length === 1 ? p.toUpperCase() : p.charAt(0).toUpperCase() + p.slice(1);
+      return KEY_LABELS[p] ?? (p.length === 1 ? p.toUpperCase() : p.charAt(0).toUpperCase() + p.slice(1));
     });
     return IS_MAC ? out.join("") : out.join("+");
   },

@@ -33,4 +33,15 @@ describe("keyboard", () => {
     // Non-mac formatting joins with '+'.
     expect(keyboard.label("mod+shift+f")).toBe("Ctrl+Shift+F");
   });
+
+  // The shortcut catalogue renders every key through label(); named keys used to
+  // Title-Case into "Pageup", which is why Settings hand-wrote its own key text.
+  it("labels named keys with their conventional forms", () => {
+    expect(keyboard.label("ctrl+pageup")).toBe("Ctrl+PgUp");
+    expect(keyboard.label("ctrl+pagedown")).toBe("Ctrl+PgDn");
+    expect(keyboard.label("arrowleft")).toBe("←");
+    expect(keyboard.label("delete")).toBe("Del");
+    expect(keyboard.label("escape")).toBe("Esc");
+    expect(keyboard.label("mod+enter")).toBe("Ctrl+↵");
+  });
 });
