@@ -97,6 +97,7 @@
 
   {#if statementTabs.length > 1 && !showHistory}
     <Tabs
+      label="Statement results"
       items={statementTabs}
       activeId={String(tab?.activeStatement ?? 0)}
       onSelect={(id) => tab && (tab.activeStatement = Number(id))}
@@ -136,7 +137,7 @@
     {:else if current && current.rows.length === 0}
       <EmptyState icon={Play} message="0 rows returned." />
     {:else if current}
-      <DataGrid columns={current.columns} rows={current.rows} />
+      <DataGrid label="Query results" columns={current.columns} rows={current.rows} />
     {/if}
   </div>
 </div>

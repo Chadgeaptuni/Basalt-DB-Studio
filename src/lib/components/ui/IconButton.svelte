@@ -8,6 +8,7 @@
     title: string;
     size?: "sm" | "md";
     disabled?: boolean;
+    /** Set only for toggle buttons; omitted for ordinary actions. */
     active?: boolean;
     /** Shows a spinner in place of the icon and blocks clicks while pending. */
     loading?: boolean;
@@ -19,7 +20,7 @@
     title,
     size = "md",
     disabled = false,
-    active = false,
+    active,
     loading = false,
     onclick,
   }: Props = $props();
@@ -37,7 +38,7 @@
   {onclick}
   class="inline-flex items-center justify-center rounded-md {box} transition-colors duration-150
     hover:bg-bg-2 hover:text-fg-0 disabled:opacity-50 disabled:pointer-events-none
-    {active ? 'bg-bg-2 text-fg-0' : 'text-fg-1'}"
+    {active === true ? 'bg-bg-2 text-fg-0' : 'text-fg-1'}"
 >
   {#if loading}
     <Spinner size="sm" />

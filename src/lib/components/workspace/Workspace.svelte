@@ -44,7 +44,13 @@
 </script>
 
 <div class="flex h-full flex-col">
-  <Tabs items={tabItems} activeId={active?.id ?? null} onSelect={editorTabs.select} onClose={editorTabs.close}>
+  <Tabs
+    label="Editor tabs"
+    items={tabItems}
+    activeId={active?.id ?? null}
+    onSelect={editorTabs.select}
+    onClose={editorTabs.close}
+  >
     {#snippet trailing()}
       <IconButton icon={Plus} title={`New tab · ${keyboard.label("mod+t")}`} size="sm" onclick={() => editorTabs.open()} />
     {/snippet}
