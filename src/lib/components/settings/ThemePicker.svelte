@@ -3,6 +3,9 @@
   import Plus from "@lucide/svelte/icons/plus";
   import Pencil from "@lucide/svelte/icons/pencil";
   import Trash2 from "@lucide/svelte/icons/trash-2";
+  import Button from "$lib/components/ui/Button.svelte";
+  import IconButton from "$lib/components/ui/IconButton.svelte";
+  import { confirm } from "$lib/stores/dialogs.svelte";
   import { theme, THEME_VARIANTS, type CustomTheme } from "$lib/stores/theme.svelte";
   import { THEME_DEFINITIONS } from "./themeDefinitions";
   import CustomThemeEditorModal from "./CustomThemeEditorModal.svelte";
@@ -10,23 +13,27 @@
   let editingCustomTheme = $state<CustomTheme | null>(null);
   let showEditorModal = $state(false);
 
-  function createNewTheme() {
+  function createNewTheme(): void {
     editingCustomTheme = null;
     showEditorModal = true;
   }
 
-  function handleEditCustom(item: CustomTheme, e: Event) {
-    e.stopPropagation();
+  function handleEditCustom(item: CustomTheme): void {
     editingCustomTheme = item;
     showEditorModal = true;
   }
 
-  function handleDeleteCustom(id: string, e: Event) {
-    e.stopPropagation();
-    theme.deleteCustomTheme(id);
+  async function handleDeleteCustom(item: CustomTheme): Promise<void> {
+    const ok = await confirm({
+      title: `Delete custom theme “${item.name}”?`,
+      message: "The theme definition will be removed from this device.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (ok) theme.deleteCustomTheme(item.id);
   }
 
-  function handleSaveCustom(item: CustomTheme) {
+  function handleSaveCustom(item: CustomTheme): void {
     const existing = theme.customThemes;
     const index = existing.findIndex((t) => t.id === item.id);
     let next: CustomTheme[];
@@ -42,20 +49,20 @@
   }
 </script>
 
-<div class="flex flex-col gap-4">
-  <!-- Variant Selector & Create Custom Theme Button -->
-  <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-bg-0/60 p-3">
+<div class="flex flex-col gap-3">
+  <div class="flex min-h-9 flex-wrap items-center justify-between gap-2 border-y border-border py-1">
     <div class="flex items-center gap-2">
-      <span class="text-xs font-semibold tracking-wider text-fg-2 uppercase">Variant:</span>
-      <div class="flex items-center gap-1 rounded-md bg-bg-1 p-0.5 border border-border">
+      <span class="text-xs font-medium tracking-wider text-fg-2 uppercase">Variant</span>
+      <div class="flex items-center gap-0.5" role="group" aria-label="Theme variant">
         {#each THEME_VARIANTS as v}
           <button
             type="button"
+            aria-pressed={theme.variant === v}
             onclick={() => theme.setVariant(v)}
-            class="cursor-pointer rounded px-2.5 py-1 text-xs font-medium transition-colors uppercase
+            class="h-6 rounded-md px-2 text-xs font-medium uppercase transition-colors duration-150
               {theme.variant === v
-                ? 'bg-accent text-accent-fg font-semibold'
-                : 'text-fg-2 hover:text-fg-1'}"
+                ? 'bg-bg-2 text-fg-0'
+                : 'text-fg-2 hover:bg-bg-1 hover:text-fg-1'}"
           >
             {v === "amoled" ? "OLED" : v}
           </button>
@@ -63,62 +70,35 @@
       </div>
     </div>
 
-    <button
-      type="button"
-      onclick={createNewTheme}
-      class="flex cursor-pointer items-center gap-1.5 rounded-md border border-border bg-bg-1 px-3 py-1.5 text-xs font-medium text-fg-0 transition-colors hover:border-accent hover:text-accent"
-    >
-      <Plus size={14} />
-      Create Theme
-    </button>
+    <Button size="sm" onclick={createNewTheme}><Plus size={13} /> New custom theme</Button>
   </div>
 
-  <!-- Custom Themes Section (if any exist) -->
   {#if theme.customThemes.length > 0}
     <div class="flex flex-col gap-2">
-      <span class="text-xs font-semibold tracking-wider text-fg-2 uppercase">Custom Themes</span>
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <h4 class="text-xs font-medium tracking-wider text-fg-2 uppercase">Custom themes</h4>
+      <div class="divide-y divide-border border-y border-border">
         {#each theme.customThemes as custom (custom.id)}
-          <div
-            role="button"
-            tabindex="0"
-            onclick={() => theme.set(custom.id)}
-            onkeydown={(e) => e.key === 'Enter' && theme.set(custom.id)}
-            class="flex items-center gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer
-              {theme.current === custom.id
-                ? 'border-accent bg-bg-1 text-fg-0'
-                : 'border-border bg-bg-0 text-fg-1 hover:border-border-strong hover:bg-bg-1/60'}"
-          >
-            <span class="flex h-9 w-12 shrink-0 items-center justify-center rounded border border-border p-1" style="background-color: {custom.colors.surface}">
-              <span class="h-5 w-2 rounded-full" style="background-color: {custom.colors.primary}"></span>
-              <span class="ml-1 h-5 w-2 rounded-full" style="background-color: {custom.colors.border}"></span>
-            </span>
-            <span class="min-w-0 flex-1">
-              <span class="flex items-center gap-1 text-xs font-semibold text-fg-0">
-                <span class="truncate">{custom.name}</span>
-                {#if theme.current === custom.id}
-                  <Check size={14} class="shrink-0 text-accent" />
-                {/if}
+          <div class="flex h-11 items-center transition-colors hover:bg-bg-1">
+            <button
+              type="button"
+              aria-pressed={theme.current === custom.id}
+              onclick={() => theme.set(custom.id)}
+              class="flex h-full min-w-0 flex-1 items-center gap-2 px-2 text-left"
+            >
+              <span
+                class="flex h-7 w-10 shrink-0 items-center justify-center rounded-md border border-border p-1"
+                style="background-color: {custom.colors.surface}"
+                aria-hidden="true"
+              >
+                <span class="h-4 w-1.5 rounded-full" style="background-color: {custom.colors.primary}"></span>
+                <span class="ml-1 h-4 w-1.5 rounded-full" style="background-color: {custom.colors.border}"></span>
               </span>
-              <span class="mt-0.5 block truncate text-[11px] text-fg-2">User custom theme</span>
-            </span>
-            <div class="flex items-center gap-1">
-              <button
-                type="button"
-                title="Edit theme"
-                onclick={(e) => handleEditCustom(custom, e)}
-                class="cursor-pointer p-1 text-fg-2 hover:text-fg-0"
-              >
-                <Pencil size={13} />
-              </button>
-              <button
-                type="button"
-                title="Delete theme"
-                onclick={(e) => handleDeleteCustom(custom.id, e)}
-                class="cursor-pointer p-1 text-fg-2 hover:text-danger"
-              >
-                <Trash2 size={13} />
-              </button>
+              <span class="min-w-0 flex-1 truncate text-xs font-medium text-fg-0">{custom.name}</span>
+              {#if theme.current === custom.id}<Check size={14} class="shrink-0 text-accent" />{/if}
+            </button>
+            <div class="flex shrink-0 items-center pr-1">
+              <IconButton icon={Pencil} title={`Edit ${custom.name}`} size="sm" onclick={() => handleEditCustom(custom)} />
+              <IconButton icon={Trash2} title={`Delete ${custom.name}`} size="sm" onclick={() => void handleDeleteCustom(custom)} />
             </div>
           </div>
         {/each}
@@ -126,33 +106,33 @@
     </div>
   {/if}
 
-  <!-- Presets Grid -->
-  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-    {#each THEME_DEFINITIONS as preset (preset.id)}
-      <button
-        type="button"
-        onclick={() => theme.set(preset.id)}
-        class="flex items-center gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer
-          {theme.current === preset.id
-            ? 'border-accent bg-bg-1 text-fg-0'
-            : 'border-border bg-bg-0 text-fg-1 hover:border-border-strong hover:bg-bg-1/60'}"
-      >
-        <span class="flex h-9 w-12 shrink-0 items-center justify-center gap-1 rounded border border-border bg-bg-0 p-1">
-          {#each preset.colors as color}
-            <span class="h-5 w-2 rounded-full" style="background-color: {color}"></span>
-          {/each}
-        </span>
-        <span class="min-w-0 flex-1">
-          <span class="flex items-center gap-1.5 text-xs font-semibold text-fg-0">
-            <span class="truncate">{preset.name}</span>
-            {#if theme.current === preset.id}
-              <Check size={14} class="shrink-0 text-accent" />
-            {/if}
+  <div class="flex flex-col gap-2">
+    <h4 class="text-xs font-medium tracking-wider text-fg-2 uppercase">Presets</h4>
+    <div class="grid grid-cols-1 border-y border-border sm:grid-cols-2">
+      {#each THEME_DEFINITIONS as preset, i (preset.id)}
+        <button
+          type="button"
+          aria-pressed={theme.current === preset.id}
+          onclick={() => theme.set(preset.id)}
+          class="flex h-11 min-w-0 items-center gap-2 border-b border-border px-2 text-left
+            transition-colors duration-150 hover:bg-bg-1 {i % 2 === 0 ? 'sm:border-r' : ''}
+            {theme.current === preset.id ? 'bg-bg-1 text-fg-0' : 'text-fg-1'}"
+        >
+          <span class="flex h-7 w-10 shrink-0 items-center justify-center gap-1 rounded-md border border-border bg-bg-0 p-1" aria-hidden="true">
+            {#each preset.colors as color}
+              <span class="h-4 w-1.5 rounded-full" style="background-color: {color}"></span>
+            {/each}
           </span>
-          <span class="mt-0.5 block truncate text-[11px] text-fg-2">{preset.description}</span>
-        </span>
-      </button>
-    {/each}
+          <span class="min-w-0 flex-1">
+            <span class="flex items-center gap-1 text-xs font-medium text-fg-0">
+              <span class="truncate">{preset.name}</span>
+              {#if theme.current === preset.id}<Check size={14} class="shrink-0 text-accent" />{/if}
+            </span>
+            <span class="block truncate text-[11px] text-fg-2">{preset.description}</span>
+          </span>
+        </button>
+      {/each}
+    </div>
   </div>
 </div>
 
