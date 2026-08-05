@@ -24,8 +24,9 @@
     columns: ColumnInfo[];
     rows: CellValue[][];
     edit?: EditController;
+    label?: string;
   }
-  let { columns, rows, edit }: Props = $props();
+  let { columns, rows, edit, label = "Data grid" }: Props = $props();
 
   const ROW_H = 28;
   // Re-formats when rows change or the datetime-display setting flips (DESIGN §10).
@@ -58,6 +59,8 @@
   let sel = $state<{ r: number; c: number } | null>(null);
   let editing = $state<{ r: number; c: number } | null>(null);
   let draft = $state("");
+  let grid = $state<HTMLElement>();
+  let viewport = $state<HTMLElement>();
 
   const isReadOnlyCell = (r: number, c: number): boolean => {
     const kind = rows[r]?.[c]?.kind;
@@ -69,9 +72,16 @@
     node.select();
   }
 
-  function select(r: number, c: number): void {
+  function select(r: number, c: number, focus = false): void {
     sel = { r, c };
     edit?.onSelect?.(r, c);
+    if (focus) grid?.focus();
+    if (!viewport) return;
+    const headerHeight = 36;
+    const rowTop = headerHeight + r * ROW_H;
+    const rowBottom = rowTop + ROW_H;
+    if (rowTop < viewport.scrollTop + headerHeight) viewport.scrollTop = Math.max(0, rowTop - headerHeight);
+    else if (rowBottom > viewport.scrollTop + viewport.clientHeight) viewport.scrollTop = rowBottom - viewport.clientHeight;
   }
 
   function startEdit(r: number, c: number): void {
@@ -87,12 +97,12 @@
   }
 
   function onGridKeydown(e: KeyboardEvent): void {
-    if (!edit || editing || !sel) return;
+    if (editing || !sel) return;
     const { r, c } = sel;
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && edit) {
       e.preventDefault();
       startEdit(r, c);
-    } else if (e.key === "Delete" || e.key === "Backspace") {
+    } else if (edit && (e.key === "Delete" || e.key === "Backspace")) {
       e.preventDefault();
       if (!isReadOnlyCell(r, c)) edit.setNull(r, c);
     } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "c") {
@@ -111,6 +121,12 @@
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       select(Math.max(0, r - 1), c);
+    } else if (e.key === "Tab") {
+      const last = rows.length * columns.length - 1;
+      const next = r * columns.length + c + (e.shiftKey ? -1 : 1);
+      if (next < 0 || next > last) return;
+      e.preventDefault();
+      select(Math.floor(next / columns.length), next % columns.length);
     }
   }
 
@@ -123,16 +139,25 @@
 </script>
 
 <div
+  bind:this={grid}
   role="grid"
-  tabindex={edit ? 0 : undefined}
+  tabindex="0"
+  aria-label={label}
+  aria-rowcount={rows.length + 1}
+  aria-colcount={columns.length}
   class="h-full outline-none"
   onkeydown={onGridKeydown}
+  onfocus={(e) => {
+    if (e.currentTarget === e.target && !sel && rows.length > 0 && columns.length > 0) select(0, 0);
+  }}
 >
-  <VirtualList items={display} rowHeight={ROW_H} contentWidth={width} class="h-full">
+  <VirtualList bind:viewport items={display} rowHeight={ROW_H} contentWidth={width} class="h-full">
     {#snippet header()}
-      <div class="flex bg-grid-header-bg" style="width:{width}px">
+      <div role="row" aria-rowindex="1" class="flex bg-grid-header-bg" style="width:{width}px">
         {#each columns as col, i (col.name)}
           <div
+            role="columnheader"
+            aria-colindex={i + 1}
             class="flex h-9 shrink-0 flex-col justify-center gap-0.5 border-r border-b border-border
               px-2 font-mono"
             style="width:{colWidths[i]}px"
@@ -145,15 +170,17 @@
       </div>
     {/snippet}
     {#snippet row(cells, r)}
-      <div class="flex {rowBg(r)} hover:bg-bg-2" style="width:{width}px">
+      <div role="row" aria-rowindex={r + 2} class="flex {rowBg(r)} hover:bg-bg-2" style="width:{width}px">
         {#each cells as cell, c (c)}
-          {@const selected = edit && sel?.r === r && sel?.c === c}
+          {@const selected = sel?.r === r && sel?.c === c}
           {@const dirty = edit?.isDirty(r, c)}
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <!-- Keyboard navigation/editing is handled on the role=grid container. -->
           <div
             role="gridcell"
             tabindex="-1"
+            aria-colindex={c + 1}
+            aria-selected={selected}
             class="relative flex h-7 shrink-0 items-center border-r border-b border-border px-2
               font-mono text-xs {cell.numeric ? 'justify-end tabular-nums' : ''}
               {dirty ? 'bg-grid-edited' : ''}
@@ -161,7 +188,7 @@
               {edit?.rowState(r) === 'deleted' ? 'text-fg-2 line-through' : 'text-fg-1'}"
             style="width:{colWidths[c]}px"
             title={cell.title}
-            onclick={() => edit && select(r, c)}
+            onclick={() => select(r, c, true)}
             ondblclick={() => startEdit(r, c)}
           >
             {#if editing && editing.r === r && editing.c === c}

@@ -14,6 +14,8 @@
     header?: Snippet;
     /** Fixed inner content width (px) — enables horizontal scroll for wide grids. */
     contentWidth?: number;
+    /** Optional viewport binding for consumers that move a virtual selection. */
+    viewport?: HTMLElement;
     class?: string;
   }
 
@@ -24,12 +26,12 @@
     row,
     header,
     contentWidth,
+    viewport = $bindable(),
     class: cls = "",
   }: Props = $props();
 
   const widthStyle = $derived(contentWidth ? `width:${contentWidth}px;` : "");
 
-  let viewport = $state<HTMLElement>();
   let scrollTop = $state(0);
   let clientHeight = $state(0);
 

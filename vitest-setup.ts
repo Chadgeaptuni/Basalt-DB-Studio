@@ -1,5 +1,13 @@
 import "@testing-library/jest-dom/vitest";
 
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
 // Svelte transitions use the Web Animations API, which jsdom does not provide.
 // Finish animations on the next microtask so transition-driven overlays can be
 // tested without changing their production timing behavior.

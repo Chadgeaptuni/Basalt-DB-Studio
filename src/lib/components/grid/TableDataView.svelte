@@ -188,7 +188,12 @@
     {:else if gridRows.length === 0}
       <EmptyState message="No rows. Use Add row to insert one." />
     {:else}
-      <DataGrid {columns} rows={gridRows} edit={browse?.editable ? controller : undefined} />
+      <DataGrid
+        label={tab.ref ? `Table data for ${tab.ref.namespace}.${tab.ref.table}` : "Table data"}
+        {columns}
+        rows={gridRows}
+        edit={browse?.editable ? controller : undefined}
+      />
     {/if}
   </div>
 </div>
