@@ -14,7 +14,7 @@
 </script>
 
 <div class="flex h-full flex-col">
-  <div class="flex h-7 shrink-0 items-center gap-2 border-b border-outline-variant px-2 font-mono text-[11px] text-on-surface-muted">
+  <div class="flex h-8 shrink-0 items-center gap-2 border-b border-outline-variant px-2 font-mono text-[11px] text-on-surface-muted">
     <span class="tabular-nums">{items.length} in history</span>
     <div class="flex-1"></div>
     <IconButton icon={Trash2} title="Clear history" size="sm" disabled={items.length === 0} onclick={() => history.clear()} />

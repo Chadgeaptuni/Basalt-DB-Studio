@@ -10,6 +10,7 @@
     | "tonal"
     | "outlined"
     | "text"
+    | "text-error"
     | "danger"
     | "primary"
     | "secondary"
@@ -49,6 +50,9 @@
     tonal: "bg-primary-container text-on-primary-container",
     outlined: "border border-outline text-on-surface",
     text: "text-primary",
+    // The text button *inside* an error surface — primary blue on an error
+    // container reads as an unrelated link and fails contrast.
+    "text-error": "text-on-error-container",
     danger: "bg-error-container text-on-error-container",
     primary: "bg-primary text-on-primary",
     secondary: "border border-outline text-on-surface",

@@ -76,7 +76,7 @@
       <div class="min-h-0 flex-1 overflow-auto p-4">
         {#if activeTab === "general"}
           <div class="divide-y divide-outline-variant border-y border-outline-variant">
-            <label class="flex items-center gap-3 py-2">
+            <label class="flex items-center gap-3 py-3">
               <span class="min-w-0 flex-1">
                 <span class="block text-xs text-on-surface">Date-time display</span>
                 <span class="block text-[11px] text-on-surface-muted">How timestamps render in data grids.</span>
@@ -89,7 +89,7 @@
                 />
               </span>
             </label>
-            <label class="flex items-center gap-3 py-2">
+            <label class="flex items-center gap-3 py-3">
               <span class="min-w-0 flex-1">
                 <span class="block text-xs text-on-surface">Default row limit</span>
                 <span class="block text-[11px] text-on-surface-muted">Fetch ceiling per statement.</span>
@@ -110,7 +110,7 @@
                 </h3>
                 <div class="divide-y divide-outline-variant border-y border-outline-variant">
                   {#each group.items as item (item.label)}
-                    <div class="flex h-7 items-center justify-between gap-3">
+                    <div class="flex h-8 items-center justify-between gap-3">
                       <span class="flex min-w-0 items-center gap-2">
                         <item.icon size={14} class="shrink-0 text-on-surface-muted" />
                         <span class="truncate text-xs text-on-surface-variant">{item.label}</span>

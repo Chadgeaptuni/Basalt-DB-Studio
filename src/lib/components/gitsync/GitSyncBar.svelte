@@ -23,7 +23,7 @@
 </script>
 
 <div class="shrink-0 border-t border-outline-variant bg-surface-container px-2 py-1 font-mono text-[11px] text-on-surface-muted">
-  <div class="flex h-6 items-center gap-1.5">
+  <div class="flex h-8 items-center gap-1.5">
     <GitBranch size={12} strokeWidth={2} class="shrink-0" />
     {#if !st || !st.installed}
       <span class="truncate text-on-surface-muted">git not installed</span>

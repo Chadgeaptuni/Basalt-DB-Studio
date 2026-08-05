@@ -60,7 +60,7 @@
 
 <Popover.Root bind:open>
   <Popover.Trigger
-    class="flex h-7 min-w-56 max-w-96 items-center gap-2 rounded-md border border-outline-variant
+    class="flex h-8 min-w-56 max-w-96 items-center gap-2 rounded-full border border-outline-variant
       bg-surface px-2 text-xs transition-colors hover:bg-on-surface/8"
     title="Connection"
   >

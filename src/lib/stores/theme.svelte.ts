@@ -119,15 +119,19 @@ export const theme = {
   },
 
   /** Quick toggle: swap to the other authored appearance of the same family. A
-   *  theme with only one appearance (OLED, custom) falls back to Basalt. */
+   *  theme with only one appearance (OLED, custom) falls back to Basalt.
+   *
+   *  Self-references go through `theme`, not `this`: call sites pass these
+   *  methods straight to `onclick={theme.toggleAppearance}`, which detaches the
+   *  receiver and would make `this` undefined. */
   toggleAppearance() {
-    const want: ThemeCategory = this.isLight ? "dark" : "light";
+    const want: ThemeCategory = theme.isLight ? "dark" : "light";
     const seedId = themeEntry(currentTheme)?.seedId;
     const paired =
       seedId && currentTheme !== OLED_THEME_ID
         ? THEME_ENTRIES.find((e) => e.seedId === seedId && e.category === want)
         : undefined;
-    this.set(paired?.id ?? `basalt-${want}`);
+    theme.set(paired?.id ?? `basalt-${want}`);
   },
 
   saveCustomThemes(themes: CustomTheme[]) {
@@ -138,7 +142,7 @@ export const theme = {
 
   deleteCustomTheme(id: string) {
     const next = customThemesList.filter((t) => t.id !== id);
-    if (currentTheme === id) this.set(DEFAULT_THEME);
-    this.saveCustomThemes(next);
+    if (currentTheme === id) theme.set(DEFAULT_THEME);
+    theme.saveCustomThemes(next);
   },
 };

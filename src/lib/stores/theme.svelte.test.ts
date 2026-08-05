@@ -49,6 +49,27 @@ describe("theme store (DOM application)", () => {
     expect(theme.current).toBe("basalt-light");
   });
 
+  // Regression: TopBar wires `onclick={theme.toggleAppearance}`, which detaches
+  // the receiver — the method threw "this.set is not a function" at runtime while
+  // every call-with-receiver test stayed green.
+  it("toggles when the method is detached from the store", () => {
+    theme.set("catppuccin-dark");
+    const detached = theme.toggleAppearance;
+    expect(() => detached()).not.toThrow();
+    expect(theme.current).toBe("catppuccin-light");
+  });
+
+  it("deletes a custom theme when the method is detached", () => {
+    theme.saveCustomThemes([
+      { id: "custom-del", name: "Gone", colors: { primary: "#ff8800", surface: "#101418", border: "#2a2f36", text: "#eef2f6" } },
+    ]);
+    theme.set("custom-del");
+    const detached = theme.deleteCustomTheme;
+    expect(() => detached("custom-del")).not.toThrow();
+    expect(theme.current).toBe("basalt-dark");
+    expect(theme.customThemes).toHaveLength(0);
+  });
+
   it("applies a custom theme's accent and reaches the whole contract", () => {
     theme.saveCustomThemes([
       { id: "custom-1", name: "Mine", colors: { primary: "#ff8800", surface: "#101418", border: "#2a2f36", text: "#eef2f6" } },
