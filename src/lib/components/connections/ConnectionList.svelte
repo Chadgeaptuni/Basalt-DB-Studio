@@ -8,13 +8,13 @@
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import AccordionSection from "$lib/components/ui/AccordionSection.svelte";
-  import Badge from "$lib/components/ui/Badge.svelte";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import ConnectionForm from "./ConnectionForm.svelte";
+  import ConnectionRow from "./ConnectionRow.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { confirm } from "$lib/stores/dialogs.svelte";
-  import type { ConnectionProfile, Engine, ErrorKind } from "$lib/api/types";
+  import type { ConnectionProfile, ErrorKind } from "$lib/api/types";
 
   // Kind-specific, actionable headings for connect failures (DESIGN §8) — the
   // backend message follows below. secretNotFound/keychainUnavailable/vaultLocked
@@ -36,19 +36,6 @@
   $effect(() => {
     void connections.load();
   });
-
-  const ENGINE_TAG: Record<Engine, string> = { postgres: "PG", mysql: "MY", sqlite: "SQ" };
-  const DOT: Record<string, string> = {
-    connected: "bg-ok",
-    connecting: "bg-warn",
-    error: "bg-danger",
-    disconnected: "bg-fg-2",
-  };
-
-  function subtitle(p: ConnectionProfile): string {
-    if (p.engine === "sqlite") return p.filePath ?? "";
-    return `${p.host ?? ""}${p.port ? `:${p.port}` : ""}${p.database ? `/${p.database}` : ""}`;
-  }
 
   async function toggle(p: ConnectionProfile): Promise<void> {
     const s = connections.statusFor(p.id);
@@ -99,24 +86,13 @@
       <ul class="divide-y divide-border">
         {#each connections.profiles as p (p.id)}
           {@const st = connections.statusFor(p.id)}
-          {@const isActive = connections.active?.sessionId === st.session?.sessionId && !!st.session}
           <li>
-            <div
-              class="group flex h-9 items-center gap-2 px-3 text-sm transition-colors duration-150
-                {isActive ? 'bg-bg-2' : 'hover:bg-bg-2'}"
+            <ConnectionRow
+              profile={p}
+              selected={!!st.session && connections.active?.sessionId === st.session.sessionId}
+              onclick={() => selectRow(p)}
             >
-              <span class="h-1.5 w-1.5 shrink-0 rounded-full {DOT[st.status]}"></span>
-              <Badge>{ENGINE_TAG[p.engine]}</Badge>
-              <button
-                type="button"
-                class="min-w-0 flex-1 text-left"
-                onclick={() => selectRow(p)}
-                title={subtitle(p)}
-              >
-                <div class="truncate text-fg-0">{p.name}</div>
-                <div class="truncate font-mono text-[11px] text-fg-2">{subtitle(p)}</div>
-              </button>
-              <div class="flex shrink-0 items-center opacity-0 group-hover:opacity-100">
+              {#snippet actions()}
                 <IconButton
                   icon={st.status === "connected" ? Unplug : Plug}
                   title={st.status === "connected" ? "Disconnect" : "Connect"}
@@ -125,9 +101,8 @@
                 />
                 <IconButton icon={Pencil} title="Edit" size="sm" onclick={() => (form = { profile: p })} />
                 <IconButton icon={Trash2} title="Delete" size="sm" onclick={() => del(p)} />
-              </div>
-              {#if st.status === "connecting"}<Spinner size="sm" />{/if}
-            </div>
+              {/snippet}
+            </ConnectionRow>
             {#if st.status === "error" && st.error}
               <div class="flex items-start gap-2 bg-danger-bg px-3 py-1.5 text-xs text-danger">
                 <div class="min-w-0 flex-1">
