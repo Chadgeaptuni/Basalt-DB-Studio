@@ -8,26 +8,13 @@
   import { THEME_DEFINITIONS } from "./themeDefinitions";
   import { settings } from "$lib/stores/settings.svelte";
   import { theme } from "$lib/stores/theme.svelte";
+  import { SHORTCUT_GROUPS } from "$lib/utils/shortcuts";
   import type { DatetimeDisplay } from "$lib/api/types";
 
   // Icons
   import Palette from "@lucide/svelte/icons/palette";
   import Keyboard from "@lucide/svelte/icons/keyboard";
   import X from "@lucide/svelte/icons/x";
-  import Play from "@lucide/svelte/icons/play";
-  import PlaySquare from "@lucide/svelte/icons/play-square";
-  import AlignLeft from "@lucide/svelte/icons/align-left";
-  import PanelLeft from "@lucide/svelte/icons/panel-left";
-  import FilePlus from "@lucide/svelte/icons/file-plus";
-  import FileX from "@lucide/svelte/icons/file-x";
-  import Layers from "@lucide/svelte/icons/layers";
-  import Save from "@lucide/svelte/icons/save";
-  import XCircle from "@lucide/svelte/icons/x-circle";
-  import Grid from "@lucide/svelte/icons/grid";
-  import Edit3 from "@lucide/svelte/icons/edit-3";
-  import Undo from "@lucide/svelte/icons/undo";
-  import CheckSquare from "@lucide/svelte/icons/check-square";
-  import Copy from "@lucide/svelte/icons/copy";
 
   type SettingsTab = "appearance" | "shortcuts";
 
@@ -49,59 +36,6 @@
     if (Number.isFinite(n) && n > 0) settings.setDefaultRowLimit(n);
   }
 
-  interface ShortcutItem {
-    label: string;
-    combo: string;
-    icon: any;
-    customKeys?: string[];
-  }
-
-  interface ShortcutGroup {
-    title: string;
-    items: ShortcutItem[];
-  }
-
-  const shortcutGroups: ShortcutGroup[] = [
-    {
-      title: "RECOMMENDED & FREQUENT",
-      items: [
-        { label: "Run statement at cursor", combo: "mod+enter", icon: Play },
-        { label: "Run full SQL script", combo: "mod+shift+enter", icon: PlaySquare },
-        { label: "Format SQL query", combo: "mod+shift+f", icon: AlignLeft },
-        { label: "Toggle left sidebar", combo: "mod+b", icon: PanelLeft },
-      ],
-    },
-    {
-      title: "NAVIGATION & WORKSPACE",
-      items: [
-        { label: "New SQL editor tab", combo: "mod+t", icon: FilePlus },
-        { label: "Close editor tab", combo: "mod+w", icon: FileX },
-        {
-          label: "Switch editor tabs",
-          combo: "mod+pageup",
-          icon: Layers,
-          customKeys: ["Ctrl", "PgUp / PgDn"],
-        },
-        { label: "Save active query", combo: "mod+s", icon: Save },
-        { label: "Cancel query / Close overlay", combo: "escape", icon: XCircle },
-      ],
-    },
-    {
-      title: "DATA GRID & EDITING",
-      items: [
-        {
-          label: "Navigate grid cells",
-          combo: "tab",
-          icon: Grid,
-          customKeys: ["Arrows", "Tab"],
-        },
-        { label: "Edit selected cell", combo: "enter", icon: Edit3, customKeys: ["Enter"] },
-        { label: "Revert cell edit", combo: "escape", icon: Undo, customKeys: ["Esc"] },
-        { label: "Commit staged edits", combo: "mod+enter", icon: CheckSquare },
-        { label: "Copy cell or selection", combo: "mod+c", icon: Copy },
-      ],
-    },
-  ];
 </script>
 
 <Modal open title="Settings" size="4xl" headerHidden padding={false} {onclose}>
@@ -200,31 +134,21 @@
           </div>
         {:else if activeTab === "shortcuts"}
           <div class="flex flex-col gap-6">
-            {#each shortcutGroups as group}
+            {#each SHORTCUT_GROUPS as group (group.title)}
               <section class="flex flex-col gap-2">
                 <h3 class="text-[11px] font-semibold tracking-wider text-fg-2 uppercase">
                   {group.title}
                 </h3>
 
                 <div class="flex flex-col rounded-lg border border-border bg-bg-0/40 divide-y divide-border">
-                  {#each group.items as item}
+                  {#each group.items as item (item.label)}
                     <div class="flex items-center justify-between px-3.5 py-2.5">
                       <div class="flex items-center gap-3">
-                        <svelte:component this={item.icon} size={15} class="text-fg-2 shrink-0" />
+                        <item.icon size={15} class="text-fg-2 shrink-0" />
                         <span class="text-xs text-fg-1">{item.label}</span>
                       </div>
                       <div class="flex items-center gap-1">
-                        {#if item.customKeys}
-                          {#each item.customKeys as key}
-                            <kbd
-                              class="inline-flex h-5 items-center rounded border border-border bg-bg-2 px-1.5 font-mono text-[11px] leading-none text-fg-1"
-                            >
-                              {key}
-                            </kbd>
-                          {/each}
-                        {:else}
-                          <Kbd combo={item.combo} />
-                        {/if}
+                        {#each item.combos as combo (combo)}<Kbd {combo} />{/each}
                       </div>
                     </div>
                   {/each}
