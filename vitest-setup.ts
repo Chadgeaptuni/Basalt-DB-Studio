@@ -1,5 +1,22 @@
 import "@testing-library/jest-dom/vitest";
 
+// Svelte transitions use the Web Animations API, which jsdom does not provide.
+// Finish animations on the next microtask so transition-driven overlays can be
+// tested without changing their production timing behavior.
+if (typeof Element.prototype.animate !== "function") {
+  Element.prototype.animate = function () {
+    const animation = {
+      currentTime: 0,
+      effect: null,
+      onfinish: null as ((event: AnimationPlaybackEvent) => void) | null,
+      playState: "finished",
+      cancel() {},
+    };
+    queueMicrotask(() => animation.onfinish?.(new Event("finish") as AnimationPlaybackEvent));
+    return animation as unknown as Animation;
+  };
+}
+
 // jsdom under vitest doesn't always expose localStorage as a global; stores read it
 // at import time, so install a minimal in-memory shim when it's missing.
 if (typeof globalThis.localStorage === "undefined") {

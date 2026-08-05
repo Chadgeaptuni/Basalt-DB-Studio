@@ -14,6 +14,7 @@ import {
 } from "svelte/transition";
 
 const reduced = (): boolean =>
+  typeof window.matchMedia === "function" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export function uiFade(node: Element, params: FadeParams = {}) {
