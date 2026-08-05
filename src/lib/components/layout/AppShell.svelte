@@ -1,8 +1,7 @@
 <script lang="ts">
-  import BrandMark from "$lib/components/ui/BrandMark.svelte";
   import Sidebar from "./Sidebar.svelte";
   import StatusBar from "./StatusBar.svelte";
-  import EmptyState from "$lib/components/ui/EmptyState.svelte";
+  import StartPanel from "./StartPanel.svelte";
   import Workspace from "$lib/components/workspace/Workspace.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { keyboard } from "$lib/utils/keyboard";
@@ -30,11 +29,7 @@
       {#if connections.active}
         <Workspace />
       {:else}
-        <EmptyState
-          icon={BrandMark}
-          iconSize={24}
-          message="Connect to a database to start querying."
-        />
+        <StartPanel />
       {/if}
     </main>
   </div>
