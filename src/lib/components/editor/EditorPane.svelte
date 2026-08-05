@@ -129,8 +129,8 @@
 
 </script>
 
-<div class="flex h-full flex-col bg-bg-0">
-  <div class="flex h-9 shrink-0 items-center gap-1.5 border-b border-border px-2">
+<div class="flex h-full flex-col bg-surface">
+  <div class="flex h-9 shrink-0 items-center gap-1.5 border-b border-outline-variant px-2">
     <Button
       variant="primary"
       size="sm"
@@ -140,7 +140,7 @@
     >
       <Play size={13} strokeWidth={2} /> Run
     </Button>
-    <span class="font-mono text-[11px] text-fg-2">{keyboard.label("mod+enter")} at cursor</span>
+    <span class="font-mono text-[11px] text-on-surface-muted">{keyboard.label("mod+enter")} at cursor</span>
     <div class="flex-1"></div>
     <IconButton
       icon={Save}

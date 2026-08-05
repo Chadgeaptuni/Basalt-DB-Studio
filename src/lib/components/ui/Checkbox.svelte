@@ -11,7 +11,7 @@
 </script>
 
 <label
-  class="inline-flex items-center gap-2 text-sm text-fg-1 select-none
+  class="inline-flex items-center gap-2 text-sm text-on-surface-variant select-none
     {disabled ? 'opacity-50' : 'cursor-pointer'}"
 >
   <input
@@ -23,7 +23,7 @@
       checked = e.currentTarget.checked;
       onchange?.(checked);
     }}
-    class="h-4 w-4 rounded border-border bg-bg-0 accent-accent"
+    class="h-4 w-4 rounded border-outline-variant bg-surface accent-accent"
   />
   {#if label}<span>{label}</span>{/if}
 </label>

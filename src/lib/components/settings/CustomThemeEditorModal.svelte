@@ -46,12 +46,12 @@
 <Modal open title={themeToEdit ? "Edit Custom Theme" : "Create Custom Theme"} size="lg" {onclose}>
   <div class="flex flex-col gap-4">
     <label class="flex flex-col gap-1.5">
-      <span class="text-xs font-semibold tracking-wider text-fg-2 uppercase">Theme Name</span>
+      <span class="text-xs font-semibold tracking-wider text-on-surface-muted uppercase">Theme Name</span>
       <Input value={name} oninput={(e) => (name = (e.target as HTMLInputElement).value)} />
     </label>
 
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <label class="flex items-center gap-3 rounded-lg border border-border bg-bg-0/60 p-3">
+      <label class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface/60 p-3">
         <input
           type="color"
           aria-label="Primary Accent"
@@ -59,12 +59,12 @@
           class="h-8 w-10 cursor-pointer rounded border-0 bg-transparent"
         />
         <div class="flex flex-1 flex-col">
-          <span class="text-xs font-medium text-fg-0">Primary Accent</span>
-          <span class="font-mono text-[11px] text-fg-2">{primary}</span>
+          <span class="text-xs font-medium text-on-surface">Primary Accent</span>
+          <span class="font-mono text-[11px] text-on-surface-muted">{primary}</span>
         </div>
       </label>
 
-      <label class="flex items-center gap-3 rounded-lg border border-border bg-bg-0/60 p-3">
+      <label class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface/60 p-3">
         <input
           type="color"
           aria-label="Surface Background"
@@ -72,12 +72,12 @@
           class="h-8 w-10 cursor-pointer rounded border-0 bg-transparent"
         />
         <div class="flex flex-1 flex-col">
-          <span class="text-xs font-medium text-fg-0">Surface Background</span>
-          <span class="font-mono text-[11px] text-fg-2">{surface}</span>
+          <span class="text-xs font-medium text-on-surface">Surface Background</span>
+          <span class="font-mono text-[11px] text-on-surface-muted">{surface}</span>
         </div>
       </label>
 
-      <label class="flex items-center gap-3 rounded-lg border border-border bg-bg-0/60 p-3">
+      <label class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface/60 p-3">
         <input
           type="color"
           aria-label="Border Color"
@@ -85,12 +85,12 @@
           class="h-8 w-10 cursor-pointer rounded border-0 bg-transparent"
         />
         <div class="flex flex-1 flex-col">
-          <span class="text-xs font-medium text-fg-0">Border Color</span>
-          <span class="font-mono text-[11px] text-fg-2">{border}</span>
+          <span class="text-xs font-medium text-on-surface">Border Color</span>
+          <span class="font-mono text-[11px] text-on-surface-muted">{border}</span>
         </div>
       </label>
 
-      <label class="flex items-center gap-3 rounded-lg border border-border bg-bg-0/60 p-3">
+      <label class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface/60 p-3">
         <input
           type="color"
           aria-label="Text Color"
@@ -98,8 +98,8 @@
           class="h-8 w-10 cursor-pointer rounded border-0 bg-transparent"
         />
         <div class="flex flex-1 flex-col">
-          <span class="text-xs font-medium text-fg-0">Text Color</span>
-          <span class="font-mono text-[11px] text-fg-2">{text}</span>
+          <span class="text-xs font-medium text-on-surface">Text Color</span>
+          <span class="font-mono text-[11px] text-on-surface-muted">{text}</span>
         </div>
       </label>
     </div>

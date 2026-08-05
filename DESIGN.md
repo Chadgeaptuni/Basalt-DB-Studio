@@ -18,7 +18,7 @@ AI models default to outdated "Dribbble-style" trends. The following are
 - ❌ **No gradients.** No `bg-gradient-*`, no gradient text, no gradient borders.
 - ❌ **No glassmorphism.** No `backdrop-blur`, no semi-transparent milky panels.
 - ❌ **No shadows or glows.** No `shadow-*`, no neon box-shadows, no "elevation".
-- ❌ **No colored card borders.** All borders are muted neutral (`--border`).
+- ❌ **No colored card borders.** All borders are muted neutral (`--outline-variant`).
 - ❌ **No arbitrary colors.** No hex/rgb/hsl literals in components — every color
   maps to a design token (§3). `text-[#8b5cf6]` is a build-blocking review failure.
 - ❌ **No emoji in the UI.** Icons are Lucide, monochrome, sized deliberately.
@@ -47,11 +47,22 @@ literal colors on the grounds of being "logo-like".
 
 Depth comes from **contrast and 1px borders**, never shadows.
 
-- Three background levels, darkest to lightest (in dark themes):
-  `--bg-0` (app base: editor, grid body) → `--bg-1` (panels: sidebar, results
-  header, status bar) → `--bg-2` (raised: modals, menus, active tab, hover).
-- Adjacent surfaces are separated by `1px` `--border` lines, not gaps or shadows.
-- Lists use row separators (`divide-y` with `--border`) or plain hover highlight —
+Surface roles follow Material 3's naming, but only its *tonal* model: a container
+is raised by moving up the ladder, never by an elevation shadow, tint overlay, or
+ripple. The role names are shared with Flow Desktop so one vocabulary covers both
+apps; nothing else of Material's visual language applies here (§1 still governs
+radii, shadows, gradients, and motion).
+
+- Five surface levels, base → most raised (in dark themes):
+  `--surface` (app base: editor, grid body) → `--surface-container-low` (inset
+  wells: search fields, sunken toolbars) → `--surface-container` (panels: sidebar,
+  results header, status bar) → `--surface-container-high` (raised: modals, menus,
+  active tab, hover) → `--surface-container-highest` (hover *on* a raised surface:
+  menu rows, modal list rows).
+- Reach for a new level only when two surfaces genuinely stack. A flat screen
+  using two levels is correct; using all five to look layered is not.
+- Adjacent surfaces are separated by `1px` `--outline-variant` lines, not gaps or shadows.
+- Lists use row separators (`divide-y` with `--outline-variant`) or plain hover highlight —
   not per-item cards.
 - The accent color (`--accent`) is used **sparingly**: primary buttons, active/
   selected states, focused rings, the running-query indicator, connection-alive
@@ -60,8 +71,8 @@ Depth comes from **contrast and 1px borders**, never shadows.
 ## 3. Design Tokens (the only source of color)
 
 Tailwind v4, CSS-first. Utility-generating tokens are declared in `src/app.css`
-under `@theme inline`, each mapping a raw CSS variable (`--bg-0`, …) into a
-utility (`bg-bg-0`, …). The raw variables are computed per theme in
+under `@theme inline`, each mapping a raw CSS variable (`--surface`, …) into a
+utility (`bg-surface`, …). The raw variables are computed per theme in
 `src/lib/stores/themeData.ts` and written onto `<html>` as inline
 variables by `stores/theme.svelte.ts`. `src/themes/tokens.css` holds the
 contract doc + a basalt-dark fallback (pre-JS / no-JS). **Adding a color = adding
@@ -71,9 +82,9 @@ Token contract (every preset must define all of these):
 
 | Token | Role |
 |---|---|
-| `--bg-0` `--bg-1` `--bg-2` | Surface levels (§2) |
-| `--fg-0` `--fg-1` `--fg-2` | Text: primary / secondary / muted-label |
-| `--border` `--border-strong` | Hairlines / emphasized separators (focus-adjacent) |
+| `--surface` `--surface-container-low` `--surface-container` `--surface-container-high` `--surface-container-highest` | Surface levels (§2) |
+| `--on-surface` `--on-surface-variant` `--on-surface-muted` | Text: primary / secondary / muted-label |
+| `--outline-variant` `--outline` | Hairlines / emphasized separators (focus-adjacent) |
 | `--accent` `--accent-fg` | Accent surface + text on accent |
 | `--danger` `--danger-fg` `--danger-bg` | Destructive text / on-danger / muted danger surface |
 | `--ok` `--warn` | Success / warning indicators (dots, badges) |
@@ -97,10 +108,10 @@ surface. The theme editor only writes seed colors — zero component rework.
 
 Text contrast is the primary hierarchy tool. Two font stacks: UI sans and mono.
 
-- **Panel/section titles:** `text-sm font-medium` `--fg-0`.
-- **Body/labels:** `text-sm` `--fg-1`.
+- **Panel/section titles:** `text-sm font-medium` `--on-surface`.
+- **Body/labels:** `text-sm` `--on-surface-variant`.
 - **Overline labels** (sidebar groups, form sections): `text-xs uppercase
-  tracking-wider font-medium` `--fg-2`.
+  tracking-wider font-medium` `--on-surface-muted`.
 - **All data is mono**, no exceptions: cell values, row counts, durations,
   connection hosts/ports, SQL text, keyboard shortcuts (`Kbd`), history entries.
   `font-mono` + `tabular-nums`.
@@ -136,25 +147,25 @@ the primitive**, don't fork it locally.
   `rounded-lg` · badges/pills `rounded-full` · grid cells & tree rows `rounded-none`.
 - **Button** — `variant: 'primary' | 'secondary' | 'ghost' | 'danger'`,
   `size: 'sm' | 'md'`, optional `icon`. Primary = `--accent`/`--accent-fg`;
-  secondary = `--bg-2` + border; ghost = transparent, hover `--bg-2`; danger =
+  secondary = `--surface-container-high` + border; ghost = transparent, hover `--surface-container-high`; danger =
   `--danger-bg` surface + `--danger` text + danger border (muted, not alarm-red).
 - **IconButton** — square ghost button for toolbars; `title` (tooltip) required.
-- **Input / Select / Checkbox** — `--bg-0` field on `--bg-1` panels, 1px border,
+- **Input / Select / Checkbox** — `--surface` field on `--surface-container` panels, 1px border,
   focus = accent ring (§7). Error state: danger border + `text-xs` danger message
   below; never a toast for field validation.
 - **Badge** — `variant: 'neutral' | 'accent' | 'ok' | 'warn' | 'danger'`. Used
   for: `NULL` cells (`--grid-null`, italic mono), tx state (`TX` in status bar),
   read-only connections, engine tags (`PG` `MY` `SQ`).
-- **Modal / ConfirmDialog** — centered, `max-w-md`/`max-w-lg`, `--bg-2`, 1px
-  border, dimmed scrim (`--bg-0` at ~60% opacity, **no blur**). ConfirmDialog is
+- **Modal / ConfirmDialog** — centered, `max-w-md`/`max-w-lg`, `--surface-container-high`, 1px
+  border, dimmed scrim (`--surface` at ~60% opacity, **no blur**). ConfirmDialog is
   invoked only via the global `confirm()` store (§9) — never instantiated inline.
 - **Toast / ToastHost** — bottom-right stack, dense single-line rows with icon +
   message + optional action; auto-dismiss 4s (errors 8s, or sticky with action).
   Created only via the global `toast.*` API (§9).
-- **ContextMenu / DropdownMenu** — `--bg-2`, 1px border, 24px rows, `Kbd` hints
+- **ContextMenu / DropdownMenu** — `--surface-container-high`, 1px border, 24px rows, `Kbd` hints
   right-aligned, danger items use `--danger` text.
 - **Tooltip** — delay 400 ms, `text-xs`, no arrow.
-- **EmptyState** — icon (16px, `--fg-2`) + one sentence + at most one action.
+- **EmptyState** — icon (16px, `--on-surface-muted`) + one sentence + at most one action.
 - **Spinner** — 3 sizes; inline in buttons while pending (`Button` handles it via
   a `loading` prop).
 - **Kbd** — takes a shortcut spec (`"mod+shift+f"`), never pre-rendered key text,
@@ -166,7 +177,7 @@ the primitive**, don't fork it locally.
 ## 7. Interaction & Keyboard
 
 - **Every interactive element has hover + focus-visible states.** Hover =
-  background shift to `--bg-2` via `transition-colors duration-150`. Focus =
+  background shift to `--surface-container-high` via `transition-colors duration-150`. Focus =
   2px accent ring (`outline`), visible only via `:focus-visible`.
 - **Simple transitions only — no fancy motion.** Allowed: `transition-colors`,
   `opacity`/fade, modal & menu fade-scale (≤120 ms), and short height/width slides

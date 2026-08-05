@@ -27,7 +27,7 @@
   <TopBar />
   <div class="flex flex-1 overflow-hidden">
     {#if sidebarOpen}<Sidebar />{/if}
-    <main class="flex-1 overflow-hidden bg-bg-0">
+    <main class="flex-1 overflow-hidden bg-surface">
       {#if connections.active}
         <Workspace />
       {:else}

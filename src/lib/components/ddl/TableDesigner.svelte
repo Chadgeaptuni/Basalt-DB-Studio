@@ -49,12 +49,12 @@
 <Modal open title="New table" size="lg" onclose={ddl.close}>
   <div class="flex flex-col gap-3">
     <label class="flex flex-col gap-1">
-      <span class="text-xs tracking-wider text-fg-2 uppercase">Table name</span>
+      <span class="text-xs tracking-wider text-on-surface-muted uppercase">Table name</span>
       <Input bind:value={name} placeholder="users" autofocus />
     </label>
 
     <div class="flex flex-col gap-1">
-      <span class="text-xs tracking-wider text-fg-2 uppercase">Columns</span>
+      <span class="text-xs tracking-wider text-on-surface-muted uppercase">Columns</span>
       <div class="flex flex-col gap-1.5">
         {#each cols as col, i (i)}
           <div class="flex items-center gap-2">
@@ -76,7 +76,7 @@
         <Button variant="ghost" size="sm" onclick={addCol}><Plus size={13} strokeWidth={2} /> Add column</Button>
       </div>
     </div>
-    <p class="font-mono text-[11px] text-fg-2">Types are raw SQL for this engine (e.g. varchar(50), serial).</p>
+    <p class="font-mono text-[11px] text-on-surface-muted">Types are raw SQL for this engine (e.g. varchar(50), serial).</p>
   </div>
 
   {#snippet footer()}

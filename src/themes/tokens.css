@@ -5,15 +5,21 @@
  * and written onto
  * <html> as inline CSS variables by `stores/theme.svelte.ts` on load and on
  * every theme/variant change. app.css maps these raw variables into Tailwind
- * utilities via `@theme inline`, so `bg-bg-0`, `text-fg-1`, `border-border`,
+ * utilities via `@theme inline`, so `bg-surface`, `text-on-surface-variant`, `border-outline-variant`,
  * etc. resolve to `var(--…)` and swap live.
+ *
+ * Role names follow Material 3's colour roles, so depth reads as a tonal ladder
+ * rather than elevation — which is the same rule as DESIGN §2 (contrast + 1px
+ * lines, never shadows), and keeps one vocabulary shared with Flow Desktop.
  *
  * Adding a color = adding a token to the contract below + deriving it in
  * themeData.ts. Never a literal in a component.
  *
- *   Surfaces (darkest→lightest):  --bg-0  --bg-1  --bg-2
- *   Text (primary→muted label):   --fg-0  --fg-1  --fg-2
- *   Lines:                        --border  --border-strong
+ *   Surfaces (base→raised):       --surface  --surface-container-low
+ *                                 --surface-container  --surface-container-high
+ *                                 --surface-container-highest
+ *   Text (primary→muted label):   --on-surface  --on-surface-variant  --on-surface-muted
+ *   Lines:                        --outline-variant  --outline
  *   Accent:                       --accent  --accent-fg
  *   Destructive:                  --danger  --danger-fg  --danger-bg
  *   Status:                       --ok  --warn
@@ -27,16 +33,18 @@
  * only ever visible if scripting is unavailable.
  */
 :root {
-  --bg-0: #0e1116;
-  --bg-1: #151a21;
-  --bg-2: #1e242e;
+  --surface: #0e1116;
+  --surface-container-low: #12161c;
+  --surface-container: #151a21;
+  --surface-container-high: #1e242e;
+  --surface-container-highest: #262d38;
 
-  --fg-0: #e6e9ef;
-  --fg-1: #b6bdc9;
-  --fg-2: #7d8695;
+  --on-surface: #e6e9ef;
+  --on-surface-variant: #b6bdc9;
+  --on-surface-muted: #7d8695;
 
-  --border: #232a34;
-  --border-strong: #323b47;
+  --outline-variant: #232a34;
+  --outline: #323b47;
 
   --accent: #4e8cd9;
   --accent-fg: #ffffff;

@@ -26,8 +26,8 @@
 </script>
 
 <div
-  class="flex w-80 items-center gap-2 rounded-md border border-border bg-bg-2 px-2.5 py-2
-    text-sm text-fg-1"
+  class="flex w-80 items-center gap-2 rounded-md border border-outline-variant bg-surface-container-high px-2.5 py-2
+    text-sm text-on-surface-variant"
 >
   <Icon size={16} strokeWidth={2} class={tone[kind]} />
   <span class="flex-1 truncate">{message}</span>

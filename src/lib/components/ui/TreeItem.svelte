@@ -39,7 +39,7 @@
   aria-selected={selected}
   {title}
   class="flex h-6 cursor-pointer items-center gap-1 pr-2 font-mono text-xs transition-colors
-    duration-150 {selected ? 'bg-bg-2 text-fg-0' : 'text-fg-1 hover:bg-bg-2'}"
+    duration-150 {selected ? 'bg-surface-container-high text-on-surface' : 'text-on-surface-variant hover:bg-surface-container-high'}"
   style="padding-left:{depth * 12 + 4}px"
   onclick={() => onclick?.()}
   ondblclick={() => ondblclick?.()}
@@ -61,7 +61,7 @@
       type="button"
       tabindex="-1"
       aria-label={expanded ? "Collapse" : "Expand"}
-      class="flex h-4 w-4 shrink-0 items-center justify-center text-fg-2"
+      class="flex h-4 w-4 shrink-0 items-center justify-center text-on-surface-muted"
       onclick={(e) => {
         e.stopPropagation();
         ontoggle?.();
@@ -72,6 +72,6 @@
   {:else}
     <span class="w-4 shrink-0"></span>
   {/if}
-  {#if Icon}<Icon size={13} strokeWidth={2} class="shrink-0 text-fg-2" />{/if}
+  {#if Icon}<Icon size={13} strokeWidth={2} class="shrink-0 text-on-surface-muted" />{/if}
   <span class="truncate">{label}</span>
 </div>

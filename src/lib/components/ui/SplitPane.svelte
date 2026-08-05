@@ -96,7 +96,7 @@
     onpointerup={endDrag}
     onpointercancel={endDrag}
     onkeydown={onKeydown}
-    class="relative shrink-0 bg-border transition-colors hover:bg-accent
+    class="relative shrink-0 bg-outline-variant transition-colors hover:bg-accent
       {isH ? 'w-px cursor-col-resize' : 'h-px cursor-row-resize'}"
   >
     <!-- Invisible ±4px grab zone so a 1px line stays easy to hit. -->

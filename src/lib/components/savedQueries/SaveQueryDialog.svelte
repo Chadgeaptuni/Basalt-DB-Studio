@@ -39,7 +39,7 @@
 
 <Modal open title="Save query" onclose={() => saveQuery.cancel()}>
   <label class="flex flex-col gap-1">
-    <span class="text-xs tracking-wider text-fg-2 uppercase">Name (folders with /)</span>
+    <span class="text-xs tracking-wider text-on-surface-muted uppercase">Name (folders with /)</span>
     <Input
       bind:value={path}
       placeholder="reports/daily-active"

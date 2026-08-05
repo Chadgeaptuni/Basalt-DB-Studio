@@ -50,36 +50,36 @@
 
 <Modal open title="Settings" size="3xl" headerHidden padding={false} {onclose}>
   <div class="flex min-h-0 flex-1">
-    <nav class="flex w-44 shrink-0 flex-col border-r border-border bg-bg-1" aria-label="Settings sections">
+    <nav class="flex w-44 shrink-0 flex-col border-r border-outline-variant bg-surface-container" aria-label="Settings sections">
       {#each DESTINATIONS as dest (dest.id)}
         <button
           type="button"
           aria-current={activeTab === dest.id}
           onclick={() => (activeTab = dest.id)}
           class="flex h-8 shrink-0 items-center gap-2 px-3 text-left text-xs transition-colors
-            {activeTab === dest.id ? 'bg-bg-2 text-fg-0' : 'text-fg-2 hover:bg-bg-2 hover:text-fg-1'}"
+            {activeTab === dest.id ? 'bg-surface-container-high text-on-surface' : 'text-on-surface-muted hover:bg-surface-container-high hover:text-on-surface-variant'}"
         >
-          <dest.icon size={14} class={activeTab === dest.id ? "text-accent" : "text-fg-2"} />
+          <dest.icon size={14} class={activeTab === dest.id ? "text-accent" : "text-on-surface-muted"} />
           {dest.label}
         </button>
       {/each}
     </nav>
 
     <div class="flex min-w-0 flex-1 flex-col">
-      <header class="flex h-9 shrink-0 items-center gap-2 border-b border-border px-3">
-        <h2 class="text-sm font-medium text-fg-0">{current.label}</h2>
-        <span class="min-w-0 truncate text-xs text-fg-2">{current.blurb}</span>
+      <header class="flex h-9 shrink-0 items-center gap-2 border-b border-outline-variant px-3">
+        <h2 class="text-sm font-medium text-on-surface">{current.label}</h2>
+        <span class="min-w-0 truncate text-xs text-on-surface-muted">{current.blurb}</span>
         <div class="flex-1"></div>
         <IconButton icon={X} title="Close" size="sm" onclick={onclose} />
       </header>
 
       <div class="min-h-0 flex-1 overflow-auto p-4">
         {#if activeTab === "general"}
-          <div class="divide-y divide-border border-y border-border">
+          <div class="divide-y divide-outline-variant border-y border-outline-variant">
             <label class="flex items-center gap-3 py-2">
               <span class="min-w-0 flex-1">
-                <span class="block text-xs text-fg-0">Date-time display</span>
-                <span class="block text-[11px] text-fg-2">How timestamps render in data grids.</span>
+                <span class="block text-xs text-on-surface">Date-time display</span>
+                <span class="block text-[11px] text-on-surface-muted">How timestamps render in data grids.</span>
               </span>
               <span class="w-44 shrink-0">
                 <Select
@@ -91,8 +91,8 @@
             </label>
             <label class="flex items-center gap-3 py-2">
               <span class="min-w-0 flex-1">
-                <span class="block text-xs text-fg-0">Default row limit</span>
-                <span class="block text-[11px] text-fg-2">Fetch ceiling per statement.</span>
+                <span class="block text-xs text-on-surface">Default row limit</span>
+                <span class="block text-[11px] text-on-surface-muted">Fetch ceiling per statement.</span>
               </span>
               <span class="w-44 shrink-0">
                 <Input type="number" value={String(settings.defaultRowLimit)} oninput={setLimit} />
@@ -105,15 +105,15 @@
           <div class="flex flex-col gap-4">
             {#each SHORTCUT_GROUPS as group (group.title)}
               <section>
-                <h3 class="pb-1 text-[11px] font-medium tracking-wider text-fg-2 uppercase">
+                <h3 class="pb-1 text-[11px] font-medium tracking-wider text-on-surface-muted uppercase">
                   {group.title}
                 </h3>
-                <div class="divide-y divide-border border-y border-border">
+                <div class="divide-y divide-outline-variant border-y border-outline-variant">
                   {#each group.items as item (item.label)}
                     <div class="flex h-7 items-center justify-between gap-3">
                       <span class="flex min-w-0 items-center gap-2">
-                        <item.icon size={14} class="shrink-0 text-fg-2" />
-                        <span class="truncate text-xs text-fg-1">{item.label}</span>
+                        <item.icon size={14} class="shrink-0 text-on-surface-muted" />
+                        <span class="truncate text-xs text-on-surface-variant">{item.label}</span>
                       </span>
                       <span class="flex shrink-0 items-center gap-1">
                         {#each item.combos as combo (combo)}<Kbd {combo} />{/each}

@@ -60,30 +60,30 @@
 
 <Popover.Root bind:open>
   <Popover.Trigger
-    class="flex h-7 min-w-56 max-w-96 items-center gap-2 rounded-md border border-border
-      bg-bg-0 px-2 text-xs transition-colors hover:bg-bg-2"
+    class="flex h-7 min-w-56 max-w-96 items-center gap-2 rounded-md border border-outline-variant
+      bg-surface px-2 text-xs transition-colors hover:bg-surface-container-high"
     title="Connection"
   >
     {#if connections.active && activeProfile}
       <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-ok"></span>
       <Badge>{ENGINE_TAG[connections.active.engine]}</Badge>
-      <span class="min-w-0 flex-1 truncate text-left text-fg-0">{activeProfile.name}</span>
+      <span class="min-w-0 flex-1 truncate text-left text-on-surface">{activeProfile.name}</span>
       {#if connections.active.readOnly}<Badge variant="warn">read-only</Badge>{/if}
     {:else}
-      <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-fg-2"></span>
-      <span class="min-w-0 flex-1 truncate text-left text-fg-2">Not connected</span>
+      <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-on-surface-muted"></span>
+      <span class="min-w-0 flex-1 truncate text-left text-on-surface-muted">Not connected</span>
     {/if}
-    <ChevronDown size={13} class="shrink-0 text-fg-2" />
+    <ChevronDown size={13} class="shrink-0 text-on-surface-muted" />
   </Popover.Trigger>
 
   <Popover.Portal>
     <Popover.Content
       sideOffset={4}
       class="z-50 max-h-[min(28rem,calc(100dvh-4rem))] w-96 overflow-auto rounded-lg border
-        border-border bg-bg-2 outline-none"
+        border-outline-variant bg-surface-container-high outline-none"
     >
       {#if !connections.loaded}
-        <div class="flex items-center gap-2 p-3 text-sm text-fg-2"><Spinner size="sm" /> Loading…</div>
+        <div class="flex items-center gap-2 p-3 text-sm text-on-surface-muted"><Spinner size="sm" /> Loading…</div>
       {:else if connections.loadError}
         <div class="p-3 text-sm text-danger">
           Couldn't read your saved connections.
@@ -95,7 +95,7 @@
       {:else if connections.profiles.length === 0}
         <EmptyState icon={Database} message="No connections yet" />
       {:else}
-        <ul class="divide-y divide-border border-b border-border">
+        <ul class="divide-y divide-outline-variant border-b border-outline-variant">
           {#each connections.profiles as p (p.id)}
             {@const st = connections.statusFor(p.id)}
             <li>

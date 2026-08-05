@@ -22,21 +22,21 @@
   );
 </script>
 
-<div class="shrink-0 border-t border-border bg-bg-1 px-2 py-1 font-mono text-[11px] text-fg-2">
+<div class="shrink-0 border-t border-outline-variant bg-surface-container px-2 py-1 font-mono text-[11px] text-on-surface-muted">
   <div class="flex h-6 items-center gap-1.5">
     <GitBranch size={12} strokeWidth={2} class="shrink-0" />
     {#if !st || !st.installed}
-      <span class="truncate text-fg-2">git not installed</span>
+      <span class="truncate text-on-surface-muted">git not installed</span>
     {:else if !st.isRepo}
       <span class="truncate" title="Make the config dir a git repo and add a remote to sync">
         not a git repo
       </span>
     {:else}
-      <span class="truncate text-fg-1">{st.branch ?? "—"}</span>
+      <span class="truncate text-on-surface-variant">{st.branch ?? "—"}</span>
       {#if st.dirty > 0}<span class="text-warn tabular-nums">●{st.dirty}</span>{/if}
       {#if st.ahead > 0}<span class="tabular-nums">↑{st.ahead}</span>{/if}
       {#if st.behind > 0}<span class="tabular-nums">↓{st.behind}</span>{/if}
-      {#if !st.hasRemote}<span class="text-fg-2">· no remote</span>{/if}
+      {#if !st.hasRemote}<span class="text-on-surface-muted">· no remote</span>{/if}
     {/if}
     <div class="flex-1"></div>
     <IconButton

@@ -34,7 +34,7 @@
     </EmptyState>
 
     {#if !connections.loaded}
-      <div class="flex items-center gap-2 px-3 text-sm text-fg-2"><Spinner size="sm" /> Loading…</div>
+      <div class="flex items-center gap-2 px-3 text-sm text-on-surface-muted"><Spinner size="sm" /> Loading…</div>
     {:else if connections.loadError}
       <div class="px-3 text-sm text-danger">
         Couldn't read your saved connections.
@@ -45,8 +45,8 @@
       </div>
     {:else if connections.profiles.length > 0}
       <section>
-        <h2 class="px-3 pb-1 text-xs font-medium tracking-wider text-fg-2 uppercase">Connections</h2>
-        <ul class="divide-y divide-border border-y border-border">
+        <h2 class="px-3 pb-1 text-xs font-medium tracking-wider text-on-surface-muted uppercase">Connections</h2>
+        <ul class="divide-y divide-outline-variant border-y border-outline-variant">
           {#each connections.profiles as p (p.id)}
             {@const st = connections.statusFor(p.id)}
             <li>
@@ -75,13 +75,13 @@
 
     {#each STARTUP_SHORTCUT_GROUPS as group (group.title)}
       <section class="px-3">
-        <h2 class="pb-1 text-xs font-medium tracking-wider text-fg-2 uppercase">{group.title}</h2>
+        <h2 class="pb-1 text-xs font-medium tracking-wider text-on-surface-muted uppercase">{group.title}</h2>
         <div class="grid grid-cols-1 gap-x-8 gap-y-0.5 sm:grid-cols-2">
           {#each group.items as item (item.label)}
             <div class="flex h-6 items-center justify-between gap-3">
               <span class="flex min-w-0 items-center gap-2">
-                <item.icon size={14} class="shrink-0 text-fg-2" />
-                <span class="truncate text-xs text-fg-1">{item.label}</span>
+                <item.icon size={14} class="shrink-0 text-on-surface-muted" />
+                <span class="truncate text-xs text-on-surface-variant">{item.label}</span>
               </span>
               <span class="flex shrink-0 items-center gap-1">
                 {#each item.combos as combo (combo)}<Kbd {combo} />{/each}

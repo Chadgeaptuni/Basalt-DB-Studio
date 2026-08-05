@@ -56,26 +56,26 @@
 
 <div class="flex flex-col gap-3">
   <div class="flex items-center justify-between">
-    <span class="text-xs text-fg-2">{theme.current}</span>
+    <span class="text-xs text-on-surface-muted">{theme.current}</span>
     <Button size="sm" onclick={createNewTheme}><Plus size={13} /> New custom theme</Button>
   </div>
 
   {#each sections as section (section.category)}
     <section>
-      <h4 class="pb-1 text-xs font-medium tracking-wider text-fg-2 uppercase">{section.title}</h4>
-      <div class="grid grid-cols-1 border-t border-border sm:grid-cols-2">
+      <h4 class="pb-1 text-xs font-medium tracking-wider text-on-surface-muted uppercase">{section.title}</h4>
+      <div class="grid grid-cols-1 border-t border-outline-variant sm:grid-cols-2">
         {#each section.items as preset, i (preset.id)}
           <button
             type="button"
             aria-pressed={theme.current === preset.id}
             onclick={() => theme.set(preset.id)}
-            class="flex h-9 min-w-0 items-center gap-2 border-b border-border px-2 text-left
-              transition-colors duration-150 hover:bg-bg-1 {i % 2 === 0 ? 'sm:border-r' : ''}
-              {theme.current === preset.id ? 'bg-bg-1 text-fg-0' : 'text-fg-1'}"
+            class="flex h-9 min-w-0 items-center gap-2 border-b border-outline-variant px-2 text-left
+              transition-colors duration-150 hover:bg-surface-container {i % 2 === 0 ? 'sm:border-r' : ''}
+              {theme.current === preset.id ? 'bg-surface-container text-on-surface' : 'text-on-surface-variant'}"
           >
             <span
               class="flex h-6 w-9 shrink-0 items-center justify-center gap-1 rounded-md border
-                border-border p-1"
+                border-outline-variant p-1"
               style="background-color: {preset.colors[0]}"
               aria-hidden="true"
             >
@@ -88,7 +88,7 @@
         {/each}
 
         {#each section.customs as custom (custom.id)}
-          <div class="flex h-9 items-center border-b border-border transition-colors hover:bg-bg-1">
+          <div class="flex h-9 items-center border-b border-outline-variant transition-colors hover:bg-surface-container">
             <button
               type="button"
               aria-pressed={theme.current === custom.id}
@@ -97,14 +97,14 @@
             >
               <span
                 class="flex h-6 w-9 shrink-0 items-center justify-center gap-1 rounded-md border
-                  border-border p-1"
+                  border-outline-variant p-1"
                 style="background-color: {custom.colors.surface}"
                 aria-hidden="true"
               >
                 <span class="h-3.5 w-1.5 rounded-full" style="background-color: {custom.colors.primary}"></span>
                 <span class="h-3.5 w-1.5 rounded-full" style="background-color: {custom.colors.border}"></span>
               </span>
-              <span class="min-w-0 flex-1 truncate text-xs font-medium text-fg-0">{custom.name}</span>
+              <span class="min-w-0 flex-1 truncate text-xs font-medium text-on-surface">{custom.name}</span>
               {#if theme.current === custom.id}<Check size={14} class="shrink-0 text-accent" />{/if}
             </button>
             <div class="flex shrink-0 items-center pr-1">

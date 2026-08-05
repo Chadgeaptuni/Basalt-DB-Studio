@@ -109,40 +109,40 @@
 <Modal bind:open title={profile ? "Edit connection" : "New connection"} size="lg" onclose={close}>
   <div class="flex flex-col gap-3">
     <div>
-      <label for="conn-name" class="mb-1 block text-xs text-fg-2">Name</label>
+      <label for="conn-name" class="mb-1 block text-xs text-on-surface-muted">Name</label>
       <Input id="conn-name" bind:value={name} placeholder="My database" autofocus />
     </div>
     <div>
-      <label for="conn-engine" class="mb-1 block text-xs text-fg-2">Engine</label>
+      <label for="conn-engine" class="mb-1 block text-xs text-on-surface-muted">Engine</label>
       <Select id="conn-engine" value={engine} options={engineOptions} onchange={onEngineChange} />
     </div>
 
     {#if isSqlite}
       <div>
-        <label for="conn-file" class="mb-1 block text-xs text-fg-2">File path</label>
+        <label for="conn-file" class="mb-1 block text-xs text-on-surface-muted">File path</label>
         <Input id="conn-file" bind:value={filePath} placeholder="/path/to/database.sqlite" />
       </div>
     {:else}
       <div class="grid grid-cols-3 gap-2">
         <div class="col-span-2">
-          <label for="conn-host" class="mb-1 block text-xs text-fg-2">Host</label>
+          <label for="conn-host" class="mb-1 block text-xs text-on-surface-muted">Host</label>
           <Input id="conn-host" bind:value={host} placeholder="localhost" />
         </div>
         <div>
-          <label for="conn-port" class="mb-1 block text-xs text-fg-2">Port</label>
+          <label for="conn-port" class="mb-1 block text-xs text-on-surface-muted">Port</label>
           <Input id="conn-port" type="number" bind:value={portStr} />
         </div>
       </div>
       <div>
-        <label for="conn-db" class="mb-1 block text-xs text-fg-2">Database</label>
+        <label for="conn-db" class="mb-1 block text-xs text-on-surface-muted">Database</label>
         <Input id="conn-db" bind:value={database} />
       </div>
       <div>
-        <label for="conn-user" class="mb-1 block text-xs text-fg-2">Username</label>
+        <label for="conn-user" class="mb-1 block text-xs text-on-surface-muted">Username</label>
         <Input id="conn-user" bind:value={username} />
       </div>
       <div>
-        <label for="conn-pass" class="mb-1 block text-xs text-fg-2">Password</label>
+        <label for="conn-pass" class="mb-1 block text-xs text-on-surface-muted">Password</label>
         <Input
           id="conn-pass"
           type="password"
@@ -150,7 +150,7 @@
           placeholder="Kept in memory for this session only"
         />
       </div>
-      <p class="text-xs text-fg-2">
+      <p class="text-xs text-on-surface-muted">
         The password is held in memory only, never written to disk. TLS and SSH
         tunnel options arrive with the secrets/tunnel slice.
       </p>

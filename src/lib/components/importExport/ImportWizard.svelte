@@ -76,19 +76,19 @@
   <div class="flex flex-col gap-3">
     <div class="flex items-center gap-2">
       <Button variant="secondary" size="sm" onclick={browse}><FileText size={13} strokeWidth={2} /> Choose CSV…</Button>
-      <span class="truncate font-mono text-xs text-fg-2">{path ?? "No file selected"}</span>
+      <span class="truncate font-mono text-xs text-on-surface-muted">{path ?? "No file selected"}</span>
     </div>
 
     <label class="flex flex-col gap-1">
-      <span class="text-xs tracking-wider text-fg-2 uppercase">Conflict mode</span>
+      <span class="text-xs tracking-wider text-on-surface-muted uppercase">Conflict mode</span>
       <Select bind:value={conflict} options={conflictOptions} />
     </label>
 
     <Checkbox bind:checked={hasHeader} label="First row is a header" />
 
     <div class="flex flex-col gap-1">
-      <span class="text-xs tracking-wider text-fg-2 uppercase">Target columns (in CSV order)</span>
-      <div class="flex max-h-40 flex-col gap-1 overflow-auto rounded-md border border-border bg-bg-0 p-2">
+      <span class="text-xs tracking-wider text-on-surface-muted uppercase">Target columns (in CSV order)</span>
+      <div class="flex max-h-40 flex-col gap-1 overflow-auto rounded-md border border-outline-variant bg-surface p-2">
         {#each columns as col (col)}
           <Checkbox bind:checked={picked[col]} label={col} />
         {/each}

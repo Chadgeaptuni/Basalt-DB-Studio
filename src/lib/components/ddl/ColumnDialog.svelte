@@ -36,15 +36,15 @@
 <Modal open title={`Add column to ${table}`} onclose={ddl.close}>
   <div class="flex flex-col gap-3">
     <label class="flex flex-col gap-1">
-      <span class="text-xs tracking-wider text-fg-2 uppercase">Name</span>
+      <span class="text-xs tracking-wider text-on-surface-muted uppercase">Name</span>
       <Input bind:value={name} placeholder="email" autofocus />
     </label>
     <label class="flex flex-col gap-1">
-      <span class="text-xs tracking-wider text-fg-2 uppercase">Type</span>
+      <span class="text-xs tracking-wider text-on-surface-muted uppercase">Type</span>
       <Input bind:value={type} placeholder="varchar(255)" />
     </label>
     <label class="flex flex-col gap-1">
-      <span class="text-xs tracking-wider text-fg-2 uppercase">Default (optional)</span>
+      <span class="text-xs tracking-wider text-on-surface-muted uppercase">Default (optional)</span>
       <Input bind:value={dflt} placeholder="e.g. 0 or 'x'" />
     </label>
     <Checkbox bind:checked={nullable} label="Nullable" />

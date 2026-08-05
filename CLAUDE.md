@@ -68,7 +68,7 @@ before writing or editing any Svelte/Tailwind code. Zero-tolerance summary
   borders, color literals outside the token files, emoji in UI, bouncy entry
   animations, hero empty states, skeleton shimmer, or generic "Something went
   wrong" errors.
-- Depth = contrast + 1px `--border` lines. Accent used sparingly. All data text
+- Depth = contrast + 1px `--outline-variant` lines. Accent used sparingly. All data text
   is `font-mono`. Dense, flat, keyboard-driven.
 - Every view defines loading, empty, AND error states; every error `kind` gets a
   specific, actionable rendering.

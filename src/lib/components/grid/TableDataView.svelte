@@ -160,11 +160,11 @@
     <EditorPane {canonicalSql} onCanonicalRun={reload} />
   {/snippet}
   {#snippet b()}
-<div class="flex h-full flex-col bg-bg-0">
-  <div class="flex h-9 shrink-0 items-center gap-2 border-b border-border bg-bg-1 px-2">
-    <span class="font-mono text-xs text-fg-1">{tab.ref?.namespace}.{tab.ref?.table}</span>
+<div class="flex h-full flex-col bg-surface">
+  <div class="flex h-9 shrink-0 items-center gap-2 border-b border-outline-variant bg-surface-container px-2">
+    <span class="font-mono text-xs text-on-surface-variant">{tab.ref?.namespace}.{tab.ref?.table}</span>
     {#if browse && !queryMode}
-      <span class="font-mono text-[11px] text-fg-2 tabular-nums">
+      <span class="font-mono text-[11px] text-on-surface-muted tabular-nums">
         {browse.rows.length} rows{browse.truncated ? " (limit)" : ""}
       </span>
     {/if}
@@ -209,7 +209,7 @@
   </div>
 
   {#if queryMode}
-    <div class="flex items-center gap-2 border-b border-border px-3 py-1.5 text-xs text-fg-2">
+    <div class="flex items-center gap-2 border-b border-outline-variant px-3 py-1.5 text-xs text-on-surface-muted">
       <TriangleAlert size={13} strokeWidth={2} class="shrink-0 text-warn" />
       <span class="min-w-0 flex-1">
         Showing an edited query. Its rows can't be traced back to
@@ -219,13 +219,13 @@
     </div>
   {/if}
   {#if browse?.editable === false && browse.notEditableReason}
-    <div class="flex items-center gap-2 border-b border-border px-3 py-1.5 text-xs text-fg-2">
+    <div class="flex items-center gap-2 border-b border-outline-variant px-3 py-1.5 text-xs text-on-surface-muted">
       <TriangleAlert size={13} strokeWidth={2} class="shrink-0 text-warn" />
       {browse.notEditableReason}
     </div>
   {/if}
   {#if view?.commitError}
-    <div class="flex items-start gap-2 border-b border-border px-3 py-1.5 text-xs">
+    <div class="flex items-start gap-2 border-b border-outline-variant px-3 py-1.5 text-xs">
       <TriangleAlert size={13} strokeWidth={2} class="mt-0.5 shrink-0 text-danger" />
       <span class="font-mono whitespace-pre-wrap text-danger">{view.commitError.message}</span>
     </div>
@@ -235,11 +235,11 @@
     {#if queryMode}
       <ResultsPane />
     {:else if !view || view.loading}
-      <div class="flex items-center gap-2 p-3 text-sm text-fg-2"><Spinner size="sm" /> Loading rows…</div>
+      <div class="flex items-center gap-2 p-3 text-sm text-on-surface-muted"><Spinner size="sm" /> Loading rows…</div>
     {:else if view.error}
       <div class="flex items-start gap-2 p-3 text-sm">
         <TriangleAlert size={16} strokeWidth={2} class="mt-0.5 shrink-0 text-danger" />
-        <span class="font-mono text-xs whitespace-pre-wrap text-fg-2">{view.error.message}</span>
+        <span class="font-mono text-xs whitespace-pre-wrap text-on-surface-muted">{view.error.message}</span>
       </div>
     {:else if gridRows.length === 0}
       <EmptyState message="No rows. Use Add row to insert one." />

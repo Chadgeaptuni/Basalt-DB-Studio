@@ -21,7 +21,7 @@
     connected: "bg-ok",
     connecting: "bg-warn",
     error: "bg-danger",
-    disconnected: "bg-fg-2",
+    disconnected: "bg-on-surface-muted",
   };
 
   const status = $derived(connections.statusFor(profile.id).status);
@@ -34,13 +34,13 @@
 
 <div
   class="group flex h-9 items-center gap-2 px-3 text-sm transition-colors duration-150
-    {selected ? 'bg-bg-2' : 'hover:bg-bg-2'}"
+    {selected ? 'bg-surface-container-high' : 'hover:bg-surface-container-high'}"
 >
   <span class="h-1.5 w-1.5 shrink-0 rounded-full {DOT[status]}"></span>
   <Badge>{ENGINE_TAG[profile.engine]}</Badge>
   <button type="button" class="min-w-0 flex-1 text-left" {onclick} title={target}>
-    <div class="truncate text-fg-0">{profile.name}</div>
-    <div class="truncate font-mono text-[11px] text-fg-2">{target}</div>
+    <div class="truncate text-on-surface">{profile.name}</div>
+    <div class="truncate font-mono text-[11px] text-on-surface-muted">{target}</div>
   </button>
   {#if actions}
     <div class="flex shrink-0 items-center opacity-0 group-hover:opacity-100">{@render actions()}</div>

@@ -163,19 +163,19 @@
           <div
             role="columnheader"
             aria-colindex={i + 1}
-            class="flex h-9 shrink-0 flex-col justify-center gap-0.5 border-r border-b border-border
+            class="flex h-9 shrink-0 flex-col justify-center gap-0.5 border-r border-b border-outline-variant
               px-2 font-mono"
             style="width:{colWidths[i]}px"
             title={`${col.name} · ${col.typeName}${col.isPk ? " · PK" : ""}`}
           >
-            <span class="truncate text-xs font-medium text-fg-1">{col.name}</span>
-            <span class="truncate text-[10px] leading-none text-fg-2">{col.typeName}</span>
+            <span class="truncate text-xs font-medium text-on-surface-variant">{col.name}</span>
+            <span class="truncate text-[10px] leading-none text-on-surface-muted">{col.typeName}</span>
           </div>
         {/each}
       </div>
     {/snippet}
     {#snippet row(cells, r)}
-      <div role="row" aria-rowindex={r + 2} class="flex {rowBg(r)} hover:bg-bg-2" style="width:{width}px">
+      <div role="row" aria-rowindex={r + 2} class="flex {rowBg(r)} hover:bg-surface-container-high" style="width:{width}px">
         {#each cells as cell, c (c)}
           {@const selected = sel?.r === r && sel?.c === c}
           {@const dirty = edit?.isDirty(r, c)}
@@ -186,11 +186,11 @@
             tabindex="-1"
             aria-colindex={c + 1}
             aria-selected={selected}
-            class="relative flex h-7 shrink-0 items-center border-r border-b border-border px-2
+            class="relative flex h-7 shrink-0 items-center border-r border-b border-outline-variant px-2
               font-mono text-xs {cell.numeric ? 'justify-end tabular-nums' : ''}
               {dirty ? 'bg-grid-edited' : ''}
               {selected ? 'outline outline-1 -outline-offset-1 outline-accent' : ''}
-              {edit?.rowState(r) === 'deleted' ? 'text-fg-2 line-through' : 'text-fg-1'}"
+              {edit?.rowState(r) === 'deleted' ? 'text-on-surface-muted line-through' : 'text-on-surface-variant'}"
             style="width:{colWidths[c]}px"
             title={cell.title}
             onclick={() => select(r, c, true)}
@@ -200,8 +200,8 @@
               <input
                 use:focusSelect
                 bind:value={draft}
-                class="absolute inset-0 h-full w-full border border-accent bg-bg-2 px-2 font-mono
-                  text-xs text-fg-0 outline-none"
+                class="absolute inset-0 h-full w-full border border-accent bg-surface-container-high px-2 font-mono
+                  text-xs text-on-surface outline-none"
                 onkeydown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();

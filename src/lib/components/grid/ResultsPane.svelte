@@ -74,19 +74,19 @@
   }
 </script>
 
-<div class="flex h-full flex-col bg-bg-0">
+<div class="flex h-full flex-col bg-surface">
   <div
-    class="flex h-8 shrink-0 items-center gap-2 border-b border-border bg-bg-1 px-2 font-mono
-      text-[11px] text-fg-2"
+    class="flex h-8 shrink-0 items-center gap-2 border-b border-outline-variant bg-surface-container px-2 font-mono
+      text-[11px] text-on-surface-muted"
   >
     {#if tab?.running}
       <Spinner size="sm" /> <span>Running… {elapsed}s</span>
     {:else if current && !current.error}
       {#if current.columns.length > 0}
-        <span class="tabular-nums text-fg-1">{current.rows.length} rows</span>
+        <span class="tabular-nums text-on-surface-variant">{current.rows.length} rows</span>
         {#if current.truncated}<Badge variant="warn">limit</Badge>{/if}
       {:else}
-        <span class="tabular-nums text-fg-1">{current.rowsAffected} affected</span>
+        <span class="tabular-nums text-on-surface-variant">{current.rowsAffected} affected</span>
       {/if}
       <span class="tabular-nums">· {current.durationMs} ms</span>
     {:else}
@@ -114,13 +114,13 @@
     {:else if !tab}
       <EmptyState icon={Play} message="No editor tab open." />
     {:else if tab.running}
-      <div class="flex items-center gap-2 p-3 text-sm text-fg-2"><Spinner size="sm" /> Running query…</div>
+      <div class="flex items-center gap-2 p-3 text-sm text-on-surface-muted"><Spinner size="sm" /> Running query…</div>
     {:else if tab.runError}
       <div class="flex items-start gap-2 p-3 text-sm">
         <TriangleAlert size={16} strokeWidth={2} class="mt-0.5 shrink-0 text-danger" />
         <div class="min-w-0">
-          <div class="text-fg-0">{title(tab.runError.kind)}</div>
-          <div class="mt-0.5 font-mono text-xs whitespace-pre-wrap text-fg-2">{tab.runError.message}</div>
+          <div class="text-on-surface">{title(tab.runError.kind)}</div>
+          <div class="mt-0.5 font-mono text-xs whitespace-pre-wrap text-on-surface-muted">{tab.runError.message}</div>
         </div>
       </div>
     {:else if !result}
@@ -129,12 +129,12 @@
       <div class="flex items-start gap-2 p-3 text-sm">
         <TriangleAlert size={16} strokeWidth={2} class="mt-0.5 shrink-0 text-danger" />
         <div class="min-w-0">
-          <div class="text-fg-0">{title(current.error.kind)}</div>
-          <div class="mt-0.5 font-mono text-xs whitespace-pre-wrap text-fg-2">{current.error.message}</div>
+          <div class="text-on-surface">{title(current.error.kind)}</div>
+          <div class="mt-0.5 font-mono text-xs whitespace-pre-wrap text-on-surface-muted">{current.error.message}</div>
         </div>
       </div>
     {:else if current && current.columns.length === 0}
-      <div class="flex items-center gap-2 p-3 text-sm text-fg-1">
+      <div class="flex items-center gap-2 p-3 text-sm text-on-surface-variant">
         <CircleCheck size={16} strokeWidth={2} class="shrink-0 text-ok" />
         {current.rowsAffected} row{current.rowsAffected === 1 ? "" : "s"} affected.
       </div>

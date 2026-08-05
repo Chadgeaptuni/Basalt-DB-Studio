@@ -64,11 +64,11 @@
   {#if genError}
     <p class="font-mono text-xs text-danger">{genError.message}</p>
   {:else if sql === null}
-    <div class="flex items-center gap-2 text-fg-2"><Spinner size="sm" /> Generating…</div>
+    <div class="flex items-center gap-2 text-on-surface-muted"><Spinner size="sm" /> Generating…</div>
   {:else}
     <pre
-      class="max-h-80 overflow-auto rounded-md border border-border bg-bg-0 p-3 font-mono
-        text-xs whitespace-pre-wrap text-fg-1">{sql}</pre>
+      class="max-h-80 overflow-auto rounded-md border border-outline-variant bg-surface p-3 font-mono
+        text-xs whitespace-pre-wrap text-on-surface-variant">{sql}</pre>
     {#if runError}
       <p class="mt-2 font-mono text-xs whitespace-pre-wrap text-danger">{runError}</p>
     {/if}

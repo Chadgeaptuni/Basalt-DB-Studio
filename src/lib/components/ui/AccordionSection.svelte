@@ -47,16 +47,16 @@
 </script>
 
 <section
-  class="relative flex flex-col border-b border-border {open ? 'min-h-0' : 'shrink-0'}"
+  class="relative flex flex-col border-b border-outline-variant {open ? 'min-h-0' : 'shrink-0'}"
   style={open ? `flex:${sidebar.size(id)} 1 0` : ""}
 >
-  <header class="flex h-9 shrink-0 items-center gap-2 px-3 {open ? 'border-b border-border' : ''}">
+  <header class="flex h-9 shrink-0 items-center gap-2 px-3 {open ? 'border-b border-outline-variant' : ''}">
     <button
       type="button"
       onclick={() => sidebar.toggle(id)}
       aria-expanded={open}
-      class="flex min-w-0 flex-1 items-center gap-1.5 text-left text-fg-2 transition-colors
-        hover:text-fg-1"
+      class="flex min-w-0 flex-1 items-center gap-1.5 text-left text-on-surface-muted transition-colors
+        hover:text-on-surface-variant"
     >
       {#if open}
         <ChevronDown size={13} class="shrink-0" />

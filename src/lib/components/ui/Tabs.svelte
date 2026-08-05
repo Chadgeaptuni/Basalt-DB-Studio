@@ -54,14 +54,14 @@
   bind:this={tablist}
   role="tablist"
   aria-label={label}
-  class="flex h-8 items-stretch overflow-x-auto border-b border-border bg-bg-1"
+  class="flex h-8 items-stretch overflow-x-auto border-b border-outline-variant bg-surface-container"
 >
   {#each items as item (item.id)}
     <div
       transition:uiSlide={{ axis: "x" }}
-      class="group flex h-full items-center border-r border-border font-mono text-xs whitespace-nowrap
+      class="group flex h-full items-center border-r border-outline-variant font-mono text-xs whitespace-nowrap
         transition-colors duration-150
-        {item.id === activeId ? 'bg-bg-0 text-fg-0' : 'text-fg-2 hover:bg-bg-2 hover:text-fg-1'}"
+        {item.id === activeId ? 'bg-surface text-on-surface' : 'text-on-surface-muted hover:bg-surface-container-high hover:text-on-surface-variant'}"
     >
       <button
         type="button"
@@ -87,8 +87,8 @@
         <button
           type="button"
           aria-label={`Close ${item.label}`}
-          class="flex h-4 w-4 items-center justify-center rounded text-fg-2 opacity-0
-            transition-opacity hover:bg-bg-2 hover:text-fg-0 group-hover:opacity-100
+          class="flex h-4 w-4 items-center justify-center rounded text-on-surface-muted opacity-0
+            transition-opacity hover:bg-surface-container-high hover:text-on-surface group-hover:opacity-100
             group-focus-within:opacity-100"
           onclick={() => onClose?.(item.id)}
         >

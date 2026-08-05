@@ -57,8 +57,8 @@
     <Dialog.Overlay forceMount>
       {#snippet child({ props, open: overlayOpen })}
         {#if overlayOpen}
-          <!-- Scrim: dimmed --bg-0, no blur (DESIGN §6). -->
-          <div {...props} class="fixed inset-0 z-50 bg-bg-0/60" transition:uiFade></div>
+          <!-- Scrim: dimmed --surface, no blur (DESIGN §6). -->
+          <div {...props} class="fixed inset-0 z-50 bg-surface/60" transition:uiFade></div>
         {/if}
       {/snippet}
     </Dialog.Overlay>
@@ -76,14 +76,14 @@
           <div {...props}>
             <div
               class="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-lg border
-                border-border bg-bg-2"
+                border-outline-variant bg-surface-container-high"
               transition:uiScale
             >
               {#if !headerHidden}
                 <header
-                  class="flex shrink-0 items-center justify-between border-b border-border px-4 py-3"
+                  class="flex shrink-0 items-center justify-between border-b border-outline-variant px-4 py-3"
                 >
-                  <Dialog.Title level={2} class="text-base font-medium text-fg-0">
+                  <Dialog.Title level={2} class="text-base font-medium text-on-surface">
                     {title}
                   </Dialog.Title>
                   <IconButton icon={X} title="Close" size="sm" onclick={close} />
@@ -92,7 +92,7 @@
                 <Dialog.Title level={2} class="sr-only">{title}</Dialog.Title>
               {/if}
               <div
-                class="min-h-0 min-w-0 flex-1 text-sm text-fg-1 {padding
+                class="min-h-0 min-w-0 flex-1 text-sm text-on-surface-variant {padding
                   ? 'overflow-auto p-4'
                   : 'flex flex-col overflow-hidden'}"
               >
@@ -100,7 +100,7 @@
               </div>
               {#if footer}
                 <footer
-                  class="flex shrink-0 items-center justify-end gap-2 border-t border-border px-4 py-3"
+                  class="flex shrink-0 items-center justify-end gap-2 border-t border-outline-variant px-4 py-3"
                 >
                   {@render footer()}
                 </footer>

@@ -34,8 +34,8 @@
   const sizes: Record<Size, string> = { sm: "h-6 px-2 text-xs", md: "h-7 px-3 text-sm" };
   const variants: Record<Variant, string> = {
     primary: "bg-accent text-accent-fg hover:opacity-90",
-    secondary: "bg-bg-2 text-fg-0 border border-border hover:border-border-strong",
-    ghost: "text-fg-1 hover:bg-bg-2 hover:text-fg-0",
+    secondary: "bg-surface-container-high text-on-surface border border-outline-variant hover:border-outline",
+    ghost: "text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface",
     danger: "bg-danger-bg text-danger border border-danger/40 hover:border-danger",
   };
 </script>

@@ -37,8 +37,8 @@
   disabled={disabled || loading}
   {onclick}
   class="inline-flex items-center justify-center rounded-md {box} transition-colors duration-150
-    hover:bg-bg-2 hover:text-fg-0 disabled:opacity-50 disabled:pointer-events-none
-    {active === true ? 'bg-bg-2 text-fg-0' : 'text-fg-1'}"
+    hover:bg-surface-container-high hover:text-on-surface disabled:opacity-50 disabled:pointer-events-none
+    {active === true ? 'bg-surface-container-high text-on-surface' : 'text-on-surface-variant'}"
 >
   {#if loading}
     <Spinner size="sm" />

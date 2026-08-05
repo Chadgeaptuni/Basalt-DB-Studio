@@ -13,10 +13,10 @@
   let { variant = "neutral", title, class: cls = "", children }: Props = $props();
 
   const styles: Record<Variant, string> = {
-    neutral: "bg-bg-2 text-fg-2 border-border",
-    accent: "bg-bg-2 text-accent border-border",
-    ok: "bg-bg-2 text-ok border-border",
-    warn: "bg-bg-2 text-warn border-border",
+    neutral: "bg-surface-container-high text-on-surface-muted border-outline-variant",
+    accent: "bg-surface-container-high text-accent border-outline-variant",
+    ok: "bg-surface-container-high text-ok border-outline-variant",
+    warn: "bg-surface-container-high text-warn border-outline-variant",
     danger: "bg-danger-bg text-danger border-danger/40",
   };
 </script>

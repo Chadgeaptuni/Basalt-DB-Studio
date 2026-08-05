@@ -14,7 +14,7 @@
   let { icon: Icon, iconSize = 16, message, action }: Props = $props();
 </script>
 
-<div class="flex flex-col items-start gap-2 p-3 text-sm text-fg-2">
+<div class="flex flex-col items-start gap-2 p-3 text-sm text-on-surface-muted">
   <div class="flex items-center gap-2">
     {#if Icon}<Icon size={iconSize} strokeWidth={2} />{/if}
     <span>{message}</span>

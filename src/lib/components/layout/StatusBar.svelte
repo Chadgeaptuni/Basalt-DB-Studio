@@ -20,8 +20,8 @@
 </script>
 
 <footer
-  class="flex h-6 shrink-0 items-center gap-2 border-t border-border bg-bg-1 px-2
-    font-mono text-[11px] text-fg-2"
+  class="flex h-6 shrink-0 items-center gap-2 border-t border-outline-variant bg-surface-container px-2
+    font-mono text-[11px] text-on-surface-muted"
 >
   <IconButton icon={PanelLeft} title="Toggle sidebar" size="sm" onclick={onToggleSidebar} />
 
@@ -43,7 +43,7 @@
   <div class="flex-1"></div>
   <button
     type="button"
-    class="tabular-nums transition-colors hover:text-fg-1"
+    class="tabular-nums transition-colors hover:text-on-surface-variant"
     title="Display size — click to reset ({keyboard.label('mod+0')})"
     onclick={zoom.reset}
   >

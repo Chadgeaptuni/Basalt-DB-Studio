@@ -230,7 +230,7 @@ export const DEFAULT_CUSTOM_COLORS = {
 
 // OLED surfaces: true-black base + near-black raised, retaining the Basalt dark
 // accents/text. One preset, not a modifier applied to every palette.
-const OLED = { bg0: "#000000", bg1: "#0b0b0b", bg2: "#151515" } as const;
+const OLED = { surface: "#000000", container: "#0b0b0b", containerHigh: "#151515" } as const;
 export const OLED_THEME_ID = "basalt-oled";
 
 const mix = (color: string, pct: number, into: string): string =>
@@ -238,18 +238,18 @@ const mix = (color: string, pct: number, into: string): string =>
 
 /**
  * Map a seed + category to the full Basalt token contract (DESIGN.md §3). The one
- * derivation point: surfaces build a 3-level ramp, borders/grid/danger are mixed
- * from the palette, and accent/syntax hues are nudged toward the text colour on a
- * light palette so they retain contrast on a light background.
+ * derivation point: surfaces build a 5-level tonal ladder, borders/grid/danger are
+ * mixed from the palette, and accent/syntax hues are nudged toward the text colour
+ * on a light palette so they retain contrast on a light background.
  */
 export function themeTokens(seed: ThemeSeed, category: ThemeCategory): Record<string, string> {
   const light = category === "light";
   const oled = category === "oled";
   const base = light ? seed.light : seed.dark; // oled builds on the dark palette
 
-  const background = oled ? OLED.bg0 : base.background;
-  const surface = oled ? OLED.bg2 : base.surface;
-  const panel = oled ? OLED.bg1 : mix(base.surface, light ? 58 : 72, base.background);
+  const background = oled ? OLED.surface : base.background;
+  const surface = oled ? OLED.containerHigh : base.surface;
+  const panel = oled ? OLED.container : mix(base.surface, light ? 58 : 72, base.background);
 
   // Authored light accents win; otherwise pull hues toward onSurface (a dark tone)
   // so they keep contrast on a light background. Dark/OLED use them as authored.
@@ -259,16 +259,18 @@ export function themeTokens(seed: ThemeSeed, category: ThemeCategory): Record<st
   const s = accents.syntax;
 
   return {
-    "--bg-0": background,
-    "--bg-1": panel,
-    "--bg-2": surface,
+    "--surface": background,
+    "--surface-container-low": mix(panel, 50, background),
+    "--surface-container": panel,
+    "--surface-container-high": surface,
+    "--surface-container-highest": mix(base.onSurface, light ? 7 : 9, surface),
 
-    "--fg-0": base.onSurface,
-    "--fg-1": base.onSurfaceVariant,
-    "--fg-2": mix(base.onSurfaceVariant, 60, surface),
+    "--on-surface": base.onSurface,
+    "--on-surface-variant": base.onSurfaceVariant,
+    "--on-surface-muted": mix(base.onSurfaceVariant, 60, surface),
 
-    "--border": mix(base.outline, 58, surface),
-    "--border-strong": base.outline,
+    "--outline-variant": mix(base.outline, 58, surface),
+    "--outline": base.outline,
 
     "--accent": base.primary,
     "--accent-fg": base.onPrimary,
@@ -346,7 +348,7 @@ export function seedOf(entry: ThemeEntry): ThemeSeed {
 export function themeSwatch(entry: ThemeEntry): [string, string, string] {
   const seed = seedOf(entry);
   const base = entry.category === "light" ? seed.light : seed.dark;
-  return [entry.category === "oled" ? OLED.bg0 : base.background, base.primary, base.outline];
+  return [entry.category === "oled" ? OLED.surface : base.background, base.primary, base.outline];
 }
 
 /** Perceptual lightness of a #rrggbb colour, 0 (black) → 1 (white). */

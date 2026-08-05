@@ -23,7 +23,7 @@ describe("theme store (DOM application)", () => {
 
   it("uses a true-black base for the OLED preset", () => {
     theme.set("basalt-oled");
-    expect(tok("--bg-0")).toBe("#000000");
+    expect(tok("--surface")).toBe("#000000");
     expect(tok("--accent")).toBe("#4e8cd9"); // Basalt dark accent retained
     expect(root.style.colorScheme).toBe("dark");
   });
@@ -32,7 +32,7 @@ describe("theme store (DOM application)", () => {
     theme.set("basalt-light");
     expect(theme.isLight).toBe(true);
     expect(root.style.colorScheme).toBe("light");
-    expect(tok("--bg-0")).toBe("#ffffff");
+    expect(tok("--surface")).toBe("#ffffff");
   });
 
   it("toggles between the two appearances of the same family", () => {
@@ -55,8 +55,8 @@ describe("theme store (DOM application)", () => {
     ]);
     theme.set("custom-1");
     expect(tok("--accent")).toBe("#ff8800");
-    expect(tok("--fg-0")).toBe("#eef2f6");
-    expect(tok("--bg-2")).toBe("#101418");
+    expect(tok("--on-surface")).toBe("#eef2f6");
+    expect(tok("--surface-container-high")).toBe("#101418");
     expect(root.getAttribute("data-theme")).toBe("custom-1");
     expect(theme.category).toBe("dark"); // dark authored surface
   });

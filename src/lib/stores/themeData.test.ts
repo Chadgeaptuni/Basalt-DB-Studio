@@ -13,9 +13,10 @@ import {
 
 // Every token in the DESIGN.md §3 contract; themeTokens must emit all of them.
 const CONTRACT = [
-  "--bg-0", "--bg-1", "--bg-2",
-  "--fg-0", "--fg-1", "--fg-2",
-  "--border", "--border-strong",
+  "--surface", "--surface-container-low", "--surface-container",
+  "--surface-container-high", "--surface-container-highest",
+  "--on-surface", "--on-surface-variant", "--on-surface-muted",
+  "--outline-variant", "--outline",
   "--accent", "--accent-fg",
   "--danger", "--danger-fg", "--danger-bg",
   "--ok", "--warn",
@@ -65,7 +66,7 @@ describe("themeData", () => {
 
   it("makes the OLED appearance a true-black base", () => {
     for (const seed of THEME_SEEDS) {
-      expect(themeTokens(seed, "oled")["--bg-0"]).toBe("#000000");
+      expect(themeTokens(seed, "oled")["--surface"]).toBe("#000000");
     }
   });
 
@@ -73,17 +74,17 @@ describe("themeData", () => {
     for (const seed of THEME_SEEDS) {
       const light = themeTokens(seed, "light");
       const dark = themeTokens(seed, "dark");
-      expect(light["--bg-0"]).not.toBe(dark["--bg-0"]);
+      expect(light["--surface"]).not.toBe(dark["--surface"]);
     }
   });
 
   it("maps palettes to their exact seed colours", () => {
     const catppuccin = THEME_SEEDS.find((s) => s.id === "catppuccin")!;
     const darkTokens = themeTokens(catppuccin, "dark");
-    expect(darkTokens["--bg-0"]).toBe("#11111b"); // background
+    expect(darkTokens["--surface"]).toBe("#11111b"); // background
     expect(darkTokens["--accent"]).toBe("#cba6f7"); // primary
     expect(darkTokens["--danger"]).toBe("#f38ba8"); // error
-    expect(themeTokens(catppuccin, "light")["--bg-0"]).toBe("#eff1f5");
+    expect(themeTokens(catppuccin, "light")["--surface"]).toBe("#eff1f5");
 
     const dracula = THEME_SEEDS.find((s) => s.id === "dracula")!;
     expect(themeTokens(dracula, "dark")["--accent"]).toBe("#bd93f9");

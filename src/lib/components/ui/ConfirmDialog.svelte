@@ -28,7 +28,7 @@
 </script>
 
 <Modal {title} bind:open onclose={oncancel}>
-  {#if message}<p class="text-fg-1">{message}</p>{/if}
+  {#if message}<p class="text-on-surface-variant">{message}</p>{/if}
   {#snippet footer()}
     <Button variant="ghost" onclick={oncancel}>{cancelLabel}</Button>
     <Button variant={variant === "danger" ? "danger" : "primary"} onclick={onconfirm}>

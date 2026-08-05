@@ -59,7 +59,7 @@
 </script>
 
 <aside
-  class="relative flex h-full shrink-0 flex-col border-r border-border bg-bg-1"
+  class="relative flex h-full shrink-0 flex-col border-r border-outline-variant bg-surface-container"
   style="width:{sidebar.width}px"
 >
   <div bind:this={stack} class="flex min-h-0 flex-1 flex-col">

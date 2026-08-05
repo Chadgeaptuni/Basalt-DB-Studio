@@ -16,11 +16,11 @@
 <kbd class="inline-flex items-center gap-0.5" title={keyboard.label(combo)}>
   {#each keys as key, i (i)}
     {#if i > 0}
-      <span aria-hidden="true" class="font-mono text-[10px] leading-none text-fg-2">+</span>
+      <span aria-hidden="true" class="font-mono text-[10px] leading-none text-on-surface-muted">+</span>
     {/if}
     <kbd
-      class="inline-flex h-4 min-w-4 items-center justify-center rounded border border-border
-        bg-bg-2 px-1 font-mono text-[10px] leading-none text-fg-2"
+      class="inline-flex h-4 min-w-4 items-center justify-center rounded border border-outline-variant
+        bg-surface-container-high px-1 font-mono text-[10px] leading-none text-on-surface-muted"
     >
       {key}
     </kbd>

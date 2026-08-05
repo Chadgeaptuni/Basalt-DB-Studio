@@ -111,32 +111,32 @@ const highlight = HighlightStyle.define([
   { tag: [t.function(t.variableName), t.function(t.propertyName)], color: "var(--syntax-fn)" },
   { tag: t.typeName, color: "var(--syntax-fn)" },
   { tag: [t.variableName, t.propertyName, t.name], color: "var(--syntax-ident)" },
-  { tag: t.operator, color: "var(--fg-1)" },
+  { tag: t.operator, color: "var(--on-surface-variant)" },
 ]);
 
 // Flat, tokenized editor chrome — the app owns the focus ring, so CM's is off.
 const theme = EditorView.theme({
-  "&": { color: "var(--fg-1)", backgroundColor: "var(--bg-0)", height: "100%" },
+  "&": { color: "var(--on-surface-variant)", backgroundColor: "var(--surface)", height: "100%" },
   "&.cm-focused": { outline: "none" },
   ".cm-scroller": { fontFamily: "var(--font-mono)", fontSize: "13px", lineHeight: "1.5" },
-  ".cm-content": { caretColor: "var(--fg-0)" },
-  ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--fg-0)" },
+  ".cm-content": { caretColor: "var(--on-surface)" },
+  ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--on-surface)" },
   ".cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection": {
     backgroundColor: "var(--grid-sel)",
   },
   ".cm-gutters": {
-    backgroundColor: "var(--bg-1)",
-    color: "var(--fg-2)",
+    backgroundColor: "var(--surface-container)",
+    color: "var(--on-surface-muted)",
     border: "none",
-    borderRight: "1px solid var(--border)",
+    borderRight: "1px solid var(--outline-variant)",
   },
   ".cm-lineNumbers .cm-gutterElement": { padding: "0 8px 0 12px" },
-  ".cm-matchingBracket": { backgroundColor: "var(--bg-2)", outline: "1px solid var(--border-strong)" },
+  ".cm-matchingBracket": { backgroundColor: "var(--surface-container-high)", outline: "1px solid var(--outline)" },
   ".cm-tooltip": {
-    backgroundColor: "var(--bg-2)",
-    border: "1px solid var(--border)",
+    backgroundColor: "var(--surface-container-high)",
+    border: "1px solid var(--outline-variant)",
     borderRadius: "8px",
-    color: "var(--fg-1)",
+    color: "var(--on-surface-variant)",
   },
   ".cm-tooltip.cm-tooltip-autocomplete > ul": { fontFamily: "var(--font-mono)", fontSize: "12px" },
   ".cm-tooltip-autocomplete ul li[aria-selected]": {

@@ -36,16 +36,16 @@
 <Modal open title={`New index on ${table}`} onclose={ddl.close}>
   <div class="flex flex-col gap-3">
     <label class="flex flex-col gap-1">
-      <span class="text-xs tracking-wider text-fg-2 uppercase">Index name</span>
+      <span class="text-xs tracking-wider text-on-surface-muted uppercase">Index name</span>
       <Input bind:value={name} autofocus />
     </label>
     <div class="flex flex-col gap-1">
-      <span class="text-xs tracking-wider text-fg-2 uppercase">Columns</span>
-      <div class="flex flex-col gap-1 rounded-md border border-border bg-bg-0 p-2">
+      <span class="text-xs tracking-wider text-on-surface-muted uppercase">Columns</span>
+      <div class="flex flex-col gap-1 rounded-md border border-outline-variant bg-surface p-2">
         {#each columns as col (col)}
           <Checkbox bind:checked={picked[col]} label={col} />
         {/each}
-        {#if columns.length === 0}<span class="text-xs text-fg-2">No columns.</span>{/if}
+        {#if columns.length === 0}<span class="text-xs text-on-surface-muted">No columns.</span>{/if}
       </div>
     </div>
     <Checkbox bind:checked={unique} label="Unique" />
