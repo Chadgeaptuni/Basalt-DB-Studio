@@ -13,11 +13,19 @@
 
   let { themeToEdit = null, onclose, onsave }: Props = $props();
 
-  let name = $state(themeToEdit?.name ?? "Custom Theme");
-  let primary = $state(themeToEdit?.colors.primary ?? DEFAULT_CUSTOM_COLORS.primary);
-  let surface = $state(themeToEdit?.colors.surface ?? DEFAULT_CUSTOM_COLORS.surface);
-  let border = $state(themeToEdit?.colors.border ?? DEFAULT_CUSTOM_COLORS.border);
-  let text = $state(themeToEdit?.colors.text ?? DEFAULT_CUSTOM_COLORS.text);
+  let name = $state("");
+  let primary = $state("");
+  let surface = $state("");
+  let border = $state("");
+  let text = $state("");
+
+  $effect(() => {
+    name = themeToEdit?.name ?? "Custom Theme";
+    primary = themeToEdit?.colors.primary ?? DEFAULT_CUSTOM_COLORS.primary;
+    surface = themeToEdit?.colors.surface ?? DEFAULT_CUSTOM_COLORS.surface;
+    border = themeToEdit?.colors.border ?? DEFAULT_CUSTOM_COLORS.border;
+    text = themeToEdit?.colors.text ?? DEFAULT_CUSTOM_COLORS.text;
+  });
 
   function save() {
     if (!name.trim()) return;
@@ -46,6 +54,7 @@
       <label class="flex items-center gap-3 rounded-lg border border-border bg-bg-0/60 p-3">
         <input
           type="color"
+          aria-label="Primary Accent"
           bind:value={primary}
           class="h-8 w-10 cursor-pointer rounded border-0 bg-transparent"
         />
@@ -58,6 +67,7 @@
       <label class="flex items-center gap-3 rounded-lg border border-border bg-bg-0/60 p-3">
         <input
           type="color"
+          aria-label="Surface Background"
           bind:value={surface}
           class="h-8 w-10 cursor-pointer rounded border-0 bg-transparent"
         />
@@ -70,6 +80,7 @@
       <label class="flex items-center gap-3 rounded-lg border border-border bg-bg-0/60 p-3">
         <input
           type="color"
+          aria-label="Border Color"
           bind:value={border}
           class="h-8 w-10 cursor-pointer rounded border-0 bg-transparent"
         />
@@ -82,6 +93,7 @@
       <label class="flex items-center gap-3 rounded-lg border border-border bg-bg-0/60 p-3">
         <input
           type="color"
+          aria-label="Text Color"
           bind:value={text}
           class="h-8 w-10 cursor-pointer rounded border-0 bg-transparent"
         />
