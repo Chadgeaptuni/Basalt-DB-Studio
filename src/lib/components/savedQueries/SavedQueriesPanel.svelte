@@ -7,6 +7,7 @@
   import TreeItem from "$lib/components/ui/TreeItem.svelte";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
+  import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import AccordionSection from "$lib/components/ui/AccordionSection.svelte";
   import ContextMenu, { type MenuItem } from "$lib/components/ui/ContextMenu.svelte";
@@ -15,6 +16,7 @@
   import { editorTabs } from "$lib/stores/tabs.svelte";
   import { confirm } from "$lib/stores/dialogs.svelte";
   import { toast } from "$lib/stores/toasts.svelte";
+  import { keyboard } from "$lib/utils/keyboard";
   import type { SavedQuery } from "$lib/api/savedQueries";
   import type { ApiError } from "$lib/api/client";
 
@@ -71,9 +73,12 @@
     {#if savedQueries.loading && savedQueries.items.length === 0}
       <div class="flex items-center gap-2 p-3 text-sm text-fg-2"><Spinner size="sm" /> Loading…</div>
     {:else if savedQueries.error}
-      <div class="p-3 text-xs whitespace-pre-wrap text-danger">{savedQueries.error.message}</div>
+      <div class="p-3 text-xs text-danger">
+        <div class="font-mono whitespace-pre-wrap">{savedQueries.error.message}</div>
+        <div class="mt-2"><Button size="sm" onclick={() => void savedQueries.load()}>Retry</Button></div>
+      </div>
     {:else if savedQueries.items.length === 0}
-      <EmptyState icon={BookMarked} message="No saved queries. Save one with Ctrl+S." />
+      <EmptyState icon={BookMarked} message={`No saved queries. Save one with ${keyboard.label("mod+s")}.`} />
     {:else}
       <div role="tree">
         {#each groups as g (g.folder)}
