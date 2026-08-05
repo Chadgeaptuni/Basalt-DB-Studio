@@ -18,7 +18,6 @@
 
   const sessionId = $derived(connections.active?.sessionId ?? null);
   let expanded = $state<Record<string, boolean>>({});
-  let menu = $state<{ x: number; y: number; items: MenuItem[] } | null>(null);
 
   function newTable(namespace: string): void {
     ddl.open({ type: "newTable", namespace });
@@ -30,26 +29,18 @@
     ddl.open({ type: "createIndex", namespace: ns, table: rel, columns: desc?.columns.map((c) => c.name) ?? [] });
   }
 
-  function nsMenu(e: MouseEvent, ns: string): void {
-    menu = {
-      x: e.clientX,
-      y: e.clientY,
-      items: [{ label: "New table…", onselect: () => newTable(ns) }],
-    };
+  function nsMenu(ns: string): MenuItem[] {
+    return [{ label: "New table…", onselect: () => newTable(ns) }];
   }
 
-  function relMenu(e: MouseEvent, ns: string, rel: string): void {
-    menu = {
-      x: e.clientX,
-      y: e.clientY,
-      items: [
-        { label: "Open data", onselect: () => editorTabs.openTable(ns, rel) },
-        { label: "Add column…", onselect: () => ddl.open({ type: "addColumn", namespace: ns, table: rel }) },
-        { label: "Create index…", onselect: () => void openIndexDialog(ns, rel) },
-        { label: "Rename table…", onselect: () => ddl.open({ type: "renameTable", namespace: ns, table: rel }) },
-        { label: "Drop table", danger: true, onselect: () => ddl.preview({ kind: "dropTable", namespace: ns, name: rel }) },
-      ],
-    };
+  function relMenu(ns: string, rel: string): MenuItem[] {
+    return [
+      { label: "Open data", onselect: () => editorTabs.openTable(ns, rel) },
+      { label: "Add column…", onselect: () => ddl.open({ type: "addColumn", namespace: ns, table: rel }) },
+      { label: "Create index…", onselect: () => void openIndexDialog(ns, rel) },
+      { label: "Rename table…", onselect: () => ddl.open({ type: "renameTable", namespace: ns, table: rel }) },
+      { label: "Drop table", danger: true, onselect: () => ddl.preview({ kind: "dropTable", namespace: ns, name: rel }) },
+    ];
   }
 
   // Load the tree the first time a session becomes active.
@@ -97,31 +88,33 @@
     {:else if view.tree && view.tree.namespaces.length > 0}
       <div role="tree">
         {#each view.tree.namespaces as ns (ns.name)}
-          <TreeItem
-            label={ns.name}
-            icon={Boxes}
-            depth={0}
-            expandable
-            expanded={expanded[`ns:${ns.name}`]}
-            onclick={() => toggleNs(ns.name)}
-            ontoggle={() => toggleNs(ns.name)}
-            oncontextmenu={(e) => nsMenu(e, ns.name)}
-          />
+          <ContextMenu items={nsMenu(ns.name)}>
+            <TreeItem
+              label={ns.name}
+              icon={Boxes}
+              depth={0}
+              expandable
+              expanded={expanded[`ns:${ns.name}`]}
+              onclick={() => toggleNs(ns.name)}
+              ontoggle={() => toggleNs(ns.name)}
+            />
+          </ContextMenu>
           {#if expanded[`ns:${ns.name}`]}
             {#each ns.relations as rel (rel.name)}
               {@const tkey = `tbl:${ns.name}:${rel.name}`}
-              <TreeItem
-                label={rel.name}
-                icon={rel.kind === "view" ? Eye : Table}
-                depth={1}
-                expandable
-                expanded={expanded[tkey]}
-                title={`${rel.kind} · double-click to open data`}
-                onclick={() => toggleTable(ns.name, rel.name)}
-                ondblclick={() => editorTabs.openTable(ns.name, rel.name)}
-                oncontextmenu={(e) => relMenu(e, ns.name, rel.name)}
-                ontoggle={() => toggleTable(ns.name, rel.name)}
-              />
+              <ContextMenu items={relMenu(ns.name, rel.name)}>
+                <TreeItem
+                  label={rel.name}
+                  icon={rel.kind === "view" ? Eye : Table}
+                  depth={1}
+                  expandable
+                  expanded={expanded[tkey]}
+                  title={`${rel.kind} · double-click to open data`}
+                  onclick={() => toggleTable(ns.name, rel.name)}
+                  ondblclick={() => editorTabs.openTable(ns.name, rel.name)}
+                  ontoggle={() => toggleTable(ns.name, rel.name)}
+                />
+              </ContextMenu>
               {#if expanded[tkey] && sessionId}
                 {@const desc = schema.describeCached(sessionId, ns.name, rel.name)}
                 {#if desc}
@@ -157,7 +150,3 @@
     {/if}
   </div>
 </AccordionSection>
-
-{#if menu}
-  <ContextMenu x={menu.x} y={menu.y} items={menu.items} onclose={() => (menu = null)} />
-{/if}

@@ -18,8 +18,6 @@
   import type { SavedQuery } from "$lib/api/savedQueries";
   import type { ApiError } from "$lib/api/client";
 
-  let menu = $state<{ x: number; y: number; items: MenuItem[] } | null>(null);
-
   $effect(() => void savedQueries.load());
 
   // Group by folder (the path minus its last segment); root ("") first, then
@@ -55,15 +53,11 @@
     if (ok) await savedQueries.remove(q.path);
   }
 
-  function rowMenu(e: MouseEvent, q: SavedQuery): void {
-    menu = {
-      x: e.clientX,
-      y: e.clientY,
-      items: [
-        { label: "Open", onselect: () => void open(q) },
-        { label: "Delete", danger: true, onselect: () => void remove(q) },
-      ],
-    };
+  function rowMenu(q: SavedQuery): MenuItem[] {
+    return [
+      { label: "Open", onselect: () => void open(q) },
+      { label: "Delete", danger: true, onselect: () => void remove(q) },
+    ];
   }
 </script>
 
@@ -87,21 +81,18 @@
             <TreeItem label={g.folder} icon={Folder} depth={0} />
           {/if}
           {#each g.queries as q (q.path)}
-            <TreeItem
-              label={q.name}
-              icon={FileCode}
-              depth={g.folder ? 1 : 0}
-              title={q.path}
-              onclick={() => void open(q)}
-              oncontextmenu={(e) => rowMenu(e, q)}
-            />
+            <ContextMenu items={rowMenu(q)}>
+              <TreeItem
+                label={q.name}
+                icon={FileCode}
+                depth={g.folder ? 1 : 0}
+                title={q.path}
+                onclick={() => void open(q)}
+              />
+            </ContextMenu>
           {/each}
         {/each}
       </div>
     {/if}
   </div>
 </AccordionSection>
-
-{#if menu}
-  <ContextMenu x={menu.x} y={menu.y} items={menu.items} onclose={() => (menu = null)} />
-{/if}

@@ -7,54 +7,38 @@
 </script>
 
 <script lang="ts">
-  // Floating menu at (x,y): `--bg-2`, 1px border, 24px rows (DESIGN §6). Closes on
-  // outside click / Escape. Dumb primitive — the caller owns the items + placement.
-  import { uiScale } from "$lib/utils/motion";
+  import type { Snippet } from "svelte";
+  import { ContextMenu as ContextMenuPrimitive } from "bits-ui";
 
   interface Props {
-    x: number;
-    y: number;
     items: MenuItem[];
-    onclose: () => void;
+    children: Snippet;
   }
-  let { x, y, items, onclose }: Props = $props();
 
-  $effect(() => {
-    const onDocClick = (): void => onclose();
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key === "Escape") onclose();
-    };
-    window.addEventListener("click", onDocClick);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("click", onDocClick);
-      window.removeEventListener("keydown", onKey);
-    };
-  });
+  let { items, children }: Props = $props();
 </script>
 
-<!-- Inside clicks are stopped so only outside clicks reach the window closer. -->
-<div
-  role="menu"
-  tabindex="-1"
-  class="fixed z-50 min-w-44 rounded-lg border border-border bg-bg-2 py-1"
-  style="left:{x}px; top:{y}px; transform-origin:top left"
-  onclick={(e) => e.stopPropagation()}
-  onkeydown={() => {}}
-  transition:uiScale
->
-  {#each items as item (item.label)}
-    <button
-      type="button"
-      role="menuitem"
-      class="flex h-6 w-full items-center px-3 text-left font-mono text-xs transition-colors
-        duration-150 hover:bg-bg-0 {item.danger ? 'text-danger' : 'text-fg-1'}"
-      onclick={() => {
-        item.onselect();
-        onclose();
-      }}
+<ContextMenuPrimitive.Root>
+  <ContextMenuPrimitive.Trigger class="contents">
+    {@render children()}
+  </ContextMenuPrimitive.Trigger>
+
+  <ContextMenuPrimitive.Portal>
+    <ContextMenuPrimitive.Content
+      loop
+      sideOffset={2}
+      class="z-50 min-w-44 rounded-lg border border-border bg-bg-2 py-1 outline-none"
     >
-      {item.label}
-    </button>
-  {/each}
-</div>
+      {#each items as item (item.label)}
+        <ContextMenuPrimitive.Item
+          onSelect={item.onselect}
+          class="flex h-6 cursor-default items-center px-3 font-mono text-xs outline-none
+            transition-colors duration-150 data-[highlighted]:bg-bg-0
+            {item.danger ? 'text-danger' : 'text-fg-1'}"
+        >
+          {item.label}
+        </ContextMenuPrimitive.Item>
+      {/each}
+    </ContextMenuPrimitive.Content>
+  </ContextMenuPrimitive.Portal>
+</ContextMenuPrimitive.Root>
