@@ -6,12 +6,23 @@
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import { confirm } from "$lib/stores/dialogs.svelte";
-  import { theme, THEME_VARIANTS, type CustomTheme } from "$lib/stores/theme.svelte";
-  import { THEME_DEFINITIONS } from "./themeDefinitions";
+  import { theme, type CustomTheme } from "$lib/stores/theme.svelte";
+  import { customCategory } from "$lib/stores/themeData";
+  import { THEME_SECTIONS } from "./themeDefinitions";
   import CustomThemeEditorModal from "./CustomThemeEditorModal.svelte";
 
+  // Three flat sections; a theme is one appearance, so picking a row is the whole
+  // choice — no variant switch on top (DESIGN §3). Custom themes join the section
+  // their authored surface puts them in.
   let editingCustomTheme = $state<CustomTheme | null>(null);
   let showEditorModal = $state(false);
+
+  const sections = $derived(
+    THEME_SECTIONS.map((section) => ({
+      ...section,
+      customs: theme.customThemes.filter((c) => customCategory(c.colors) === section.category),
+    })),
+  );
 
   function createNewTheme(): void {
     editingCustomTheme = null;
@@ -36,13 +47,7 @@
   function handleSaveCustom(item: CustomTheme): void {
     const existing = theme.customThemes;
     const index = existing.findIndex((t) => t.id === item.id);
-    let next: CustomTheme[];
-    if (index >= 0) {
-      next = [...existing];
-      next[index] = item;
-    } else {
-      next = [...existing, item];
-    }
+    const next = index >= 0 ? existing.with(index, item) : [...existing, item];
     theme.saveCustomThemes(next);
     theme.set(item.id);
     showEditorModal = false;
@@ -50,35 +55,40 @@
 </script>
 
 <div class="flex flex-col gap-3">
-  <div class="flex min-h-9 flex-wrap items-center justify-between gap-2 border-y border-border py-1">
-    <div class="flex items-center gap-2">
-      <span class="text-xs font-medium tracking-wider text-fg-2 uppercase">Variant</span>
-      <div class="flex items-center gap-0.5" role="group" aria-label="Theme variant">
-        {#each THEME_VARIANTS as v}
-          <button
-            type="button"
-            aria-pressed={theme.variant === v}
-            onclick={() => theme.setVariant(v)}
-            class="h-6 rounded-md px-2 text-xs font-medium uppercase transition-colors duration-150
-              {theme.variant === v
-                ? 'bg-bg-2 text-fg-0'
-                : 'text-fg-2 hover:bg-bg-1 hover:text-fg-1'}"
-          >
-            {v === "amoled" ? "OLED" : v}
-          </button>
-        {/each}
-      </div>
-    </div>
-
+  <div class="flex items-center justify-between">
+    <span class="text-xs text-fg-2">{theme.current}</span>
     <Button size="sm" onclick={createNewTheme}><Plus size={13} /> New custom theme</Button>
   </div>
 
-  {#if theme.customThemes.length > 0}
-    <div class="flex flex-col gap-2">
-      <h4 class="text-xs font-medium tracking-wider text-fg-2 uppercase">Custom themes</h4>
-      <div class="divide-y divide-border border-y border-border">
-        {#each theme.customThemes as custom (custom.id)}
-          <div class="flex h-11 items-center transition-colors hover:bg-bg-1">
+  {#each sections as section (section.category)}
+    <section>
+      <h4 class="pb-1 text-xs font-medium tracking-wider text-fg-2 uppercase">{section.title}</h4>
+      <div class="grid grid-cols-1 border-t border-border sm:grid-cols-2">
+        {#each section.items as preset, i (preset.id)}
+          <button
+            type="button"
+            aria-pressed={theme.current === preset.id}
+            onclick={() => theme.set(preset.id)}
+            class="flex h-9 min-w-0 items-center gap-2 border-b border-border px-2 text-left
+              transition-colors duration-150 hover:bg-bg-1 {i % 2 === 0 ? 'sm:border-r' : ''}
+              {theme.current === preset.id ? 'bg-bg-1 text-fg-0' : 'text-fg-1'}"
+          >
+            <span
+              class="flex h-6 w-9 shrink-0 items-center justify-center gap-1 rounded-md border
+                border-border p-1"
+              style="background-color: {preset.colors[0]}"
+              aria-hidden="true"
+            >
+              <span class="h-3.5 w-1.5 rounded-full" style="background-color: {preset.colors[1]}"></span>
+              <span class="h-3.5 w-1.5 rounded-full" style="background-color: {preset.colors[2]}"></span>
+            </span>
+            <span class="min-w-0 flex-1 truncate text-xs font-medium">{preset.name}</span>
+            {#if theme.current === preset.id}<Check size={14} class="shrink-0 text-accent" />{/if}
+          </button>
+        {/each}
+
+        {#each section.customs as custom (custom.id)}
+          <div class="flex h-9 items-center border-b border-border transition-colors hover:bg-bg-1">
             <button
               type="button"
               aria-pressed={theme.current === custom.id}
@@ -86,12 +96,13 @@
               class="flex h-full min-w-0 flex-1 items-center gap-2 px-2 text-left"
             >
               <span
-                class="flex h-7 w-10 shrink-0 items-center justify-center rounded-md border border-border p-1"
+                class="flex h-6 w-9 shrink-0 items-center justify-center gap-1 rounded-md border
+                  border-border p-1"
                 style="background-color: {custom.colors.surface}"
                 aria-hidden="true"
               >
-                <span class="h-4 w-1.5 rounded-full" style="background-color: {custom.colors.primary}"></span>
-                <span class="ml-1 h-4 w-1.5 rounded-full" style="background-color: {custom.colors.border}"></span>
+                <span class="h-3.5 w-1.5 rounded-full" style="background-color: {custom.colors.primary}"></span>
+                <span class="h-3.5 w-1.5 rounded-full" style="background-color: {custom.colors.border}"></span>
               </span>
               <span class="min-w-0 flex-1 truncate text-xs font-medium text-fg-0">{custom.name}</span>
               {#if theme.current === custom.id}<Check size={14} class="shrink-0 text-accent" />{/if}
@@ -103,37 +114,8 @@
           </div>
         {/each}
       </div>
-    </div>
-  {/if}
-
-  <div class="flex flex-col gap-2">
-    <h4 class="text-xs font-medium tracking-wider text-fg-2 uppercase">Presets</h4>
-    <div class="grid grid-cols-1 border-y border-border sm:grid-cols-2">
-      {#each THEME_DEFINITIONS as preset, i (preset.id)}
-        <button
-          type="button"
-          aria-pressed={theme.current === preset.id}
-          onclick={() => theme.set(preset.id)}
-          class="flex h-11 min-w-0 items-center gap-2 border-b border-border px-2 text-left
-            transition-colors duration-150 hover:bg-bg-1 {i % 2 === 0 ? 'sm:border-r' : ''}
-            {theme.current === preset.id ? 'bg-bg-1 text-fg-0' : 'text-fg-1'}"
-        >
-          <span class="flex h-7 w-10 shrink-0 items-center justify-center gap-1 rounded-md border border-border bg-bg-0 p-1" aria-hidden="true">
-            {#each preset.colors as color}
-              <span class="h-4 w-1.5 rounded-full" style="background-color: {color}"></span>
-            {/each}
-          </span>
-          <span class="min-w-0 flex-1">
-            <span class="flex items-center gap-1 text-xs font-medium text-fg-0">
-              <span class="truncate">{preset.name}</span>
-              {#if theme.current === preset.id}<Check size={14} class="shrink-0 text-accent" />{/if}
-            </span>
-            <span class="block truncate text-[11px] text-fg-2">{preset.description}</span>
-          </span>
-        </button>
-      {/each}
-    </div>
-  </div>
+    </section>
+  {/each}
 </div>
 
 {#if showEditorModal}

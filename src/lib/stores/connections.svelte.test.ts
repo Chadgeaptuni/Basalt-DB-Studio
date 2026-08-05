@@ -38,6 +38,24 @@ describe("connections store", () => {
     expect(connections.active?.sessionId).toBe("s1");
   });
 
+  it("activates an existing session instead of opening a second one", async () => {
+    let connects = 0;
+    mockIPC((cmd) => {
+      if (cmd === "connect") {
+        connects += 1;
+        return { sessionId: `s${connects}`, profileId: "p1", engine: "sqlite", readOnly: false };
+      }
+      return undefined;
+    });
+
+    await connections.activate("p-act"); // first open → connects
+    connections.setActive({ sessionId: "other", profileId: "p9", engine: "sqlite", readOnly: false });
+    await connections.activate("p-act"); // already holds a session → refocus
+
+    expect(connects).toBe(1);
+    expect(connections.active?.sessionId).toBe("s1");
+  });
+
   it("captures a typed connect failure as an error status", async () => {
     mockIPC((cmd) => {
       if (cmd === "connect") throw { kind: "connectionRefused", message: "refused" };

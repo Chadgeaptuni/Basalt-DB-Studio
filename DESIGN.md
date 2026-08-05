@@ -61,7 +61,7 @@ Depth comes from **contrast and 1px borders**, never shadows.
 
 Tailwind v4, CSS-first. Utility-generating tokens are declared in `src/app.css`
 under `@theme inline`, each mapping a raw CSS variable (`--bg-0`, …) into a
-utility (`bg-bg-0`, …). The raw variables are computed per theme+variant in
+utility (`bg-bg-0`, …). The raw variables are computed per theme in
 `src/lib/stores/themeData.ts` and written onto `<html>` as inline
 variables by `stores/theme.svelte.ts`. `src/themes/tokens.css` holds the
 contract doc + a basalt-dark fallback (pre-JS / no-JS). **Adding a color = adding
@@ -80,15 +80,18 @@ Token contract (every preset must define all of these):
 | `--grid-header-bg` `--grid-row-alt` `--grid-sel` `--grid-null` `--grid-edited` | Data grid: header, zebra, selection, NULL badge, dirty-cell marker |
 | `--syntax-kw` `--syntax-str` `--syntax-num` `--syntax-comment` `--syntax-fn` `--syntax-ident` | SQL editor highlighting (fed to the CodeMirror theme) |
 
-Every theme is a seed in `themeData.ts` (4 house themes — `basalt-dark`
-(default), `basalt-light`, `basalt-nord`, `basalt-paper` — plus the ported Flow
-palettes: catppuccin, dracula, gruvbox, nord, tokyo-night, …). Each seed carries
-a light and dark base palette; `themeTokens(seed, variant)` derives the full
-contract above for all three variants — **light**, **dark**, and **amoled** (OLED
-true-black). `stores/theme.svelte.ts` persists the theme + variant choice, sets
-`data-theme`/`data-variant` on `<html>`, and applies the resolved tokens. Custom
-themes are user-defined seeds. The theme editor only writes seed colors — zero
-component rework.
+Colors live as *seeds* in `themeData.ts` (house families — `basalt`,
+`basalt-nord`, `basalt-paper` — plus the ported Flow palettes: catppuccin,
+dracula, gruvbox, tokyo-night, …). Each seed carries a light and a dark base
+palette, and `THEME_ENTRIES` flattens every seed into one selectable theme per
+authored appearance (`<seed>-light`, `<seed>-dark`) plus the single true-black
+`basalt-oled` preset. A theme is therefore one fixed appearance — there is no
+global light/dark switch layered on top; the top bar's toggle just swaps to the
+other appearance of the same family. `themeTokens(seed, category)` derives the
+full contract above, `stores/theme.svelte.ts` persists the selected id, sets
+`data-theme` and `color-scheme` on `<html>`, and applies the resolved tokens.
+Custom themes are user-defined seeds, filed under Light or Dark by their authored
+surface. The theme editor only writes seed colors — zero component rework.
 
 ## 4. Typography
 
@@ -106,10 +109,13 @@ Text contrast is the primary hierarchy tool. Two font stacks: UI sans and mono.
 
 ## 5. Layout
 
-- **App shell:** fixed left sidebar (connections + schema tree + saved queries) ·
-  main area (editor tabs above, results grid below, both in a `SplitPane`) ·
-  bottom `StatusBar` (connection, tx state, row count, duration, row-limit
-  notice). All resizable panes use the shared `SplitPane` primitive.
+- **App shell:** `TopBar` (Basalt mark left · connection switcher centred ·
+  appearance/settings right, in a three-column grid so the centre stays centred) ·
+  fixed left sidebar (schema tree + saved queries) · main area (editor tabs above,
+  results grid below, both in a `SplitPane`) · bottom `StatusBar` (tx state, row
+  count, duration, row-limit notice, zoom). The connection lives in the top bar
+  and appears nowhere else; the status bar carries per-run state only. All
+  resizable panes use the shared `SplitPane` primitive.
 - **Density first.** Prefer tables and dense flex rows over cards. Default
   control height is 28px (`h-7`), grid rows 28px, tree rows 24px, sidebar width
   ~260px. Padding steps: `p-1.5` inside rows, `p-3` for panel sections, `p-4`
@@ -151,8 +157,11 @@ the primitive**, don't fork it locally.
 - **EmptyState** — icon (16px, `--fg-2`) + one sentence + at most one action.
 - **Spinner** — 3 sizes; inline in buttons while pending (`Button` handles it via
   a `loading` prop).
-- **VirtualList / TreeItem / Tabs / SplitPane / Kbd** — shared primitives; any
-  scrolling data list must use `VirtualList` (§10).
+- **Kbd** — takes a shortcut spec (`"mod+shift+f"`), never pre-rendered key text,
+  and emits one 16px `<kbd>` per key inside a grouping `<kbd>` — so a chord reads
+  as separate caps and platform labels come from the one catalogue (§7).
+- **VirtualList / TreeItem / Tabs / SplitPane** — shared primitives; any scrolling
+  data list must use `VirtualList` (§10).
 
 ## 7. Interaction & Keyboard
 

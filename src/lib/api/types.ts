@@ -200,6 +200,8 @@ export interface BrowseResult {
   keyIsFallback: boolean;
   editable: boolean;
   notEditableReason?: string;
+  /** The exact statement that produced `rows` — shown and re-runnable in the tab. */
+  sql: string;
   durationMs: number;
 }
 

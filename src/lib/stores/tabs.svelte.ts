@@ -23,6 +23,9 @@ export interface EditorTab {
   /** Folder-relative path of the saved query this tab is bound to, if any (M6). */
   savedPath: string | null;
   sql: string;
+  /** SQL of the last completed run — what `result` came from, and what export
+   *  re-runs. `sql` is the live draft and may already have moved on. */
+  lastRunSql: string | null;
   /** Last run's per-statement results, or null before the first run. */
   result: RunResult | null;
   running: boolean;
@@ -50,6 +53,7 @@ function base(id: string, title: string, kind: TabKind, ref: TableRef | null, sq
     ref,
     savedPath: null,
     sql,
+    lastRunSql: null,
     result: null,
     running: false,
     runError: null,

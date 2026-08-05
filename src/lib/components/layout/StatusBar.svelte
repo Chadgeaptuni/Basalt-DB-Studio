@@ -1,36 +1,22 @@
 <script lang="ts">
   import PanelLeft from "@lucide/svelte/icons/panel-left";
-  import Sun from "@lucide/svelte/icons/sun";
-  import Moon from "@lucide/svelte/icons/moon";
-  import SettingsIcon from "@lucide/svelte/icons/settings";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import Badge from "$lib/components/ui/Badge.svelte";
-  import SettingsModal from "$lib/components/settings/SettingsModal.svelte";
-  import { theme } from "$lib/stores/theme.svelte";
   import { zoom } from "$lib/stores/zoom.svelte";
   import { keyboard } from "$lib/utils/keyboard";
-  import { connections } from "$lib/stores/connections.svelte";
   import { editorTabs } from "$lib/stores/tabs.svelte";
-  import type { Engine } from "$lib/api/types";
 
+  // Run state only: connection identity lives in the top bar, theme and settings
+  // in its right-hand group. What stays here is per-run (DESIGN §5).
   interface Props {
     onToggleSidebar: () => void;
   }
   let { onToggleSidebar }: Props = $props();
 
-  const ENGINE_TAG: Record<Engine, string> = { postgres: "PG", mysql: "MY", sqlite: "SQ" };
-
   // Query stats for the active editor tab's shown statement (DESIGN §5).
   const tab = $derived(editorTabs.active);
   const stmt = $derived(tab && tab.result ? tab.result.statements[tab.activeStatement] : undefined);
   const tx = $derived(tab?.result?.txStatus ?? "idle");
-  const isDark = $derived(theme.variant !== "light");
-  let showSettings = $state(false);
-  // Quick toggle flips the light/dark variant of the active theme; the picker
-  // (settings) exposes the full theme + OLED choices.
-  function toggleTheme(): void {
-    theme.setVariant(isDark ? "light" : "dark");
-  }
 </script>
 
 <footer
@@ -38,12 +24,6 @@
     font-mono text-[11px] text-fg-2"
 >
   <IconButton icon={PanelLeft} title="Toggle sidebar" size="sm" onclick={onToggleSidebar} />
-  {#if connections.active}
-    <Badge variant="ok">{ENGINE_TAG[connections.active.engine]}</Badge>
-    <span class="text-fg-1">connected{connections.active.readOnly ? " · read-only" : ""}</span>
-  {:else}
-    <span>Not connected</span>
-  {/if}
 
   {#if tx === "inTx"}
     <Badge variant="warn">TX</Badge>
@@ -69,11 +49,4 @@
   >
     {Math.round(zoom.level * 100)}%
   </button>
-  <span class="tabular-nums">{theme.current}</span>
-  <IconButton icon={isDark ? Sun : Moon} title="Toggle light/dark" size="sm" onclick={toggleTheme} />
-  <IconButton icon={SettingsIcon} title="Settings" size="sm" onclick={() => (showSettings = true)} />
 </footer>
-
-{#if showSettings}
-  <SettingsModal onclose={() => (showSettings = false)} />
-{/if}

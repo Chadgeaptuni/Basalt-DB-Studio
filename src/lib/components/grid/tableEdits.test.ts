@@ -15,6 +15,7 @@ const browse: BrowseResult = {
   keyColumns: ["id"],
   keyIsFallback: false,
   editable: true,
+  sql: 'SELECT "id", "name" FROM "main"."t" LIMIT 501',
   durationMs: 1,
 };
 

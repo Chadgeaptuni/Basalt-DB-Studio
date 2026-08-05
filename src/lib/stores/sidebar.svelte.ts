@@ -8,11 +8,12 @@
 // A section body shows only when it's neither manually collapsed nor auto-hidden.
 
 export const SECTIONS = [
-  { id: "connections", title: "Connections" },
   { id: "schema", title: "Schema" },
   { id: "saved", title: "Saved" },
 ] as const;
 export type SectionId = (typeof SECTIONS)[number]["id"];
+
+const isSectionId = (id: unknown): id is SectionId => SECTIONS.some((s) => s.id === id);
 
 // Shared layout metrics (also used by Sidebar + AccordionSection).
 export const HEADER_H = 36; // h-9 accordion header row, px
@@ -32,9 +33,12 @@ function loadWidth(): number {
   return n >= MIN_W && n <= MAX_W ? n : DEFAULT_W;
 }
 
+// Both loaders drop unknown ids so state persisted by an older layout (which had
+// a Connections section) can't leak a retired id back into the weights.
 function loadCollapsed(): Set<SectionId> {
   try {
-    return new Set(JSON.parse(localStorage.getItem(C_KEY) ?? "[]"));
+    const saved: unknown = JSON.parse(localStorage.getItem(C_KEY) ?? "[]");
+    return new Set(Array.isArray(saved) ? saved.filter(isSectionId) : []);
   } catch {
     return new Set();
   }
@@ -43,7 +47,11 @@ function loadCollapsed(): Set<SectionId> {
 function loadSizes(): Record<SectionId, number> {
   const base = Object.fromEntries(SECTIONS.map((s) => [s.id, 1])) as Record<SectionId, number>;
   try {
-    return { ...base, ...JSON.parse(localStorage.getItem(S_KEY) ?? "{}") };
+    const saved = JSON.parse(localStorage.getItem(S_KEY) ?? "{}") as Record<string, number>;
+    for (const [id, weight] of Object.entries(saved)) {
+      if (isSectionId(id) && typeof weight === "number") base[id] = weight;
+    }
+    return base;
   } catch {
     return base;
   }

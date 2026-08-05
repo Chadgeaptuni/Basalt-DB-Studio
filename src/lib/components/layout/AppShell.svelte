@@ -1,5 +1,6 @@
 <script lang="ts">
   import Sidebar from "./Sidebar.svelte";
+  import TopBar from "./TopBar.svelte";
   import StatusBar from "./StatusBar.svelte";
   import StartPanel from "./StartPanel.svelte";
   import Workspace from "$lib/components/workspace/Workspace.svelte";
@@ -23,6 +24,7 @@
 </script>
 
 <div class="flex h-full flex-col">
+  <TopBar />
   <div class="flex flex-1 overflow-hidden">
     {#if sidebarOpen}<Sidebar />{/if}
     <main class="flex-1 overflow-hidden bg-bg-0">

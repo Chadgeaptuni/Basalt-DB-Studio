@@ -1,9 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
   THEME_SEEDS,
-  THEME_VARIANTS,
+  THEME_ENTRIES,
+  THEME_CATEGORIES,
+  OLED_THEME_ID,
+  themeEntry,
   themeTokens,
   themeSwatch,
+  customCategory,
   customSeed,
 } from "./themeData";
 
@@ -23,35 +27,49 @@ const isColor = (v: string) => v.startsWith("#") || v.startsWith("color-mix(");
 
 describe("themeData", () => {
   it("ships the built-in palettes with unique ids", () => {
-    expect(THEME_SEEDS.length).toBeGreaterThanOrEqual(22);
+    expect(THEME_SEEDS.length).toBeGreaterThanOrEqual(21);
     expect(new Set(THEME_SEEDS.map((s) => s.id)).size).toBe(THEME_SEEDS.length);
     const ids = THEME_SEEDS.map((s) => s.id);
 
-    for (const id of ["basalt-dark", "basalt-light", "catppuccin", "dracula", "gruvbox", "claude"]) {
+    for (const id of ["basalt", "catppuccin", "dracula", "gruvbox", "claude"]) {
       expect(ids).toContain(id);
     }
   });
 
-  it("emits the full token contract for every theme and variant", () => {
-    for (const seed of THEME_SEEDS) {
-      for (const variant of THEME_VARIANTS) {
-        const tokens = themeTokens(seed, variant);
-        expect(Object.keys(tokens).sort()).toEqual([...CONTRACT].sort());
-        for (const value of Object.values(tokens)) {
-          expect(typeof value).toBe("string");
-          expect(isColor(value)).toBe(true);
-        }
+  it("flattens every seed into one entry per authored appearance, plus OLED", () => {
+    expect(THEME_ENTRIES).toHaveLength(THEME_SEEDS.length * 2 + 1);
+    expect(new Set(THEME_ENTRIES.map((e) => e.id)).size).toBe(THEME_ENTRIES.length);
+    expect(themeEntry(OLED_THEME_ID)?.category).toBe("oled");
+
+    // Each entry belongs to exactly one section, and every category is populated.
+    for (const category of THEME_CATEGORIES) {
+      expect(THEME_ENTRIES.some((e) => e.category === category)).toBe(true);
+    }
+    // The ids an old theme+variant selection migrates to must exist.
+    for (const id of ["basalt-dark", "basalt-light", "catppuccin-light", "dracula-dark"]) {
+      expect(themeEntry(id)).toBeDefined();
+    }
+  });
+
+  it("emits the full token contract for every entry", () => {
+    for (const entry of THEME_ENTRIES) {
+      const seed = THEME_SEEDS.find((s) => s.id === entry.seedId)!;
+      const tokens = themeTokens(seed, entry.category);
+      expect(Object.keys(tokens).sort()).toEqual([...CONTRACT].sort());
+      for (const value of Object.values(tokens)) {
+        expect(typeof value).toBe("string");
+        expect(isColor(value)).toBe(true);
       }
     }
   });
 
-  it("makes the OLED variant a true-black base for every theme", () => {
+  it("makes the OLED appearance a true-black base", () => {
     for (const seed of THEME_SEEDS) {
-      expect(themeTokens(seed, "amoled")["--bg-0"]).toBe("#000000");
+      expect(themeTokens(seed, "oled")["--bg-0"]).toBe("#000000");
     }
   });
 
-  it("gives each theme a distinct light and dark surface", () => {
+  it("gives each seed a distinct light and dark surface", () => {
     for (const seed of THEME_SEEDS) {
       const light = themeTokens(seed, "light");
       const dark = themeTokens(seed, "dark");
@@ -71,24 +89,39 @@ describe("themeData", () => {
     expect(themeTokens(dracula, "dark")["--accent"]).toBe("#bd93f9");
   });
 
+  it("uses a seed's authored light accents instead of nudging them", () => {
+    const basalt = THEME_SEEDS.find((s) => s.id === "basalt")!;
+    expect(themeTokens(basalt, "light")["--syntax-kw"]).toBe("#0b5fb3"); // authored
+    expect(themeTokens(basalt, "dark")["--syntax-kw"]).toBe("#7aa2f7");
+  });
+
   it("expands a 4-colour custom theme into the full contract", () => {
-    const seed = customSeed("custom-x", "Mine", {
+    const colors = {
       primary: "#4e8cd9",
       surface: "#141820",
       border: "#2a3240",
       text: "#e6e9ef",
-    });
-    const tokens = themeTokens(seed, "dark");
+    };
+    const seed = customSeed("custom-x", "Mine", colors);
+    const tokens = themeTokens(seed, customCategory(colors));
     expect(Object.keys(tokens).sort()).toEqual([...CONTRACT].sort());
     expect(tokens["--accent"]).toBe("#4e8cd9");
-    expect(themeTokens(seed, "amoled")["--bg-0"]).toBe("#000000");
   });
 
-  it("returns a three-colour swatch per theme", () => {
-    for (const seed of THEME_SEEDS) {
-      const swatch = themeSwatch(seed);
+  it("classifies a custom theme from its authored surface", () => {
+    const base = { primary: "#4e8cd9", border: "#2a3240", text: "#111111" };
+    expect(customCategory({ ...base, surface: "#f5f6f8" })).toBe("light");
+    expect(customCategory({ ...base, surface: "#141820" })).toBe("dark");
+  });
+
+  it("returns a three-colour swatch matching the entry's appearance", () => {
+    for (const entry of THEME_ENTRIES) {
+      const swatch = themeSwatch(entry);
       expect(swatch).toHaveLength(3);
       for (const c of swatch) expect(c.startsWith("#")).toBe(true);
     }
+    expect(themeSwatch(themeEntry(OLED_THEME_ID)!)[0]).toBe("#000000");
+    expect(themeSwatch(themeEntry("catppuccin-light")!)[0]).toBe("#eff1f5");
+    expect(themeSwatch(themeEntry("catppuccin-dark")!)[0]).toBe("#11111b");
   });
 });

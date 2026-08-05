@@ -3,16 +3,18 @@
   // the app once connected. Dense and top-left aligned — content, not a hero
   // (DESIGN §8). Shortcuts come from the single catalogue so this pane can never
   // advertise a binding the app doesn't have.
+  import RotateCw from "@lucide/svelte/icons/rotate-cw";
   import Button from "$lib/components/ui/Button.svelte";
   import Kbd from "$lib/components/ui/Kbd.svelte";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import BrandMark from "$lib/components/ui/BrandMark.svelte";
+  import IconButton from "$lib/components/ui/IconButton.svelte";
   import ConnectionRow from "$lib/components/connections/ConnectionRow.svelte";
   import ConnectionForm from "$lib/components/connections/ConnectionForm.svelte";
   import { connections } from "$lib/stores/connections.svelte";
+  import { connectErrorTitle } from "$lib/utils/connectionErrors";
   import { STARTUP_SHORTCUT_GROUPS } from "$lib/utils/shortcuts";
-  import type { ConnectionProfile } from "$lib/api/types";
 
   let formOpen = $state(false);
 
@@ -21,14 +23,6 @@
   $effect(() => {
     void connections.load();
   });
-
-  // A profile can already hold a session when the previously active one was
-  // disconnected — focus that instead of opening a second connection.
-  function open(p: ConnectionProfile): void {
-    const s = connections.statusFor(p.id);
-    if (s.status === "connected" && s.session) connections.setActive(s.session);
-    else void connections.connect(p.id);
-  }
 </script>
 
 <div class="h-full overflow-auto">
@@ -54,7 +48,26 @@
         <h2 class="px-3 pb-1 text-xs font-medium tracking-wider text-fg-2 uppercase">Connections</h2>
         <ul class="divide-y divide-border border-y border-border">
           {#each connections.profiles as p (p.id)}
-            <li><ConnectionRow profile={p} onclick={() => open(p)} /></li>
+            {@const st = connections.statusFor(p.id)}
+            <li>
+              <ConnectionRow profile={p} onclick={() => void connections.activate(p.id)} />
+              {#if st.status === "error" && st.error}
+                <div class="flex items-start gap-2 bg-danger-bg px-3 py-1.5 text-xs text-danger">
+                  <div class="min-w-0 flex-1">
+                    <div class="font-medium">{connectErrorTitle(st.error.kind)}</div>
+                    <div class="mt-0.5 font-mono text-[11px] break-words opacity-90">
+                      {st.error.message}
+                    </div>
+                  </div>
+                  <IconButton
+                    icon={RotateCw}
+                    title="Retry"
+                    size="sm"
+                    onclick={() => connections.connect(p.id)}
+                  />
+                </div>
+              {/if}
+            </li>
           {/each}
         </ul>
       </section>

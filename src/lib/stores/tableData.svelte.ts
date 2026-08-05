@@ -1,4 +1,5 @@
 import { gridApi } from "$lib/api/grid";
+import { settings } from "$lib/stores/settings.svelte";
 import type { ApiError } from "$lib/api/client";
 import type { BrowseResult, CellValue } from "$lib/api/types";
 import {
@@ -49,7 +50,7 @@ function fresh(namespace: string, table: string): State {
 async function load(tabId: string, sessionId: string, namespace: string, table: string): Promise<void> {
   byTab[tabId] = fresh(namespace, table);
   try {
-    const browse = await gridApi.browse(sessionId, namespace, table);
+    const browse = await gridApi.browse(sessionId, namespace, table, settings.defaultRowLimit);
     const s = byTab[tabId];
     if (s) {
       s.browse = browse;

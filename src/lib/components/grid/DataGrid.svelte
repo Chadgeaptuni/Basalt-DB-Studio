@@ -59,6 +59,10 @@
   let sel = $state<{ r: number; c: number } | null>(null);
   let editing = $state<{ r: number; c: number } | null>(null);
   let draft = $state("");
+  // The draft as the session opened. The draft is seeded from the *display*
+  // string, which for JSON/array/NULL/converted datetimes is not the stored form —
+  // re-parsing it unchanged would stage a phantom edit.
+  let draftAtOpen = "";
   let grid = $state<HTMLElement>();
   let viewport = $state<HTMLElement>();
 
@@ -88,11 +92,12 @@
     if (!edit || isReadOnlyCell(r, c)) return;
     select(r, c);
     draft = display[r]?.[c]?.isNull ? "" : (display[r]?.[c]?.text ?? "");
+    draftAtOpen = draft;
     editing = { r, c };
   }
 
   function commitEdit(): void {
-    if (editing) edit?.commit(editing.r, editing.c, draft);
+    if (editing && draft !== draftAtOpen) edit?.commit(editing.r, editing.c, draft);
     editing = null;
   }
 

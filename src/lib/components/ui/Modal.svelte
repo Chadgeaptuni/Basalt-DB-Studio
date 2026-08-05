@@ -63,21 +63,26 @@
       {/snippet}
     </Dialog.Overlay>
 
+    <!-- The dvh cap keeps the frame inside the window (width is already viewport-
+         relative); header/footer stay fixed and the body is the only scroller. -->
     <Dialog.Content
       forceMount
       restoreScrollDelay={120}
-      class="fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] {maxw}
-        -translate-x-1/2 -translate-y-1/2 outline-none"
+      class="fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)]
+        w-[calc(100%-2rem)] {maxw} flex-col -translate-x-1/2 -translate-y-1/2 outline-none"
     >
       {#snippet child({ props, open: contentOpen })}
         {#if contentOpen}
           <div {...props}>
             <div
-              class="w-full rounded-lg border border-border bg-bg-2"
+              class="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-lg border
+                border-border bg-bg-2"
               transition:uiScale
             >
               {#if !headerHidden}
-                <header class="flex items-center justify-between border-b border-border px-4 py-3">
+                <header
+                  class="flex shrink-0 items-center justify-between border-b border-border px-4 py-3"
+                >
                   <Dialog.Title level={2} class="text-base font-medium text-fg-0">
                     {title}
                   </Dialog.Title>
@@ -86,12 +91,16 @@
               {:else}
                 <Dialog.Title level={2} class="sr-only">{title}</Dialog.Title>
               {/if}
-              <div class={padding ? "p-4 text-sm text-fg-1" : "text-sm text-fg-1"}>
+              <div
+                class="min-h-0 min-w-0 flex-1 text-sm text-fg-1 {padding
+                  ? 'overflow-auto p-4'
+                  : 'flex flex-col overflow-hidden'}"
+              >
                 {@render children()}
               </div>
               {#if footer}
                 <footer
-                  class="flex items-center justify-end gap-2 border-t border-border px-4 py-3"
+                  class="flex shrink-0 items-center justify-end gap-2 border-t border-border px-4 py-3"
                 >
                   {@render footer()}
                 </footer>

@@ -17,11 +17,12 @@
   import { ioApi } from "$lib/api/io";
   import type { ErrorKind, StatementResult } from "$lib/api/types";
 
+  // History is a SQL-tab affordance; a table tab renders results without it.
   interface Props {
-    showHistory: boolean;
-    onToggleHistory: () => void;
+    showHistory?: boolean;
+    onToggleHistory?: () => void;
   }
-  let { showHistory, onToggleHistory }: Props = $props();
+  let { showHistory = false, onToggleHistory }: Props = $props();
 
   const tab = $derived(editorTabs.active);
   const result = $derived(tab?.result ?? null);
@@ -60,12 +61,13 @@
   };
   const title = (kind: ErrorKind): string => ERROR_TITLE[kind] ?? "Error";
 
-  // Export re-runs the tab's SQL (full result, not the row-limited page shown).
-  const canExport = $derived(Boolean(connections.active) && Boolean(tab?.sql.trim()) && !tab?.running);
+  // Export re-runs the SQL that produced the shown result (full result, not the
+  // row-limited page) — never the live draft, which may have moved on since.
+  const canExport = $derived(Boolean(connections.active) && Boolean(tab?.lastRunSql) && !tab?.running);
   function exportResult(): void {
     const sess = connections.active;
-    if (!sess || !tab) return;
-    const sql = tab.sql;
+    const sql = tab?.lastRunSql;
+    if (!sess || !sql) return;
     void runExport("query.csv", (format, path, ch) =>
       ioApi.exportQuery(sess.sessionId, sql, format, path, ch),
     );
@@ -92,7 +94,9 @@
     {/if}
     <div class="flex-1"></div>
     <IconButton icon={Download} title="Export query result" size="sm" disabled={!canExport} onclick={exportResult} />
-    <IconButton icon={HistoryIcon} title="History" size="sm" active={showHistory} onclick={onToggleHistory} />
+    {#if onToggleHistory}
+      <IconButton icon={HistoryIcon} title="History" size="sm" active={showHistory} onclick={onToggleHistory} />
+    {/if}
   </div>
 
   {#if statementTabs.length > 1 && !showHistory}

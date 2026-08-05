@@ -260,6 +260,9 @@ pub struct BrowseResult {
     pub editable: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub not_editable_reason: Option<String>,
+    /// The exact statement that produced `rows` — shown (and re-runnable) in the
+    /// table tab's editor, so the UI never displays SQL that didn't run.
+    pub sql: String,
     pub duration_ms: u64,
 }
 

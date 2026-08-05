@@ -70,17 +70,25 @@ export const keyboard = {
     };
   },
 
-  /** Human-readable form for Kbd / menus: "mod+shift+f" → "⌘⇧F" or "Ctrl+Shift+F". */
+  /** One display label per key: "mod+shift+f" → ["⌘","⇧","F"] / ["Ctrl","Shift","F"].
+   *  `Kbd` renders one element per entry; `label()` joins them for plain text. */
+  keys(spec: string): string[] {
+    return spec
+      .toLowerCase()
+      .split("+")
+      .map((raw) => {
+        const p = raw.trim();
+        if (p === "mod") return IS_MAC ? "⌘" : "Ctrl";
+        if (p === "shift") return IS_MAC ? "⇧" : "Shift";
+        if (p === "alt") return IS_MAC ? "⌥" : "Alt";
+        if (p === "ctrl") return IS_MAC ? "⌃" : "Ctrl";
+        if (p === "meta") return IS_MAC ? "⌘" : "Win";
+        return KEY_LABELS[p] ?? (p.length === 1 ? p.toUpperCase() : p.charAt(0).toUpperCase() + p.slice(1));
+      });
+  },
+
+  /** Flat form for tooltips and titles: "⌘⇧F" or "Ctrl+Shift+F". */
   label(spec: string): string {
-    const parts = spec.toLowerCase().split("+").map((p) => p.trim());
-    const out = parts.map((p) => {
-      if (p === "mod") return IS_MAC ? "⌘" : "Ctrl";
-      if (p === "shift") return IS_MAC ? "⇧" : "Shift";
-      if (p === "alt") return IS_MAC ? "⌥" : "Alt";
-      if (p === "ctrl") return IS_MAC ? "⌃" : "Ctrl";
-      if (p === "meta") return IS_MAC ? "⌘" : "Win";
-      return KEY_LABELS[p] ?? (p.length === 1 ? p.toUpperCase() : p.charAt(0).toUpperCase() + p.slice(1));
-    });
-    return IS_MAC ? out.join("") : out.join("+");
+    return this.keys(spec).join(IS_MAC ? "" : "+");
   },
 };

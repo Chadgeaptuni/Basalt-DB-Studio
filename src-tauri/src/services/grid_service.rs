@@ -8,7 +8,7 @@
 
 use std::collections::HashMap;
 
-use crate::drivers::types::{BrowseResult, CellValue, GridCommitResult, GridEdit};
+use crate::drivers::types::{BrowseResult, CellValue, Engine, GridCommitResult, GridEdit};
 use crate::services::connection_service::{session_driver, SessionRegistry};
 use crate::sqlgen::{quote_ident, quote_qualified, Statement};
 use crate::{AppError, AppResult};
@@ -31,18 +31,12 @@ pub async fn browse(
     let desc = driver.describe_table(namespace, table).await?;
 
     let limit = limit.unwrap_or(DEFAULT_ROW_LIMIT);
-    let cols = desc
-        .columns
-        .iter()
-        .map(|c| quote_ident(engine, &c.name))
-        .collect::<Vec<_>>()
-        .join(", ");
-    let qualified = quote_qualified(engine, namespace, table);
-    let sql = format!("SELECT {cols} FROM {qualified} LIMIT {}", limit + 1);
+    let column_names = desc.columns.iter().map(|c| c.name.as_str());
+    let sql = browse_sql(engine, namespace, table, column_names, limit);
     let stmt = Statement {
         start: 0,
         end: sql.len(),
-        text: sql,
+        text: sql.clone(),
     };
 
     let mut results = driver.run(std::slice::from_ref(&stmt), limit).await?;
@@ -86,6 +80,7 @@ pub async fn browse(
         key_is_fallback,
         editable,
         not_editable_reason,
+        sql,
         duration_ms: result.duration_ms,
     })
 }
@@ -148,6 +143,27 @@ pub async fn commit(
         .await
 }
 
+/// The canonical table-browse statement: an explicit column list (so result order
+/// matches the described metadata) and the row cap.
+///
+/// The `LIMIT` stays in the SQL — it is what stops the engine from scanning and
+/// streaming the whole table; the fetch-side cap only bounds decoding. Asking for
+/// `limit + 1` rows is also how truncation is detected.
+fn browse_sql<'a>(
+    engine: Engine,
+    namespace: &str,
+    table: &str,
+    columns: impl Iterator<Item = &'a str>,
+    limit: usize,
+) -> String {
+    let cols = columns
+        .map(|name| quote_ident(engine, name))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let qualified = quote_qualified(engine, namespace, table);
+    format!("SELECT {cols} FROM {qualified} LIMIT {}", limit + 1)
+}
+
 /// Heuristic: a column whose type can't participate in an equality-based identity.
 fn is_binaryish(type_name: &str) -> bool {
     let t = type_name.to_ascii_lowercase();
@@ -208,6 +224,25 @@ mod tests {
             .await
             .unwrap();
         (info.session_id, registry)
+    }
+
+    #[test]
+    fn browse_sql_quotes_identifiers_per_engine() {
+        let cols = || ["id", "we\"ird", "ba`ck"].into_iter();
+
+        assert_eq!(
+            browse_sql(Engine::Postgres, "public", "od\"d", cols(), 500),
+            r#"SELECT "id", "we""ird", "ba`ck" FROM "public"."od""d" LIMIT 501"#
+        );
+        assert_eq!(
+            browse_sql(Engine::Sqlite, "main", "od\"d", cols(), 500),
+            r#"SELECT "id", "we""ird", "ba`ck" FROM "main"."od""d" LIMIT 501"#
+        );
+        // MySQL backtick-quotes and doubles embedded backticks; a `"` is inert.
+        assert_eq!(
+            browse_sql(Engine::MySql, "app", "ba`d", cols(), 10),
+            r#"SELECT `id`, `we"ird`, `ba``ck` FROM `app`.`ba``d` LIMIT 11"#
+        );
     }
 
     fn change(column: &str, value: CellValue) -> CellChange {
@@ -340,6 +375,52 @@ mod tests {
         .unwrap();
         let after = browse(&sid, "main", "t", None, &reg).await.unwrap();
         assert_eq!(after.rows[0][1], CellValue::Text("filled".into()));
+    }
+
+    #[tokio::test]
+    async fn browse_returns_the_statement_that_ran() {
+        let (sid, reg) = session(&[
+            r#"CREATE TABLE "od""d" (id INTEGER PRIMARY KEY, "we""ird" TEXT)"#,
+            r#"INSERT INTO "od""d" VALUES (1, 'x')"#,
+        ])
+        .await;
+
+        let b = browse(&sid, "main", r#"od"d"#, Some(2), &reg)
+            .await
+            .unwrap();
+        // SQLite (like Postgres) double-quotes identifiers, doubling embedded quotes.
+        assert_eq!(
+            b.sql,
+            r#"SELECT "id", "we""ird" FROM "main"."od""d" LIMIT 3"#
+        );
+        assert_eq!(b.rows.len(), 1);
+        assert!(!b.truncated);
+    }
+
+    /// The row cap must stay in the SQL: it is what stops the engine scanning the
+    /// whole table, and the `limit + 1`th row is what marks the page truncated.
+    #[tokio::test]
+    async fn browse_caps_rows_in_sql_and_flags_truncation() {
+        let (sid, reg) = session(&[
+            "CREATE TABLE t (id INTEGER PRIMARY KEY)",
+            "INSERT INTO t VALUES (1), (2), (3), (4)",
+        ])
+        .await;
+
+        let b = browse(&sid, "main", "t", Some(2), &reg).await.unwrap();
+        assert_eq!(b.sql, r#"SELECT "id" FROM "main"."t" LIMIT 3"#);
+        assert_eq!(b.rows.len(), 2);
+        assert!(b.truncated);
+    }
+
+    #[tokio::test]
+    async fn browse_of_an_empty_table_still_describes_it() {
+        let (sid, reg) = session(&["CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)"]).await;
+
+        let b = browse(&sid, "main", "t", None, &reg).await.unwrap();
+        assert_eq!(b.columns.len(), 2);
+        assert!(b.rows.is_empty());
+        assert_eq!(b.sql, r#"SELECT "id", "name" FROM "main"."t" LIMIT 501"#);
     }
 
     #[tokio::test]

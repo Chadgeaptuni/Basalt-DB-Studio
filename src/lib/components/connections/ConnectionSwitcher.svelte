@@ -1,0 +1,143 @@
+<script lang="ts">
+  import { Popover } from "bits-ui";
+  import ChevronDown from "@lucide/svelte/icons/chevron-down";
+  import Plug from "@lucide/svelte/icons/plug";
+  import Unplug from "@lucide/svelte/icons/unplug";
+  import Pencil from "@lucide/svelte/icons/pencil";
+  import Trash2 from "@lucide/svelte/icons/trash-2";
+  import RotateCw from "@lucide/svelte/icons/rotate-cw";
+  import Database from "@lucide/svelte/icons/database";
+  import Button from "$lib/components/ui/Button.svelte";
+  import IconButton from "$lib/components/ui/IconButton.svelte";
+  import Badge from "$lib/components/ui/Badge.svelte";
+  import Spinner from "$lib/components/ui/Spinner.svelte";
+  import EmptyState from "$lib/components/ui/EmptyState.svelte";
+  import ConnectionForm from "./ConnectionForm.svelte";
+  import ConnectionRow from "./ConnectionRow.svelte";
+  import { connections } from "$lib/stores/connections.svelte";
+  import { confirm } from "$lib/stores/dialogs.svelte";
+  import { connectErrorTitle } from "$lib/utils/connectionErrors";
+  import type { ConnectionProfile, Engine } from "$lib/api/types";
+
+  // The app's one connection surface (DESIGN §5): the trigger states which
+  // database the workspace is pointed at, the panel manages every profile.
+  const ENGINE_TAG: Record<Engine, string> = { postgres: "PG", mysql: "MY", sqlite: "SQ" };
+
+  let open = $state(false);
+  let form = $state<{ profile: ConnectionProfile | null } | null>(null);
+
+  $effect(() => {
+    void connections.load();
+  });
+
+  const activeProfile = $derived(
+    connections.profiles.find(
+      (p) => connections.statusFor(p.id).session?.sessionId === connections.active?.sessionId,
+    ) ?? null,
+  );
+
+  async function activate(p: ConnectionProfile): Promise<void> {
+    open = false;
+    await connections.activate(p.id);
+  }
+
+  async function toggle(p: ConnectionProfile): Promise<void> {
+    const s = connections.statusFor(p.id);
+    if (s.status === "connected") await connections.disconnect(p.id);
+    else await connections.connect(p.id);
+  }
+
+  async function del(p: ConnectionProfile): Promise<void> {
+    const ok = await confirm({
+      title: `Delete connection “${p.name}”?`,
+      message: "This removes the saved profile. The database itself is untouched.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (ok) await connections.remove(p.id);
+  }
+</script>
+
+<Popover.Root bind:open>
+  <Popover.Trigger
+    class="flex h-7 min-w-56 max-w-96 items-center gap-2 rounded-md border border-border
+      bg-bg-0 px-2 text-xs transition-colors hover:bg-bg-2"
+    title="Connection"
+  >
+    {#if connections.active && activeProfile}
+      <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-ok"></span>
+      <Badge>{ENGINE_TAG[connections.active.engine]}</Badge>
+      <span class="min-w-0 flex-1 truncate text-left text-fg-0">{activeProfile.name}</span>
+      {#if connections.active.readOnly}<Badge variant="warn">read-only</Badge>{/if}
+    {:else}
+      <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-fg-2"></span>
+      <span class="min-w-0 flex-1 truncate text-left text-fg-2">Not connected</span>
+    {/if}
+    <ChevronDown size={13} class="shrink-0 text-fg-2" />
+  </Popover.Trigger>
+
+  <Popover.Portal>
+    <Popover.Content
+      sideOffset={4}
+      class="z-50 max-h-[min(28rem,calc(100dvh-4rem))] w-96 overflow-auto rounded-lg border
+        border-border bg-bg-2 outline-none"
+    >
+      {#if !connections.loaded}
+        <div class="flex items-center gap-2 p-3 text-sm text-fg-2"><Spinner size="sm" /> Loading…</div>
+      {:else if connections.loadError}
+        <div class="p-3 text-sm text-danger">
+          Couldn't read your saved connections.
+          <div class="mt-0.5 font-mono text-[11px] break-words opacity-90">
+            {connections.loadError.message}
+          </div>
+          <div class="mt-2"><Button size="sm" onclick={() => connections.load()}>Retry</Button></div>
+        </div>
+      {:else if connections.profiles.length === 0}
+        <EmptyState icon={Database} message="No connections yet" />
+      {:else}
+        <ul class="divide-y divide-border border-b border-border">
+          {#each connections.profiles as p (p.id)}
+            {@const st = connections.statusFor(p.id)}
+            <li>
+              <ConnectionRow
+                profile={p}
+                selected={!!st.session && connections.active?.sessionId === st.session.sessionId}
+                onclick={() => void activate(p)}
+              >
+                {#snippet actions()}
+                  <IconButton
+                    icon={st.status === "connected" ? Unplug : Plug}
+                    title={st.status === "connected" ? "Disconnect" : "Connect"}
+                    size="sm"
+                    onclick={() => void toggle(p)}
+                  />
+                  <IconButton icon={Pencil} title="Edit" size="sm" onclick={() => (form = { profile: p })} />
+                  <IconButton icon={Trash2} title="Delete" size="sm" onclick={() => void del(p)} />
+                {/snippet}
+              </ConnectionRow>
+              {#if st.status === "error" && st.error}
+                <div class="flex items-start gap-2 bg-danger-bg px-3 py-1.5 text-xs text-danger">
+                  <div class="min-w-0 flex-1">
+                    <div class="font-medium">{connectErrorTitle(st.error.kind)}</div>
+                    <div class="mt-0.5 font-mono text-[11px] break-words opacity-90">
+                      {st.error.message}
+                    </div>
+                  </div>
+                  <IconButton icon={RotateCw} title="Retry" size="sm" onclick={() => connections.connect(p.id)} />
+                </div>
+              {/if}
+            </li>
+          {/each}
+        </ul>
+      {/if}
+
+      <div class="flex justify-end p-2">
+        <Button size="sm" onclick={() => (form = { profile: null })}>New connection</Button>
+      </div>
+    </Popover.Content>
+  </Popover.Portal>
+</Popover.Root>
+
+{#if form}
+  <ConnectionForm profile={form.profile} onclose={() => (form = null)} />
+{/if}

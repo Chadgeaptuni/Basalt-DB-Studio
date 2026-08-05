@@ -1,5 +1,4 @@
 <script lang="ts">
-  import ConnectionList from "$lib/components/connections/ConnectionList.svelte";
   import SchemaTree from "$lib/components/schema/SchemaTree.svelte";
   import SavedQueriesPanel from "$lib/components/savedQueries/SavedQueriesPanel.svelte";
   import GitSyncBar from "$lib/components/gitsync/GitSyncBar.svelte";
@@ -27,7 +26,7 @@
   });
 
   // Auto-collapse the lowest-priority open sections when there isn't room to show
-  // each open body at MIN_BODY. Priority is top→bottom (Connections kept longest).
+  // each open body at MIN_BODY. Priority is top→bottom (Schema kept longest).
   $effect(() => {
     const openIds = SECTIONS.filter((s) => !sidebar.isCollapsed(s.id)).map((s) => s.id);
     const fits = Math.max(0, Math.floor((sidebar.availH - SECTIONS.length * HEADER_H) / MIN_BODY));
@@ -64,7 +63,6 @@
   style="width:{sidebar.width}px"
 >
   <div bind:this={stack} class="flex min-h-0 flex-1 flex-col">
-    <ConnectionList />
     <SchemaTree />
     <SavedQueriesPanel />
   </div>

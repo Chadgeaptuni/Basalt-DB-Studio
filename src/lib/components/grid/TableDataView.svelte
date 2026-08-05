@@ -12,7 +12,10 @@
   import Badge from "$lib/components/ui/Badge.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
+  import SplitPane from "$lib/components/ui/SplitPane.svelte";
+  import EditorPane from "$lib/components/editor/EditorPane.svelte";
   import DataGrid, { type EditController } from "./DataGrid.svelte";
+  import ResultsPane from "./ResultsPane.svelte";
   import ImportWizard from "$lib/components/importExport/ImportWizard.svelte";
   import { runExport } from "$lib/components/importExport/runExport";
   import { parseCell } from "./tableEdits";
@@ -35,6 +38,14 @@
   const existingCount = $derived(browse?.rows.length ?? 0);
   const pending = $derived(tableData.pending(tab.id));
 
+  // The statement the backend actually ran for these rows. Running it unchanged
+  // reloads the editable grid; anything else is an arbitrary query, whose result
+  // has no table provenance and so is read-only (DESIGN §10).
+  const canonicalSql = $derived(browse?.sql ?? "");
+  const queryMode = $derived(
+    Boolean(tab.lastRunSql) && tab.lastRunSql !== canonicalSql && canonicalSql !== "",
+  );
+
   let selectedRow = $state<number | null>(null);
   let showImport = $state(false);
 
@@ -54,6 +65,12 @@
     if (s && ref && !tableData.get(tab.id)) {
       void tableData.load(tab.id, s.sessionId, ref.namespace, ref.table);
     }
+  });
+
+  // Seed the editor with the browse SQL once it's known. Only when the buffer is
+  // still empty — a reload must never overwrite what the user is editing.
+  $effect(() => {
+    if (canonicalSql && !tab.sql) tab.sql = canonicalSql;
   });
 
   const NULL: CellValue = { kind: "null" };
@@ -112,28 +129,53 @@
     await tableData.commit(tab.id, sess.sessionId);
   }
 
-  function refresh(): void {
+  // The single reload path (refresh, rerunning the canonical query, reset). It is
+  // also the only thing that drops staged edits, so the guard lives here once.
+  async function reload(): Promise<void> {
     const ref = tab.ref;
-    if (sess && ref) void tableData.load(tab.id, sess.sessionId, ref.namespace, ref.table);
+    if (!sess || !ref) return;
+    if (pending > 0) {
+      const ok = await confirm({
+        title: "Discard staged changes?",
+        message: `${pending} uncommitted change(s) will be lost when the rows reload.`,
+        confirmLabel: "Discard",
+        variant: "danger",
+      });
+      if (!ok) return;
+    }
+    await tableData.load(tab.id, sess.sessionId, ref.namespace, ref.table);
+    tab.lastRunSql = tableData.get(tab.id)?.browse?.sql ?? null;
+  }
+
+  async function resetToTableQuery(): Promise<void> {
+    await reload();
+    tab.sql = tableData.get(tab.id)?.browse?.sql ?? tab.sql;
   }
 </script>
 
+<!-- Same vertical structure as a SQL tab, with a smaller editor share so the rows
+     stay the dominant surface (DESIGN §5). -->
+<SplitPane direction="vertical" initial={0.28} min={80} label="Resize query and rows">
+  {#snippet a()}
+    <EditorPane {canonicalSql} onCanonicalRun={reload} />
+  {/snippet}
+  {#snippet b()}
 <div class="flex h-full flex-col bg-bg-0">
   <div class="flex h-9 shrink-0 items-center gap-2 border-b border-border bg-bg-1 px-2">
     <span class="font-mono text-xs text-fg-1">{tab.ref?.namespace}.{tab.ref?.table}</span>
-    {#if browse}
+    {#if browse && !queryMode}
       <span class="font-mono text-[11px] text-fg-2 tabular-nums">
         {browse.rows.length} rows{browse.truncated ? " (limit)" : ""}
       </span>
     {/if}
-    {#if browse && !browse.editable}
+    {#if browse && !browse.editable && !queryMode}
       <Badge variant="warn">read-only</Badge>
     {/if}
     <div class="flex-1"></div>
     {#if pending > 0}
       <span class="font-mono text-[11px] text-accent tabular-nums">{pending} pending</span>
     {/if}
-    {#if browse?.editable}
+    {#if browse?.editable && !queryMode}
       <IconButton icon={Plus} title="Add row" size="sm" onclick={() => tableData.addRow(tab.id)} />
       <IconButton
         icon={Trash2}
@@ -160,10 +202,22 @@
       </Button>
       <IconButton icon={Upload} title="Import CSV" size="sm" onclick={() => (showImport = true)} />
     {/if}
-    <IconButton icon={Download} title="Export" size="sm" disabled={!browse} onclick={exportTable} />
-    <IconButton icon={RefreshCw} title="Refresh" size="sm" onclick={refresh} />
+    {#if !queryMode}
+      <IconButton icon={Download} title="Export" size="sm" disabled={!browse} onclick={exportTable} />
+    {/if}
+    <IconButton icon={RefreshCw} title="Refresh" size="sm" onclick={() => void reload()} />
   </div>
 
+  {#if queryMode}
+    <div class="flex items-center gap-2 border-b border-border px-3 py-1.5 text-xs text-fg-2">
+      <TriangleAlert size={13} strokeWidth={2} class="shrink-0 text-warn" />
+      <span class="min-w-0 flex-1">
+        Showing an edited query. Its rows can't be traced back to
+        <span class="font-mono">{tab.ref?.namespace}.{tab.ref?.table}</span>, so they're read-only.
+      </span>
+      <Button size="sm" onclick={() => void resetToTableQuery()}>Reset to table query</Button>
+    </div>
+  {/if}
   {#if browse?.editable === false && browse.notEditableReason}
     <div class="flex items-center gap-2 border-b border-border px-3 py-1.5 text-xs text-fg-2">
       <TriangleAlert size={13} strokeWidth={2} class="shrink-0 text-warn" />
@@ -178,7 +232,9 @@
   {/if}
 
   <div class="min-h-0 flex-1 overflow-hidden">
-    {#if !view || view.loading}
+    {#if queryMode}
+      <ResultsPane />
+    {:else if !view || view.loading}
       <div class="flex items-center gap-2 p-3 text-sm text-fg-2"><Spinner size="sm" /> Loading rows…</div>
     {:else if view.error}
       <div class="flex items-start gap-2 p-3 text-sm">
@@ -197,6 +253,8 @@
     {/if}
   </div>
 </div>
+  {/snippet}
+</SplitPane>
 
 {#if showImport && tab.ref}
   <ImportWizard

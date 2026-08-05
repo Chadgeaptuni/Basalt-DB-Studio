@@ -1,7 +1,11 @@
 // Single source of truth for every built-in theme.
+//
+// A *seed* holds the two authored palettes of one colour family; a *theme* is one
+// of those palettes, picked directly. Selecting an appearance is the whole choice
+// — there is no separate light/dark switch layered on top (DESIGN §3).
 
-export const THEME_VARIANTS = ["light", "dark", "amoled"] as const;
-export type ThemeVariant = (typeof THEME_VARIANTS)[number];
+export const THEME_CATEGORIES = ["light", "dark", "oled"] as const;
+export type ThemeCategory = (typeof THEME_CATEGORIES)[number];
 
 /** Material-ish base palette */
 interface BasePalette {
@@ -23,9 +27,9 @@ interface SyntaxPalette {
   fn: string;
 }
 
-/** Basalt-only accents. Hues are authored
- *  for the dark variant; themeTokens() nudges them toward the text colour on the
- *  light variant so they keep contrast on a light background. */
+/** Basalt-only accents. Hues are authored for the dark palette; themeTokens()
+ *  nudges them toward the text colour on a light palette (unless the seed
+ *  authors its own `lightAccents`) so they keep contrast on a light background. */
 interface Accents {
   ok: string;
   warn: string;
@@ -36,35 +40,28 @@ export interface ThemeSeed {
   id: string;
   name: string;
   description: string;
-  /** true for inherently-light palettes — only affects the picker swatch. */
-  lightFirst?: boolean;
   light: BasePalette;
   dark: BasePalette;
   accents: Accents;
+  /** Set only where a family authors its own light accents; otherwise the dark
+   *  accents are nudged toward the text colour (see `themeTokens`). */
+  lightAccents?: Accents;
 }
 
 export const THEME_SEEDS: ThemeSeed[] = [
   {
-    id: "basalt-dark",
-    name: "Basalt Dark",
-    description: "Default flat dark theme with high contrast.",
-    light: { primary: "#2f6fd0", onPrimary: "#ffffff", background: "#ffffff", surface: "#eef1f6", onSurface: "#1c2530", onSurfaceVariant: "#3d4757", outline: "#cdd2da", error: "#c0392b" },
-    dark: { primary: "#4e8cd9", onPrimary: "#ffffff", background: "#0e1116", surface: "#1e242e", onSurface: "#e6e9ef", onSurfaceVariant: "#b6bdc9", outline: "#323b47", error: "#e06c75" },
-    accents: { ok: "#6cc070", warn: "#d6a55c", syntax: { kw: "#7aa2f7", str: "#9ece6a", num: "#ff9e64", comment: "#5c6370", fn: "#7dcfff" } },
-  },
-  {
-    id: "basalt-light",
-    name: "Basalt Light",
-    description: "Clean light theme with inverted surfaces.",
-    lightFirst: true,
+    id: "basalt",
+    name: "Basalt",
+    description: "Default flat palette with high contrast.",
     light: { primary: "#2f6fd0", onPrimary: "#ffffff", background: "#ffffff", surface: "#e9ebef", onSurface: "#1c2530", onSurfaceVariant: "#3d4757", outline: "#cdd2da", error: "#c0392b" },
     dark: { primary: "#4e8cd9", onPrimary: "#ffffff", background: "#0e1116", surface: "#1e242e", onSurface: "#e6e9ef", onSurfaceVariant: "#b6bdc9", outline: "#323b47", error: "#e06c75" },
-    accents: { ok: "#2e8b57", warn: "#b8860b", syntax: { kw: "#0b5fb3", str: "#297a3a", num: "#b25000", comment: "#8a919e", fn: "#0a7ea4" } },
+    accents: { ok: "#6cc070", warn: "#d6a55c", syntax: { kw: "#7aa2f7", str: "#9ece6a", num: "#ff9e64", comment: "#5c6370", fn: "#7dcfff" } },
+    lightAccents: { ok: "#2e8b57", warn: "#b8860b", syntax: { kw: "#0b5fb3", str: "#297a3a", num: "#b25000", comment: "#8a919e", fn: "#0a7ea4" } },
   },
   {
     id: "basalt-nord",
     name: "Basalt Nord",
-    description: "Cool Nordic dark theme with arctic blue accents.",
+    description: "Cool Nordic palette with arctic blue accents.",
     light: { primary: "#5e81ac", onPrimary: "#ffffff", background: "#eceff4", surface: "#e5e9f0", onSurface: "#2e3440", onSurfaceVariant: "#4c566a", outline: "#c3cad5", error: "#bf616a" },
     dark: { primary: "#88c0d0", onPrimary: "#2e3440", background: "#2e3440", surface: "#3b4252", onSurface: "#eceff4", onSurfaceVariant: "#d8dee9", outline: "#4c566a", error: "#bf616a" },
     accents: { ok: "#a3be8c", warn: "#ebcb8b", syntax: { kw: "#81a1c1", str: "#a3be8c", num: "#d08770", comment: "#616e88", fn: "#8fbcbb" } },
@@ -73,7 +70,6 @@ export const THEME_SEEDS: ThemeSeed[] = [
     id: "basalt-paper",
     name: "Basalt Paper",
     description: "Warm paper theme with soft sepia contrast.",
-    lightFirst: true,
     light: { primary: "#a65d00", onPrimary: "#ffffff", background: "#faf7f0", surface: "#e8e1d3", onSurface: "#2b2620", onSurfaceVariant: "#4d463b", outline: "#c9bfab", error: "#b23b3b" },
     dark: { primary: "#d9973a", onPrimary: "#2a1c08", background: "#1a1611", surface: "#241f18", onSurface: "#ece4d5", onSurfaceVariant: "#b9ad98", outline: "#4a4234", error: "#e08a7d" },
     accents: { ok: "#4f8a3d", warn: "#9a6b12", syntax: { kw: "#1e6fb8", str: "#2f7d32", num: "#b5591f", comment: "#9a9180", fn: "#0f8a8a" } },
@@ -129,7 +125,7 @@ export const THEME_SEEDS: ThemeSeed[] = [
   {
     id: "strawberry-daiquiri",
     name: "Strawberry Daiquiri",
-    description: "Crimson pink accents with dark surfaces.",
+    description: "Crimson pink accents over quiet surfaces.",
     light: { primary: "#b3264f", onPrimary: "#ffffff", background: "#fff8f8", surface: "#fcebed", onSurface: "#28171b", onSurfaceVariant: "#6b555b", outline: "#dbc0c7", error: "#ba1a1a" },
     dark: { primary: "#ffb1c3", onPrimary: "#67002b", background: "#1c1013", surface: "#291a1e", onSurface: "#f4dfe4", onSurfaceVariant: "#d6c0c6", outline: "#523b41", error: "#ffb4ab" },
     accents: { ok: "#a3db9e", warn: "#e8b8c4", syntax: { kw: "#ffb1c3", str: "#e8b8c4", num: "#ff8fa3", comment: "#7d6268", fn: "#ff9ebb" } },
@@ -153,7 +149,7 @@ export const THEME_SEEDS: ThemeSeed[] = [
   {
     id: "rose-pine",
     name: "Rosé Pine",
-    description: "Warm dark aesthetic with muted rose tones.",
+    description: "Warm aesthetic with muted rose tones.",
     light: { primary: "#907aa9", onPrimary: "#ffffff", background: "#faf4ed", surface: "#f2e9e1", onSurface: "#575279", onSurfaceVariant: "#797593", outline: "#cecacd", error: "#b4637a" },
     dark: { primary: "#c4a7e7", onPrimary: "#191724", background: "#191724", surface: "#26233a", onSurface: "#e0def4", onSurfaceVariant: "#908caa", outline: "#403d52", error: "#eb6f92" },
     accents: { ok: "#9ccfd8", warn: "#f6c177", syntax: { kw: "#c4a7e7", str: "#ebbcba", num: "#f6c177", comment: "#6e6a86", fn: "#9ccfd8" } },
@@ -169,7 +165,7 @@ export const THEME_SEEDS: ThemeSeed[] = [
   {
     id: "gruvbox",
     name: "Gruvbox",
-    description: "Classic retro dark theme with warm accents.",
+    description: "Classic retro palette with warm accents.",
     light: { primary: "#b57614", onPrimary: "#ffffff", background: "#fbf1c7", surface: "#ebdbb2", onSurface: "#3c3836", onSurfaceVariant: "#665c54", outline: "#d5c4a1", error: "#cc241d" },
     dark: { primary: "#fabd2f", onPrimary: "#282828", background: "#1d2021", surface: "#282828", onSurface: "#ebdbb2", onSurfaceVariant: "#bdae93", outline: "#504945", error: "#fb4934" },
     accents: { ok: "#b8bb26", warn: "#fe8019", syntax: { kw: "#fb4934", str: "#b8bb26", num: "#d3869b", comment: "#928374", fn: "#8ec07c" } },
@@ -177,7 +173,7 @@ export const THEME_SEEDS: ThemeSeed[] = [
   {
     id: "dracula",
     name: "Dracula",
-    description: "Famous dark theme with vivid purple accents.",
+    description: "Famous palette with vivid purple accents.",
     light: { primary: "#6d4aa2", onPrimary: "#ffffff", background: "#f8f7fb", surface: "#eceaf2", onSurface: "#282a36", onSurfaceVariant: "#626473", outline: "#cfccd8", error: "#c93654" },
     dark: { primary: "#bd93f9", onPrimary: "#282a36", background: "#21222c", surface: "#282a36", onSurface: "#f8f8f2", onSurfaceVariant: "#c5c8d4", outline: "#44475a", error: "#ff5555" },
     accents: { ok: "#50fa7b", warn: "#f1fa8c", syntax: { kw: "#ff79c6", str: "#f1fa8c", num: "#bd93f9", comment: "#626473", fn: "#8be9fd" } },
@@ -232,32 +228,35 @@ export const DEFAULT_CUSTOM_COLORS = {
   text: "#e6e9ef",
 } as const;
 
-// AMOLED surfaces: true-black base + near-black raised, retaining the theme's
-// dark accents/text.
-const AMOLED = { bg0: "#000000", bg1: "#0b0b0b", bg2: "#151515" } as const;
+// OLED surfaces: true-black base + near-black raised, retaining the Basalt dark
+// accents/text. One preset, not a modifier applied to every palette.
+const OLED = { bg0: "#000000", bg1: "#0b0b0b", bg2: "#151515" } as const;
+export const OLED_THEME_ID = "basalt-oled";
 
 const mix = (color: string, pct: number, into: string): string =>
   `color-mix(in srgb, ${color} ${pct}%, ${into})`;
 
 /**
- * Map a seed + variant to the full Basalt token contract (DESIGN.md §3). The one
+ * Map a seed + category to the full Basalt token contract (DESIGN.md §3). The one
  * derivation point: surfaces build a 3-level ramp, borders/grid/danger are mixed
- * from the palette, and accent/syntax hues are nudged toward the text colour on
- * the light variant so they retain contrast on a light background.
+ * from the palette, and accent/syntax hues are nudged toward the text colour on a
+ * light palette so they retain contrast on a light background.
  */
-export function themeTokens(seed: ThemeSeed, variant: ThemeVariant): Record<string, string> {
-  const light = variant === "light";
-  const amoled = variant === "amoled";
-  const base = light ? seed.light : seed.dark; // amoled builds on the dark seed
+export function themeTokens(seed: ThemeSeed, category: ThemeCategory): Record<string, string> {
+  const light = category === "light";
+  const oled = category === "oled";
+  const base = light ? seed.light : seed.dark; // oled builds on the dark palette
 
-  const background = amoled ? AMOLED.bg0 : base.background;
-  const surface = amoled ? AMOLED.bg2 : base.surface;
-  const panel = amoled ? AMOLED.bg1 : mix(base.surface, light ? 58 : 72, base.background);
+  const background = oled ? OLED.bg0 : base.background;
+  const surface = oled ? OLED.bg2 : base.surface;
+  const panel = oled ? OLED.bg1 : mix(base.surface, light ? 58 : 72, base.background);
 
-  // Light variants pull hues toward onSurface (a dark tone) → keeps contrast on a
-  // light background; dark/amoled leave them as authored.
-  const forLight = (c: string): string => (light ? mix(c, 78, base.onSurface) : c);
-  const s = seed.accents.syntax;
+  // Authored light accents win; otherwise pull hues toward onSurface (a dark tone)
+  // so they keep contrast on a light background. Dark/OLED use them as authored.
+  const accents = light ? (seed.lightAccents ?? seed.accents) : seed.accents;
+  const nudge = light && !seed.lightAccents;
+  const forLight = (c: string): string => (nudge ? mix(c, 78, base.onSurface) : c);
+  const s = accents.syntax;
 
   return {
     "--bg-0": background,
@@ -278,32 +277,80 @@ export function themeTokens(seed: ThemeSeed, variant: ThemeVariant): Record<stri
     "--danger-fg": light ? "#ffffff" : background,
     "--danger-bg": mix(base.error, 15, background),
 
-    "--ok": forLight(seed.accents.ok),
-    "--warn": forLight(seed.accents.warn),
+    "--ok": forLight(accents.ok),
+    "--warn": forLight(accents.warn),
 
     "--grid-header-bg": mix(surface, 22, background),
     "--grid-row-alt": mix(surface, 12, background),
     "--grid-sel": mix(base.primary, light ? 16 : 22, surface),
     "--grid-null": mix(base.onSurfaceVariant, 55, background),
-    "--grid-edited": mix(forLight(seed.accents.warn), 20, background),
+    "--grid-edited": mix(forLight(accents.warn), 20, background),
 
     "--syntax-kw": forLight(s.kw),
     "--syntax-str": forLight(s.str),
     "--syntax-num": forLight(s.num),
-    "--syntax-comment": light ? mix(s.comment, 72, base.onSurface) : s.comment,
+    "--syntax-comment": nudge ? mix(s.comment, 72, base.onSurface) : s.comment,
     "--syntax-fn": forLight(s.fn),
     "--syntax-ident": base.onSurface,
   };
 }
 
-/** The three-swatch preview the theme picker draws for an inactive theme. */
-export function themeSwatch(seed: ThemeSeed): [string, string, string] {
-  const b = seed.lightFirst ? seed.light : seed.dark;
-  return [b.background, b.primary, b.outline];
+/** One selectable theme: a seed rendered in one of its authored appearances. */
+export interface ThemeEntry {
+  id: string;
+  seedId: string;
+  name: string;
+  description: string;
+  category: ThemeCategory;
+}
+
+const seedById = new Map(THEME_SEEDS.map((s) => [s.id, s]));
+
+/** Every built-in theme: both appearances of every seed, plus the one OLED preset. */
+export const THEME_ENTRIES: ThemeEntry[] = [
+  ...THEME_SEEDS.flatMap((seed): ThemeEntry[] => [
+    {
+      id: `${seed.id}-light`,
+      seedId: seed.id,
+      name: `${seed.name} Light`,
+      description: seed.description,
+      category: "light",
+    },
+    {
+      id: `${seed.id}-dark`,
+      seedId: seed.id,
+      name: `${seed.name} Dark`,
+      description: seed.description,
+      category: "dark",
+    },
+  ]),
+  {
+    id: OLED_THEME_ID,
+    seedId: "basalt",
+    name: "Basalt OLED",
+    description: "True black surfaces for OLED panels.",
+    category: "oled",
+  },
+];
+
+export function themeEntry(id: string): ThemeEntry | undefined {
+  return THEME_ENTRIES.find((e) => e.id === id);
+}
+
+export function seedOf(entry: ThemeEntry): ThemeSeed {
+  return seedById.get(entry.seedId)!;
+}
+
+/** The three-swatch preview the picker draws — read from the appearance the row
+ *  actually selects, so the swatch can never disagree with the result. */
+export function themeSwatch(entry: ThemeEntry): [string, string, string] {
+  const seed = seedOf(entry);
+  const base = entry.category === "light" ? seed.light : seed.dark;
+  return [entry.category === "oled" ? OLED.bg0 : base.background, base.primary, base.outline];
 }
 
 /** Perceptual lightness of a #rrggbb colour, 0 (black) → 1 (white). */
-function luminance(hex: string): number {
+export function luminance(hex: string): number {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
   if (!m) return 0;
   const n = Number.parseInt(m[1], 16);
@@ -318,18 +365,25 @@ export interface CustomColors {
   text: string;
 }
 
+/** A custom theme is Light or Dark by its authored surface — read the raw hex the
+ *  user picked, never the expanded palette (whose derived fields are
+ *  `color-mix()` strings that `luminance` cannot parse). */
+export function customCategory(c: CustomColors): ThemeCategory {
+  return luminance(c.surface) > 0.5 ? "light" : "dark";
+}
+
 /**
  * Expand a 4-colour custom theme into a full seed so it drives the whole token
  * contract (not just a handful) — otherwise switching to a custom theme would
- * leave the previous theme's grid/syntax tokens behind. Custom themes render
- * their colours as authored (the store treats them as the dark variant); OLED
- * still blackens the surfaces.
+ * leave the previous theme's grid/syntax tokens behind. Both appearances hold the
+ * same authored palette, so the theme renders exactly as the user drew it.
  */
 export function customSeed(id: string, name: string, c: CustomColors): ThemeSeed {
+  const light = customCategory(c) === "light";
   const palette: BasePalette = {
     primary: c.primary,
     onPrimary: luminance(c.primary) > 0.6 ? "#111111" : "#ffffff",
-    background: mix(c.surface, 82, "#000000"),
+    background: mix(c.surface, light ? 40 : 82, light ? "#ffffff" : "#000000"),
     surface: c.surface,
     onSurface: c.text,
     onSurfaceVariant: mix(c.text, 72, c.surface),

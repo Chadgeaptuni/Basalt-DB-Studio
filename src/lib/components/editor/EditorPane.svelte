@@ -19,6 +19,15 @@
   import type { ApiError } from "$lib/api/client";
   import type { Engine } from "$lib/api/types";
 
+  // Table tabs hand in the SQL that owns the editable grid: running it unchanged
+  // must go back through table browse (which keeps row provenance), not the query
+  // API. Everything else — editor, shortcuts, formatter, history — is shared.
+  interface Props {
+    canonicalSql?: string | null;
+    onCanonicalRun?: () => void | Promise<void>;
+  }
+  let { canonicalSql = null, onCanonicalRun }: Props = $props();
+
   const tab = $derived(editorTabs.active);
   const sess = $derived(connections.active);
   const dialect = $derived<Engine>(sess?.engine ?? "postgres");
@@ -53,6 +62,7 @@
       limit: settings.defaultRowLimit,
     });
     tab.result = result;
+    tab.lastRunSql = payload.sql;
     tab.activeStatement = 0;
     const rows = result.statements.reduce((n, s) => n + s.rows.length, 0);
     const durationMs = result.statements.reduce((n, s) => n + s.durationMs, 0);
@@ -68,6 +78,10 @@
 
   async function handleRun(payload: { sql: string; cursorOffset?: number }): Promise<void> {
     if (!tab || !sess || !payload.sql.trim()) return;
+    if (onCanonicalRun && payload.sql.trim() === canonicalSql?.trim()) {
+      await onCanonicalRun();
+      return;
+    }
     tab.running = true;
     tab.runError = null;
     tab.runStartedAt = Date.now();

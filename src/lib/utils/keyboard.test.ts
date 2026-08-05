@@ -34,6 +34,15 @@ describe("keyboard", () => {
     expect(keyboard.label("mod+shift+f")).toBe("Ctrl+Shift+F");
   });
 
+  // Kbd renders one element per key, so the split form is the primitive and the
+  // flat label is derived from it — the two can't drift apart.
+  it("splits a combo into one label per key", () => {
+    expect(keyboard.keys("mod+shift+f")).toEqual(["Ctrl", "Shift", "F"]);
+    expect(keyboard.keys("mod+enter")).toEqual(["Ctrl", "↵"]);
+    expect(keyboard.keys("arrowleft")).toEqual(["←"]);
+    expect(keyboard.keys("mod+shift+f").join("+")).toBe(keyboard.label("mod+shift+f"));
+  });
+
   // The shortcut catalogue renders every key through label(); named keys used to
   // Title-Case into "Pageup", which is why Settings hand-wrote its own key text.
   it("labels named keys with their conventional forms", () => {

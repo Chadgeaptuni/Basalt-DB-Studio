@@ -87,6 +87,14 @@ function setActive(session: SessionInfo): void {
   active = session;
 }
 
+/** Open a profile: focus its existing session if it already holds one (a profile
+ *  keeps its session when another is made active), otherwise connect it. */
+async function activate(id: string): Promise<void> {
+  const s = statusFor(id);
+  if (s.status === "connected" && s.session) setActive(s.session);
+  else await connect(id);
+}
+
 export const connections = {
   get profiles() {
     return profiles;
@@ -108,4 +116,5 @@ export const connections = {
   connect,
   disconnect,
   setActive,
+  activate,
 };
