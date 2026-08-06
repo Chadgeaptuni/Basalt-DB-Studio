@@ -1,5 +1,6 @@
 <script lang="ts">
   import Modal from "$lib/components/ui/Modal.svelte";
+  import Field from "$lib/components/ui/Field.svelte";
   import Input from "$lib/components/ui/Input.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import Checkbox from "$lib/components/ui/Checkbox.svelte";
@@ -35,10 +36,9 @@
 
 <Modal open title={`New index on ${table}`} onclose={ddl.close}>
   <div class="flex flex-col gap-3">
-    <label class="flex flex-col gap-1">
-      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Index name</span>
+    <Field label="Index name">
       <Input bind:value={name} autofocus />
-    </label>
+    </Field>
     <div class="flex flex-col gap-1">
       <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Columns</span>
       <div class="flex flex-col gap-1 rounded-md border border-outline-variant bg-surface p-2">
@@ -52,7 +52,7 @@
   </div>
 
   {#snippet footer()}
-    <Button variant="ghost" size="sm" onclick={ddl.close}>Cancel</Button>
-    <Button variant="primary" size="sm" disabled={!valid} onclick={preview}>Preview SQL</Button>
+    <Button variant="text" size="sm" onclick={ddl.close}>Cancel</Button>
+    <Button variant="filled" size="sm" disabled={!valid} onclick={preview}>Preview SQL</Button>
   {/snippet}
 </Modal>

@@ -48,6 +48,7 @@ mod tests {
             id: "d".into(),
             name: "d".into(),
             engine: Engine::Sqlite,
+            environment: None,
             host: None,
             port: None,
             database: None,

@@ -1,5 +1,6 @@
 <script lang="ts">
   import Modal from "$lib/components/ui/Modal.svelte";
+  import Field from "$lib/components/ui/Field.svelte";
   import Input from "$lib/components/ui/Input.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import Checkbox from "$lib/components/ui/Checkbox.svelte";
@@ -35,23 +36,20 @@
 
 <Modal open title={`Add column to ${table}`} onclose={ddl.close}>
   <div class="flex flex-col gap-3">
-    <label class="flex flex-col gap-1">
-      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Name</span>
+    <Field label="Name">
       <Input bind:value={name} placeholder="email" autofocus />
-    </label>
-    <label class="flex flex-col gap-1">
-      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Type</span>
+    </Field>
+    <Field label="Type">
       <Input bind:value={type} placeholder="varchar(255)" />
-    </label>
-    <label class="flex flex-col gap-1">
-      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Default (optional)</span>
+    </Field>
+    <Field label="Default (optional)">
       <Input bind:value={dflt} placeholder="e.g. 0 or 'x'" />
-    </label>
+    </Field>
     <Checkbox bind:checked={nullable} label="Nullable" />
   </div>
 
   {#snippet footer()}
-    <Button variant="ghost" size="sm" onclick={ddl.close}>Cancel</Button>
-    <Button variant="primary" size="sm" disabled={!valid} onclick={preview}>Preview SQL</Button>
+    <Button variant="text" size="sm" onclick={ddl.close}>Cancel</Button>
+    <Button variant="filled" size="sm" disabled={!valid} onclick={preview}>Preview SQL</Button>
   {/snippet}
 </Modal>

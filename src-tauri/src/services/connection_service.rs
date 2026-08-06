@@ -333,6 +333,7 @@ mod tests {
             id: "conn-test".into(),
             name: "test".into(),
             engine: Engine::Sqlite,
+            environment: None,
             host: None,
             port: None,
             database: None,

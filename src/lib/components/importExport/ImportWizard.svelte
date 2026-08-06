@@ -3,9 +3,11 @@
   import { untrack } from "svelte";
   import FileText from "@lucide/svelte/icons/file-text";
   import Modal from "$lib/components/ui/Modal.svelte";
+  import Field from "$lib/components/ui/Field.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import Checkbox from "$lib/components/ui/Checkbox.svelte";
   import Select from "$lib/components/ui/Select.svelte";
+  import Stepper, { type Step } from "$lib/components/ui/Stepper.svelte";
   import { ioApi } from "$lib/api/io";
   import { connections } from "$lib/stores/connections.svelte";
   import { toast } from "$lib/stores/toasts.svelte";
@@ -41,6 +43,21 @@
     { value: "upsert", label: "Upsert (update on conflict)" },
   ];
 
+  // Three steps, because the decisions are genuinely sequential: without a file
+  // there is nothing to map, and mapping is what makes the conflict mode mean
+  // anything. A single scrolling form let you hit Import having silently skipped
+  // the mapping.
+  const STEPS: Step[] = [
+    { id: "file", label: "File" },
+    { id: "columns", label: "Columns" },
+    { id: "options", label: "Options" },
+  ];
+  let step = $state(0);
+
+  // Gate per step so "Next" can never advance past an unanswered decision.
+  const canAdvance = $derived(step === 0 ? Boolean(path) : step === 1 ? chosen.length > 0 : true);
+  const onLastStep = $derived(step === STEPS.length - 1);
+
   async function browse(): Promise<void> {
     const file = await open({ filters: [{ name: "CSV", extensions: ["csv"] }], multiple: false });
     if (typeof file === "string") path = file;
@@ -73,27 +90,48 @@
 </script>
 
 <Modal open title={`Import CSV into ${table}`} size="lg" {onclose}>
-  <div class="flex flex-col gap-3">
-    <div class="flex items-center gap-2">
-      <Button variant="secondary" size="sm" onclick={browse}><FileText size={13} strokeWidth={2} /> Choose CSV…</Button>
-      <span class="truncate text-data text-on-surface-muted">{path ?? "No file selected"}</span>
-    </div>
+  <div class="flex flex-col gap-4">
+    <Stepper steps={STEPS} current={step} />
 
-    <label class="flex flex-col gap-1">
-      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Conflict mode</span>
-      <Select bind:value={conflict} options={conflictOptions} />
-    </label>
-
-    <Checkbox bind:checked={hasHeader} label="First row is a header" />
-
-    <div class="flex flex-col gap-1">
-      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Target columns (in CSV order)</span>
-      <div class="flex max-h-40 flex-col gap-1 overflow-auto rounded-md border border-outline-variant bg-surface p-2">
-        {#each columns as col (col)}
-          <Checkbox bind:checked={picked[col]} label={col} />
-        {/each}
+    {#if step === 0}
+      <div class="flex flex-col gap-2">
+        <Button variant="outlined" size="sm" onclick={browse}>
+          <FileText size={14} strokeWidth={2} /> Choose CSV…
+        </Button>
+        <span class="truncate text-data {path ? 'text-on-surface-variant' : 'text-on-surface-muted'}">
+          {path ?? "No file selected"}
+        </span>
       </div>
-    </div>
+    {:else if step === 1}
+      <div class="flex flex-col gap-2">
+        <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">
+          Target columns (in CSV order)
+        </span>
+        <div
+          class="flex max-h-64 flex-col gap-1 overflow-auto rounded-sm border border-outline-variant
+            bg-surface p-2"
+        >
+          {#each columns as col (col)}
+            <Checkbox bind:checked={picked[col]} label={col} />
+          {/each}
+        </div>
+        <span class="text-label-sm text-on-surface-muted tabular-nums">
+          {chosen.length} of {columns.length} selected
+        </span>
+      </div>
+    {:else}
+      <div class="flex flex-col gap-3">
+        <Field label="Conflict mode">
+          <Select bind:value={conflict} options={conflictOptions} />
+        </Field>
+        <Checkbox bind:checked={hasHeader} label="First row is a header" />
+        <p class="text-body-sm text-on-surface-muted">
+          Importing {chosen.length} column{chosen.length === 1 ? "" : "s"} from
+          <span class="text-data">{path?.split(/[\\/]/).pop()}</span> into
+          <span class="text-data">{table}</span>.
+        </p>
+      </div>
+    {/if}
 
     {#if error}
       <p class="text-data whitespace-pre-wrap text-error">{error}</p>
@@ -101,9 +139,18 @@
   </div>
 
   {#snippet footer()}
-    <Button variant="ghost" size="sm" onclick={onclose}>Cancel</Button>
-    <Button variant="primary" size="sm" disabled={!path || chosen.length === 0} loading={running} onclick={run}>
-      Import
-    </Button>
+    <Button variant="text" size="sm" onclick={onclose}>Cancel</Button>
+    {#if step > 0}
+      <Button variant="outlined" size="sm" onclick={() => (step -= 1)}>Back</Button>
+    {/if}
+    {#if onLastStep}
+      <Button variant="filled" size="sm" disabled={!path || chosen.length === 0} loading={running} onclick={run}>
+        Import
+      </Button>
+    {:else}
+      <Button variant="filled" size="sm" disabled={!canAdvance} onclick={() => (step += 1)}>
+        Next
+      </Button>
+    {/if}
   {/snippet}
 </Modal>

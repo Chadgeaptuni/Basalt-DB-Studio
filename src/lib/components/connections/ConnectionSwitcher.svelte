@@ -12,6 +12,7 @@
   import Badge from "$lib/components/ui/Badge.svelte";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import { stateLayer, focusRing } from "$lib/components/ui/stateLayer";
+  import { envLabel, envTone } from "$lib/utils/environment";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import ConnectionForm from "./ConnectionForm.svelte";
   import ConnectionRow from "./ConnectionRow.svelte";
@@ -69,6 +70,13 @@
       <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-ok"></span>
       <Badge>{ENGINE_TAG[connections.active.engine]}</Badge>
       <span class="min-w-0 flex-1 truncate text-left text-on-surface">{activeProfile.name}</span>
+      <!-- Label as well as colour: which database you are pointed at is exactly
+           the thing that must not depend on distinguishing red from amber. -->
+      {#if activeProfile.environment}
+        <Badge variant={envTone(activeProfile.environment)}>
+          {envLabel(activeProfile.environment)}
+        </Badge>
+      {/if}
       {#if connections.active.readOnly}<Badge variant="warn">read-only</Badge>{/if}
     {:else}
       <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-on-surface-muted"></span>

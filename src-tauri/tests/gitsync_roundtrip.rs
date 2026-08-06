@@ -47,6 +47,7 @@ fn sample_profile() -> ConnectionProfile {
         id: "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa".into(),
         name: "Shared Prod".into(),
         engine: Engine::Postgres,
+        environment: None,
         host: Some("db.internal".into()),
         port: Some(5432),
         database: Some("app".into()),

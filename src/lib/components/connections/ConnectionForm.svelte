@@ -4,12 +4,14 @@
   import Input from "$lib/components/ui/Input.svelte";
   import Select from "$lib/components/ui/Select.svelte";
   import Checkbox from "$lib/components/ui/Checkbox.svelte";
+  import Field from "$lib/components/ui/Field.svelte";
+  import { ENVIRONMENTS, envLabel } from "$lib/utils/environment";
   import { connections } from "$lib/stores/connections.svelte";
   import { connectionsApi } from "$lib/api/connections";
   import type { ApiError } from "$lib/api/client";
   import { toast } from "$lib/stores/toasts.svelte";
   import { untrack } from "svelte";
-  import type { ConnectionProfile, Engine } from "$lib/api/types";
+  import type { ConnectionProfile, Engine, Environment } from "$lib/api/types";
 
   // Mounted only while editing (parent unmounts on close), so draft state below
   // initializes once per open — no stale-draft problem.
@@ -41,6 +43,12 @@
   // never written back. Blank on save leaves any existing stashed password.
   let password = $state("");
   let readOnly = $state(seed?.readOnly ?? false);
+  // "" is untagged, which is distinct from `local` — see utils/environment.ts.
+  let environment = $state<Environment | "">(seed?.environment ?? "");
+  const environmentOptions = [
+    { value: "", label: "Untagged" },
+    ...ENVIRONMENTS.map((e) => ({ value: e, label: envLabel(e) })),
+  ];
   const id = seed?.id ?? crypto.randomUUID();
 
   let testing = $state(false);
@@ -62,6 +70,8 @@
 
   function toProfile(): ConnectionProfile {
     const p: ConnectionProfile = { id, name: name.trim(), engine, readOnly };
+    // Omitted rather than sent as "" — the profile TOML has no key for untagged.
+    if (environment) p.environment = environment;
     if (isSqlite) {
       p.filePath = filePath.trim();
     } else {
@@ -117,6 +127,12 @@
       <Select id="conn-engine" value={engine} options={engineOptions} onchange={onEngineChange} />
     </div>
 
+    <!-- Environment travels with the profile through git-sync, so tagging it once
+         warns everyone who pulls it — not just this machine. -->
+    <Field label="Environment" hint="Production connections name themselves in every destructive confirmation.">
+      <Select value={environment ?? ""} options={environmentOptions} onchange={(v) => (environment = v as Environment | "")} />
+    </Field>
+
     {#if isSqlite}
       <div>
         <label for="conn-file" class="mb-1 block text-body-sm text-on-surface-muted">File path</label>
@@ -164,9 +180,9 @@
   </div>
 
   {#snippet footer()}
-    <Button variant="ghost" onclick={test} loading={testing} disabled={!valid}>Test</Button>
+    <Button variant="text" onclick={test} loading={testing} disabled={!valid}>Test</Button>
     <div class="flex-1"></div>
-    <Button variant="ghost" onclick={close}>Cancel</Button>
-    <Button variant="primary" onclick={save} loading={saving} disabled={!valid}>Save</Button>
+    <Button variant="text" onclick={close}>Cancel</Button>
+    <Button variant="filled" onclick={save} loading={saving} disabled={!valid}>Save</Button>
   {/snippet}
 </Modal>

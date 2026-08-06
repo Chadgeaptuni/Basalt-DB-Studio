@@ -2,6 +2,7 @@
   import Plus from "@lucide/svelte/icons/plus";
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import Modal from "$lib/components/ui/Modal.svelte";
+  import Field from "$lib/components/ui/Field.svelte";
   import Input from "$lib/components/ui/Input.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
@@ -48,10 +49,9 @@
 
 <Modal open title="New table" size="lg" onclose={ddl.close}>
   <div class="flex flex-col gap-3">
-    <label class="flex flex-col gap-1">
-      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Table name</span>
+    <Field label="Table name">
       <Input bind:value={name} placeholder="users" autofocus />
-    </label>
+    </Field>
 
     <div class="flex flex-col gap-1">
       <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Columns</span>
@@ -73,14 +73,14 @@
         {/each}
       </div>
       <div class="mt-1">
-        <Button variant="ghost" size="sm" onclick={addCol}><Plus size={13} strokeWidth={2} /> Add column</Button>
+        <Button variant="text" size="sm" onclick={addCol}><Plus size={13} strokeWidth={2} /> Add column</Button>
       </div>
     </div>
     <p class="text-data text-on-surface-muted">Types are raw SQL for this engine (e.g. varchar(50), serial).</p>
   </div>
 
   {#snippet footer()}
-    <Button variant="ghost" size="sm" onclick={ddl.close}>Cancel</Button>
-    <Button variant="primary" size="sm" disabled={!valid} onclick={preview}>Preview SQL</Button>
+    <Button variant="text" size="sm" onclick={ddl.close}>Cancel</Button>
+    <Button variant="filled" size="sm" disabled={!valid} onclick={preview}>Preview SQL</Button>
   {/snippet}
 </Modal>

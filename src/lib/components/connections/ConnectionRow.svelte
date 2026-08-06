@@ -6,6 +6,7 @@
   import Badge from "$lib/components/ui/Badge.svelte";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import { stateLayerPill, focusRing } from "$lib/components/ui/stateLayer";
+  import { envLabel, envTone } from "$lib/utils/environment";
   import { connections } from "$lib/stores/connections.svelte";
   import type { ConnectionProfile, Engine } from "$lib/api/types";
 
@@ -39,6 +40,9 @@
 >
   <span class="h-1.5 w-1.5 shrink-0 rounded-full {DOT[status]}"></span>
   <Badge>{ENGINE_TAG[profile.engine]}</Badge>
+  {#if profile.environment}
+    <Badge variant={envTone(profile.environment)}>{envLabel(profile.environment)}</Badge>
+  {/if}
   <!-- Name and target share one 36px row: two stacked lines would need M3's
        two-line item (56px even at density −2), a third of a short list. -->
   <button

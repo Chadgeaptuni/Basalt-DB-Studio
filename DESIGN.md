@@ -265,8 +265,12 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
 - Prefer tables and dense flex rows over cards. A card is for a genuinely
   self-contained object, not for visually grouping two fields.
 - **Forms** (connection editor, table designer): single column, `label above
-  input`, 12-col grid only when pairing short fields (host/port). No bento grids
-  anywhere — this app is panes and tables.
+  input` via the `Field` primitive — never a hand-written `<label><span
+  class="text-label-sm …">` block. 12-col grid only when pairing short fields
+  (host/port). No bento grids anywhere — this app is panes and tables.
+- **Multi-step flows** use `Stepper` and gate the primary action per step. If a
+  flow's decisions are sequential (you cannot map columns before choosing a
+  file), a single scrolling form lets the user skip one silently.
 - Wide content (grids, SQL previews) scrolls inside its own container
   (`overflow-auto`); the app shell itself never scrolls.
 - **Scrollbars are declared once, globally** in `app.css` — a 10px gutter whose
@@ -283,7 +287,7 @@ hoc at a call site. Variants are props; if a needed variant is missing, **extend
 the primitive**, don't fork it locally.
 
 - **Button** — the M3 button family, one prop:
-  `variant: 'filled' | 'tonal' | 'outlined' | 'text' | 'danger'`, `size: 'sm' | 'md'`,
+  `variant: 'filled' | 'tonal' | 'outlined' | 'text' | 'text-error' | 'danger'`, `size: 'sm' | 'md'`,
   `rounded-full` (M3 buttons are pills). Filled = `--primary`/`--on-primary`;
   tonal = `--primary-container`/`--on-primary-container`; outlined = transparent +
   1px `--outline`; text = transparent, state layer only; danger =
@@ -449,9 +453,15 @@ Focus is **additionally** a 2px `--primary` ring via `:focus-visible` (app.css
   danger-variant dialog naming the object: "Drop table `users`?" — never a bare
   "Are you sure?".
 - **Environment is a first-class guardrail.** A connection profile is `local`,
-  `staging` or `prod`. The value tints its chip in the top app bar, and on `prod`
-  every destructive confirm names the environment in its title. Environment is
-  never conveyed by colour alone — the chip carries the label too.
+  `staging`, `prod`, or **untagged** — untagged is a real state and never
+  defaults to `local`, because a reassuring badge on an unclassified connection
+  is worse than none. The value tints its badge in the top app bar and the
+  connection list, and on `prod` every destructive confirm names the environment
+  in its title via `envConfirmTitle()`. Only operations that *write* escalate —
+  discarding staged edits touches nothing on the server. Environment is never
+  conveyed by colour alone; the badge always carries the label. All of it flows
+  from `utils/environment.ts`, so no component decides for itself what production
+  looks like.
 
 ## 8. States: loading, empty, error (all three, always)
 

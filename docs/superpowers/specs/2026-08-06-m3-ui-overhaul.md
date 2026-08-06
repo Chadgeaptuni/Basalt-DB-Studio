@@ -458,10 +458,48 @@ them to the top would bury the rows the user asked to see.
 a shared module rather than a wrapper component, because anchoring, focus and
 dismissal genuinely differ per trigger and bits-ui already solves each.
 
-**U5 — Flows.** Connection form + environments, DDL dialogs, import wizard
-stepper, settings, theme picker.
-*Gate: environment colour reaches the top bar and the destructive confirm; every
-dialog is 28px cornered; import wizard walks a real CSV end to end.*
+**U5 — Flows. ✅ done 2026-08-07.** `Stepper` and `Field` built, import wizard
+rebuilt as three gated steps, DDL / save-query / custom-theme dialogs on `Field`,
+settings nav and theme picker on `ListItem`, legacy `Button` aliases retired,
+**connection environments** end to end.
+*Gate: environment reaches the top bar and the destructive confirm ✅; every
+dialog 28px cornered ✅ (all seven route through `Modal`); import wizard walks a
+CSV end to end ✅; `svelte-check` 0 errors / 0 warnings, 150/150 vitest,
+65/65 cargo, clippy clean ✅.*
+
+**The "no backend change" non-goal was relaxed for environments, deliberately.**
+`environment` had to live in the profile TOML: profiles are the git-sync unit, so
+a tag stored client-side would warn only the machine that set it — useless for
+the team case that motivates the feature. The field is
+`Option<Environment>` with `#[serde(default, skip_serializing_if)]`, so profiles
+written before it existed still load, and they load **untagged rather than
+defaulted to `local`** — putting a reassuring badge on a connection nobody
+classified is worse than no badge. Two Rust tests pin that: legacy TOML loads
+with `environment: None`, and a tagged profile round-trips through the file.
+
+Colour is never the signal — the chip always carries the label, so `prod` reads
+the same to a colour-blind user. `envConfirmTitle()` prefixes destructive
+confirms with "Production:" on tagged prod connections only, and only for
+operations that actually write: discarding *staged* edits touches nothing on the
+server, so it stays a plain confirm.
+
+**`Stepper` and `Field` were not in the plan.** The import wizard was one
+scrolling form where you could reach Import having never looked at the column
+mapping — the three steps exist because the decisions are genuinely sequential
+and each gate blocks an unanswered one. `Field` was extracted after finding the
+same `<label><span class="text-label-sm tracking-wider …">` block written out at
+seventeen call sites.
+
+**`Stepper` and `Field` were not in the plan.** The import wizard was one
+scrolling form where you could reach Import having never looked at the column
+mapping — the three steps exist because the decisions are genuinely sequential
+and each gate blocks an unanswered one. `Field` was extracted after finding the
+same `<label><span class="text-label-sm tracking-wider …">` block written out at
+seventeen call sites.
+
+The theme picker's 22 preset cards became list rows: a card grid of 22 is a wall,
+and the only thing distinguishing them is the swatch, which a row carries just as
+well.
 
 **U6 — Audit.** Loading / empty / error for every `ErrorKind`; contrast check
 across 22 palettes × 3 variants; keyboard sweep; reduced-motion sweep.
@@ -486,6 +524,8 @@ reachable without a mouse.*
 - M3 mobile density (48dp targets, 56dp list items) — this is a desktop tool.
 - FAB, bottom sheet, navigation drawer.
 - Rounding data-grid cells or rows.
-- Any backend change. `src-tauri/` is untouched by this programme.
+- Any backend change — **with one recorded exception**: `environment` on
+  `ConnectionProfile` (U5), because the tag has to git-sync with the profile to
+  be worth having. Nothing else in `src-tauri/` is touched by this programme.
 - New dependencies. Everything here is hand-rolled or built on `bits-ui`, which
   is already a dependency.

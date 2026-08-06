@@ -9,7 +9,7 @@
   import Select, { type SelectOption } from "$lib/components/ui/Select.svelte";
   import Input from "$lib/components/ui/Input.svelte";
   import Kbd from "$lib/components/ui/Kbd.svelte";
-  import { stateLayer, focusRing } from "$lib/components/ui/stateLayer";
+  import ListItem from "$lib/components/ui/ListItem.svelte";
   import ThemePicker from "./ThemePicker.svelte";
   import { THEME_DEFINITIONS } from "./themeDefinitions";
   import { settings } from "$lib/stores/settings.svelte";
@@ -69,27 +69,20 @@
   <div class="flex h-[680px] max-h-[88vh] w-full overflow-hidden bg-surface-container-high">
     <!-- Left Navigation Sidebar -->
     <nav
-      class="flex w-56 shrink-0 flex-col gap-1 border-r border-outline-variant bg-surface-container/40 p-4"
+      class="flex w-56 shrink-0 flex-col border-r border-outline-variant bg-surface-container py-2"
       aria-label="Settings sections"
     >
-      <span class="mb-3 px-3 pt-1 text-label-sm tracking-wider text-on-surface-muted uppercase">
+      <span class="px-3 pb-2 text-label-sm tracking-wider text-on-surface-muted uppercase">
         Settings
       </span>
 
       {#each DESTINATIONS as dest (dest.id)}
-        <button
-          type="button"
-          aria-current={activeTab === dest.id}
+        <ListItem
+          headline={dest.label}
+          icon={dest.icon}
+          selected={activeTab === dest.id}
           onclick={() => (activeTab = dest.id)}
-          class="flex h-9 shrink-0 cursor-pointer items-center gap-3 rounded-full px-3 text-label-md
-            {stateLayer} {focusRing}
-            {activeTab === dest.id
-            ? 'bg-secondary-container text-on-secondary-container'
-            : 'text-on-surface-muted'}"
-        >
-          <dest.icon size={17} class={activeTab === dest.id ? "text-primary" : "text-on-surface-muted"} />
-          {dest.label}
-        </button>
+        />
       {/each}
     </nav>
 

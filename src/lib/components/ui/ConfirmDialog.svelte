@@ -30,8 +30,8 @@
 <Modal {title} bind:open onclose={oncancel}>
   {#if message}<p class="text-on-surface-variant">{message}</p>{/if}
   {#snippet footer()}
-    <Button variant="ghost" onclick={oncancel}>{cancelLabel}</Button>
-    <Button variant={variant === "danger" ? "danger" : "primary"} onclick={onconfirm}>
+    <Button variant="text" onclick={oncancel}>{cancelLabel}</Button>
+    <Button variant={variant === "danger" ? "danger" : "filled"} onclick={onconfirm}>
       {confirmLabel}
     </Button>
   {/snippet}

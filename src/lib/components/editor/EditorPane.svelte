@@ -14,6 +14,7 @@
   import { history } from "$lib/stores/history.svelte";
   import { queryApi } from "$lib/api/query";
   import { confirm } from "$lib/stores/dialogs.svelte";
+  import { envConfirmTitle } from "$lib/utils/environment";
   import { toast } from "$lib/stores/toasts.svelte";
   import { keyboard } from "$lib/utils/keyboard";
   import type { ApiError } from "$lib/api/client";
@@ -31,6 +32,9 @@
   const tab = $derived(editorTabs.active);
   const sess = $derived(connections.active);
   const dialect = $derived<Engine>(sess?.engine ?? "postgres");
+  const activeEnvironment = $derived(
+    connections.profiles.find((p) => p.id === sess?.profileId)?.environment,
+  );
   const canRun = $derived(Boolean(sess) && Boolean(tab) && !tab?.running);
 
   // Autocomplete schema straight from the in-memory cache (DESIGN §10). Recomputes
@@ -114,7 +118,12 @@
       list.length === 1
         ? `${list[0].reason}\n\n${list[0].statement}`
         : `${list.length} destructive statements:\n\n${list.map((s) => `• ${s.reason}`).join("\n")}`;
-    return confirm({ title: "Run destructive statement?", message, confirmLabel: "Run", variant: "danger" });
+    return confirm({
+      title: envConfirmTitle("Run destructive statement?", activeEnvironment),
+      message,
+      confirmLabel: "Run",
+      variant: "danger",
+    });
   }
 
   async function format(): Promise<void> {

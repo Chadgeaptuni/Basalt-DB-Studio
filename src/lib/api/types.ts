@@ -62,10 +62,15 @@ export interface SshConfig {
 }
 
 /** A saved connection. Git-syncable; contains no secret material. */
+/** Which deployment a profile points at. Lives in the profile (and so git-syncs
+ *  with it), and `undefined` means untagged — never assume `local`. */
+export type Environment = "local" | "staging" | "prod";
+
 export interface ConnectionProfile {
   id: string;
   name: string;
   engine: Engine;
+  environment?: Environment;
   // Network engines (postgres, mysql):
   host?: string;
   port?: number;

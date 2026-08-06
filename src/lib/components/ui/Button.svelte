@@ -3,18 +3,9 @@
   import Spinner from "./Spinner.svelte";
   import { stateLayer, focusRing } from "./stateLayer";
 
-  // The M3 button family (DESIGN §6). `primary`/`secondary`/`ghost` are kept as
-  // aliases of `filled`/`outlined`/`text` so call sites migrate incrementally.
-  type Variant =
-    | "filled"
-    | "tonal"
-    | "outlined"
-    | "text"
-    | "text-error"
-    | "danger"
-    | "primary"
-    | "secondary"
-    | "ghost";
+  // The M3 button family (DESIGN §6). The `primary`/`secondary`/`ghost` aliases
+  // are gone — every call site now names the M3 variant it means.
+  type Variant = "filled" | "tonal" | "outlined" | "text" | "text-error" | "danger";
   type Size = "sm" | "md";
 
   interface Props {
@@ -54,9 +45,6 @@
     // container reads as an unrelated link and fails contrast.
     "text-error": "text-on-error-container",
     danger: "bg-error-container text-on-error-container",
-    primary: "bg-primary text-on-primary",
-    secondary: "border border-outline text-on-surface",
-    ghost: "text-on-surface-variant",
   };
 </script>
 

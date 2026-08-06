@@ -22,6 +22,7 @@
   import { tableData } from "$lib/stores/tableData.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { confirm } from "$lib/stores/dialogs.svelte";
+  import { envConfirmTitle } from "$lib/utils/environment";
   import { ioApi } from "$lib/api/io";
   import type { EditorTab } from "$lib/stores/tabs.svelte";
   import type { CellValue } from "$lib/api/types";
@@ -32,6 +33,11 @@
   let { tab }: Props = $props();
 
   const sess = $derived(connections.active);
+  // Only writes escalate: discarding *staged* edits touches nothing on the server,
+  // so it stays a plain confirm even on production.
+  const activeEnvironment = $derived(
+    connections.profiles.find((p) => p.id === sess?.profileId)?.environment,
+  );
   const view = $derived(tableData.get(tab.id));
   const browse = $derived(view?.browse ?? null);
   const columns = $derived(browse?.columns ?? []);
@@ -119,7 +125,7 @@
     const deletes = tableData.deletes(tab.id);
     if (deletes > 0) {
       const ok = await confirm({
-        title: "Commit changes?",
+        title: envConfirmTitle("Commit changes?", activeEnvironment),
         message: `${pending} change(s), including ${deletes} row deletion(s), will be written.`,
         confirmLabel: "Commit",
         variant: "danger",
@@ -192,7 +198,7 @@
         onclick={() => tableData.revert(tab.id)}
       />
       <Button
-        variant="primary"
+        variant="filled"
         size="sm"
         disabled={pending === 0}
         loading={view?.committing}

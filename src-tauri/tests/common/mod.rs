@@ -49,6 +49,7 @@ pub fn profile_from_url(url: &str) -> (ConnectionProfile, Option<String>) {
         id: "it-test".into(),
         name: "integration".into(),
         engine,
+        environment: None,
         host: Some(host),
         port,
         database,

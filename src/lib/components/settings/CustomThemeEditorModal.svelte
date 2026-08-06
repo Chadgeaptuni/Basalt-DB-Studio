@@ -1,5 +1,6 @@
 <script lang="ts">
   import Modal from "$lib/components/ui/Modal.svelte";
+  import Field from "$lib/components/ui/Field.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import Input from "$lib/components/ui/Input.svelte";
   import type { CustomTheme } from "$lib/stores/theme.svelte";
@@ -45,13 +46,12 @@
 
 <Modal open title={themeToEdit ? "Edit Custom Theme" : "Create Custom Theme"} size="lg" {onclose}>
   <div class="flex flex-col gap-4">
-    <label class="flex flex-col gap-1.5">
-      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Theme Name</span>
+    <Field label="Theme Name">
       <Input value={name} oninput={(e) => (name = (e.target as HTMLInputElement).value)} />
-    </label>
+    </Field>
 
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <label class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface/60 p-3">
+      <label class="flex items-center gap-3 rounded-md border border-outline-variant bg-surface/60 p-3">
         <input
           type="color"
           aria-label="Primary Accent"
@@ -64,7 +64,7 @@
         </div>
       </label>
 
-      <label class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface/60 p-3">
+      <label class="flex items-center gap-3 rounded-md border border-outline-variant bg-surface/60 p-3">
         <input
           type="color"
           aria-label="Surface Background"
@@ -77,7 +77,7 @@
         </div>
       </label>
 
-      <label class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface/60 p-3">
+      <label class="flex items-center gap-3 rounded-md border border-outline-variant bg-surface/60 p-3">
         <input
           type="color"
           aria-label="Border Color"
@@ -90,7 +90,7 @@
         </div>
       </label>
 
-      <label class="flex items-center gap-3 rounded-lg border border-outline-variant bg-surface/60 p-3">
+      <label class="flex items-center gap-3 rounded-md border border-outline-variant bg-surface/60 p-3">
         <input
           type="color"
           aria-label="Text Color"
@@ -106,7 +106,7 @@
   </div>
 
   {#snippet footer()}
-    <Button variant="secondary" size="sm" onclick={onclose}>Cancel</Button>
-    <Button variant="primary" size="sm" disabled={!name.trim()} onclick={save}>Save Theme</Button>
+    <Button variant="outlined" size="sm" onclick={onclose}>Cancel</Button>
+    <Button variant="filled" size="sm" disabled={!name.trim()} onclick={save}>Save Theme</Button>
   {/snippet}
 </Modal>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import Modal from "$lib/components/ui/Modal.svelte";
+  import Field from "$lib/components/ui/Field.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import Input from "$lib/components/ui/Input.svelte";
   import { saveQuery } from "$lib/stores/saveQuery.svelte";
@@ -38,8 +39,7 @@
 </script>
 
 <Modal open title="Save query" onclose={() => saveQuery.cancel()}>
-  <label class="flex flex-col gap-1">
-    <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Name (folders with /)</span>
+  <Field label="Name (folders with /)">
     <Input
       bind:value={path}
       placeholder="reports/daily-active"
@@ -47,10 +47,10 @@
       error={error ?? undefined}
       onkeydown={(e) => e.key === "Enter" && submit()}
     />
-  </label>
+  </Field>
 
   {#snippet footer()}
-    <Button variant="ghost" size="sm" onclick={() => saveQuery.cancel()}>Cancel</Button>
-    <Button variant="primary" size="sm" loading={saving} onclick={submit}>Save</Button>
+    <Button variant="text" size="sm" onclick={() => saveQuery.cancel()}>Cancel</Button>
+    <Button variant="filled" size="sm" loading={saving} onclick={submit}>Save</Button>
   {/snippet}
 </Modal>

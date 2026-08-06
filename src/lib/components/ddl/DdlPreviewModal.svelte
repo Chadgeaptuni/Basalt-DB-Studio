@@ -73,8 +73,8 @@
     {/if}
   {/if}
   {#snippet footer()}
-    <Button variant="ghost" size="sm" onclick={ddl.close}>Cancel</Button>
-    <Button variant="primary" size="sm" disabled={sql === null} loading={running} onclick={execute}>
+    <Button variant="text" size="sm" onclick={ddl.close}>Cancel</Button>
+    <Button variant="filled" size="sm" disabled={sql === null} loading={running} onclick={execute}>
       Execute
     </Button>
   {/snippet}
