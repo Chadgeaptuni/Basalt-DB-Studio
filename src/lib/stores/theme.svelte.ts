@@ -1,16 +1,15 @@
 import {
-  THEME_ENTRIES,
-  OLED_THEME_ID,
-  themeEntry,
-  seedOf,
+  THEME_SEEDS,
+  THEME_VARIANTS,
   themeTokens,
-  customCategory,
   customSeed,
-  type ThemeCategory,
+  customVariant,
+  type ThemeVariant,
+  type ThemeSeed,
   type CustomColors,
 } from "./themeData";
 
-export { THEME_ENTRIES, type ThemeEntry, type ThemeCategory } from "./themeData";
+export { THEME_VARIANTS, type ThemeVariant } from "./themeData";
 
 export interface CustomTheme {
   id: string;
@@ -19,13 +18,15 @@ export interface CustomTheme {
 }
 
 const STORAGE_KEY_THEME = "basalt.theme";
-const STORAGE_KEY_VARIANT = "basalt.theme_variant"; // retired; read once to migrate
+const STORAGE_KEY_VARIANT = "basalt.theme_variant";
 const STORAGE_KEY_CUSTOM = "basalt.custom_themes";
 const DEFAULT_THEME = "basalt-dark";
 
-// The two Basalt families collapsed into one seed when themes became fixed
-// appearances, so an old selection has to be pointed at the survivor.
-const LEGACY_SEED: Record<string, string> = { "basalt-dark": "basalt", "basalt-light": "basalt" };
+// The build that dropped variants baked the appearance into the id and gave OLED
+// its own entry; those ids are still in users' localStorage.
+const FLAT_OLED_ID = "basalt-oled";
+
+const seedById = new Map(THEME_SEEDS.map((s) => [s.id, s]));
 
 function loadCustomThemes(): CustomTheme[] {
   try {
@@ -36,108 +37,128 @@ function loadCustomThemes(): CustomTheme[] {
   }
 }
 
-/** Resolve a persisted selection to a live theme id, folding away the retired
- *  `theme + variant` pair. Pure so the migration is testable; the caller supplies
- *  what was in storage. */
-export function resolveStoredTheme(
+/** Resolve what is in storage to a live theme + variant pair, unfolding an id
+ *  written by the flat-theme build. Pure so the migration is testable; the caller
+ *  supplies what was in storage. */
+export function resolveStoredSelection(
   saved: string,
-  variant: string | null,
+  storedVariant: string | null,
   customIds: string[],
-): string {
-  // A stored variant means the selection predates fixed themes, so it must be
-  // folded even when it looks like a live id — the old seed id "basalt-dark" is
-  // also the id of a current theme, and the variant is what disambiguates them.
-  if (customIds.includes(saved)) return saved;
-  if (!variant) return themeEntry(saved) ? saved : DEFAULT_THEME;
-  if (variant === "amoled") return OLED_THEME_ID;
+): { theme: string; variant: ThemeVariant } {
+  // A stored variant means the selection already is a pair — the id is a palette,
+  // never an appearance, so it needs no unfolding.
+  if (storedVariant && (THEME_VARIANTS as readonly string[]).includes(storedVariant)) {
+    const known = customIds.includes(saved) || seedById.has(saved);
+    return { theme: known ? saved : DEFAULT_THEME, variant: storedVariant as ThemeVariant };
+  }
 
-  const seedId = LEGACY_SEED[saved] ?? saved;
-  const migrated = `${seedId}-${variant}`;
-  if (themeEntry(migrated)) return migrated;
-  // The family survived but not in that appearance → keep the family.
-  return THEME_ENTRIES.find((e) => e.seedId === seedId)?.id ?? DEFAULT_THEME;
+  if (customIds.includes(saved)) return { theme: saved, variant: "dark" };
+  if (saved === FLAT_OLED_ID) return { theme: DEFAULT_THEME, variant: "amoled" };
+
+  // `<palette>-light` / `<palette>-dark` unfolds — but only when the stem is a
+  // real palette, so the "basalt-dark" / "basalt-light" seeds (whose own ids end
+  // that way) fall through to the exact match below instead of being split.
+  const flat = /^(.*)-(light|dark)$/.exec(saved);
+  if (flat && seedById.has(flat[1])) {
+    return { theme: flat[1], variant: flat[2] as ThemeVariant };
+  }
+
+  const seed = seedById.get(saved);
+  if (seed) return { theme: saved, variant: seed.lightFirst ? "light" : "dark" };
+  return { theme: DEFAULT_THEME, variant: "dark" };
 }
 
 /** Runs once at startup, so there is no flash of the wrong theme. */
-function loadTheme(customList: CustomTheme[]): string {
-  const variant = localStorage.getItem(STORAGE_KEY_VARIANT);
-  if (variant) localStorage.removeItem(STORAGE_KEY_VARIANT);
-  const id = resolveStoredTheme(
+function loadSelection(customList: CustomTheme[]): { theme: string; variant: ThemeVariant } {
+  const selection = resolveStoredSelection(
     localStorage.getItem(STORAGE_KEY_THEME) ?? "",
-    variant,
+    localStorage.getItem(STORAGE_KEY_VARIANT),
     customList.map((t) => t.id),
   );
-  localStorage.setItem(STORAGE_KEY_THEME, id);
-  return id;
+  localStorage.setItem(STORAGE_KEY_THEME, selection.theme);
+  localStorage.setItem(STORAGE_KEY_VARIANT, selection.variant);
+  return selection;
 }
 
 const storedCustomThemes = loadCustomThemes();
-let customThemesList = $state<CustomTheme[]>(storedCustomThemes);
-let currentTheme = $state<string>(loadTheme(storedCustomThemes));
+const storedSelection = loadSelection(storedCustomThemes);
 
-function categoryOf(themeId: string, customList: CustomTheme[]): ThemeCategory {
+let customThemesList = $state<CustomTheme[]>(storedCustomThemes);
+let currentTheme = $state<string>(storedSelection.theme);
+let currentVariant = $state<ThemeVariant>(storedSelection.variant);
+
+function resolveSeed(
+  themeId: string,
+  variant: ThemeVariant,
+  customList: CustomTheme[],
+): { seed: ThemeSeed; variant: ThemeVariant } {
   const custom = customList.find((t) => t.id === themeId);
-  if (custom) return customCategory(custom.colors);
-  return themeEntry(themeId)?.category ?? "dark";
+  // Custom themes have no light/dark inversion: they render as the user authored
+  // them, whichever variant is selected (AMOLED still blackens the surfaces).
+  if (custom) {
+    return {
+      seed: customSeed(custom.id, custom.name, custom.colors),
+      variant: variant === "amoled" ? "amoled" : customVariant(custom.colors),
+    };
+  }
+  return { seed: seedById.get(themeId) ?? seedById.get(DEFAULT_THEME)!, variant };
 }
 
-function applyThemeToDOM(themeId: string, customList: CustomTheme[]): void {
+function applyThemeToDOM(themeId: string, variant: ThemeVariant, customList: CustomTheme[]): void {
   const root = document.documentElement;
-  const custom = customList.find((t) => t.id === themeId);
-  const category = categoryOf(themeId, customList);
-  const entry = themeEntry(themeId) ?? themeEntry(DEFAULT_THEME)!;
-  const seed = custom ? customSeed(custom.id, custom.name, custom.colors) : seedOf(entry);
-  const tokens = themeTokens(seed, category);
+  const resolved = resolveSeed(themeId, variant, customList);
+  const tokens = themeTokens(resolved.seed, resolved.variant);
 
   for (const [name, value] of Object.entries(tokens)) root.style.setProperty(name, value);
   root.setAttribute("data-theme", themeId);
-  root.style.colorScheme = category === "light" ? "light" : "dark";
+  root.setAttribute("data-variant", variant);
+  root.style.colorScheme = resolved.variant === "light" ? "light" : "dark";
 }
 
 export const theme = {
   get current() {
     return currentTheme;
   },
-  get category(): ThemeCategory {
-    return categoryOf(currentTheme, customThemesList);
+  get variant() {
+    return currentVariant;
   },
   get isLight() {
-    return this.category === "light";
+    return currentVariant === "light";
   },
   get customThemes() {
     return customThemesList;
   },
 
   apply() {
-    applyThemeToDOM(currentTheme, customThemesList);
+    applyThemeToDOM(currentTheme, currentVariant, customThemesList);
   },
 
   set(id: string) {
     currentTheme = id;
     localStorage.setItem(STORAGE_KEY_THEME, id);
-    applyThemeToDOM(id, customThemesList);
+    applyThemeToDOM(id, currentVariant, customThemesList);
   },
 
-  /** Quick toggle: swap to the other authored appearance of the same family. A
-   *  theme with only one appearance (OLED, custom) falls back to Basalt.
+  setVariant(v: ThemeVariant) {
+    currentVariant = v;
+    localStorage.setItem(STORAGE_KEY_VARIANT, v);
+    applyThemeToDOM(currentTheme, v, customThemesList);
+  },
+
+  /** Quick toggle for the top-bar sun/moon button — AMOLED is reachable only from
+   *  the picker, so it toggles into light like any other dark variant.
    *
-   *  Self-references go through `theme`, not `this`: call sites pass these
-   *  methods straight to `onclick={theme.toggleAppearance}`, which detaches the
-   *  receiver and would make `this` undefined. */
+   *  Self-references go through `theme`, not `this`: call sites pass these methods
+   *  straight to `onclick={theme.toggleAppearance}`, which detaches the receiver
+   *  and would make `this` undefined. */
   toggleAppearance() {
-    const want: ThemeCategory = theme.isLight ? "dark" : "light";
-    const seedId = themeEntry(currentTheme)?.seedId;
-    const paired =
-      seedId && currentTheme !== OLED_THEME_ID
-        ? THEME_ENTRIES.find((e) => e.seedId === seedId && e.category === want)
-        : undefined;
-    theme.set(paired?.id ?? `basalt-${want}`);
+    theme.setVariant(theme.isLight ? "dark" : "light");
   },
 
   saveCustomThemes(themes: CustomTheme[]) {
     customThemesList = themes;
     localStorage.setItem(STORAGE_KEY_CUSTOM, JSON.stringify(themes));
-    applyThemeToDOM(currentTheme, themes);
+    applyThemeToDOM(currentTheme, currentVariant, themes);
   },
 
   deleteCustomTheme(id: string) {

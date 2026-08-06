@@ -181,6 +181,12 @@ Text contrast is the primary hierarchy tool. Two font stacks: UI sans and mono.
   anywhere — this app is panes and tables.
 - Wide content (grids, SQL previews) scrolls inside its own container
   (`overflow-auto`); the app shell itself never scrolls.
+- **Scrollbars are declared once, globally** in `app.css` — a 10px gutter whose
+  thumb renders 6px (transparent border + `background-clip: padding-box`),
+  `rounded-full`, transparent track, `--outline` resting → `--on-surface-muted`
+  hover → `--primary` while dragging. No component styles its own scroller and
+  no scroller is hidden: `scrollbar-width: none` and `::-webkit-scrollbar {
+  display: none }` are review failures — a pane that scrolls must say so.
 
 ## 6. Component Blueprints
 

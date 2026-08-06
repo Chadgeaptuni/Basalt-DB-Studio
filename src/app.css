@@ -96,6 +96,44 @@
     background: var(--grid-sel);
   }
 
+  /* Scrollbars are app chrome, styled once here — no scroller restyles its own
+     (DESIGN §5). The thumb is the only visible part: the track stays transparent
+     so a bar reads as a hairline over whatever surface it sits on, and the
+     colours are role tokens, so every theme (including custom ones) gets it free.
+     Tauri ships WebKit on macOS/Linux and Chromium on Windows, so the
+     -webkit- pseudo-elements are the real implementation; the standard
+     properties below cover engines that lack them. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    /* A transparent border inset by `background-clip` is what makes a 10px hit
+       area render as a 6px thumb — a genuinely 6px-wide bar would be too small
+       to grab. */
+    background-color: var(--outline);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+    border-radius: 9999px; /* rounded-full — @theme inline emits no --radius-* var */
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--on-surface-muted);
+  }
+  ::-webkit-scrollbar-thumb:active {
+    background-color: var(--primary);
+  }
+
+  @supports not selector(::-webkit-scrollbar) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--outline) transparent;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

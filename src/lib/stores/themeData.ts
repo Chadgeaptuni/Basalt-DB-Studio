@@ -1,11 +1,11 @@
 // Single source of truth for every built-in theme.
 //
-// A *seed* holds the two authored palettes of one colour family; a *theme* is one
-// of those palettes, picked directly. Selecting an appearance is the whole choice
-// — there is no separate light/dark switch layered on top (DESIGN §3).
+// A *seed* holds both authored palettes of one colour family; the variant picked
+// in Settings decides which one renders. Theme and variant are two independent
+// choices — 21 palettes × 3 variants, not 63 entries in a list.
 
-export const THEME_CATEGORIES = ["light", "dark", "oled"] as const;
-export type ThemeCategory = (typeof THEME_CATEGORIES)[number];
+export const THEME_VARIANTS = ["light", "dark", "amoled"] as const;
+export type ThemeVariant = (typeof THEME_VARIANTS)[number];
 
 /** Material-ish base palette */
 interface BasePalette {
@@ -40,6 +40,8 @@ export interface ThemeSeed {
   id: string;
   name: string;
   description: string;
+  /** true for inherently-light palettes — only affects the picker swatch. */
+  lightFirst?: boolean;
   light: BasePalette;
   dark: BasePalette;
   accents: Accents;
@@ -50,9 +52,19 @@ export interface ThemeSeed {
 
 export const THEME_SEEDS: ThemeSeed[] = [
   {
-    id: "basalt",
-    name: "Basalt",
-    description: "Default flat palette with high contrast.",
+    id: "basalt-dark",
+    name: "Basalt Dark",
+    description: "Default flat dark theme with high contrast.",
+    light: { primary: "#2f6fd0", onPrimary: "#ffffff", background: "#ffffff", surface: "#eef1f6", onSurface: "#1c2530", onSurfaceVariant: "#3d4757", outline: "#cdd2da", error: "#c0392b" },
+    dark: { primary: "#4e8cd9", onPrimary: "#ffffff", background: "#0e1116", surface: "#1e242e", onSurface: "#e6e9ef", onSurfaceVariant: "#b6bdc9", outline: "#323b47", error: "#e06c75" },
+    accents: { ok: "#6cc070", warn: "#d6a55c", syntax: { kw: "#7aa2f7", str: "#9ece6a", num: "#ff9e64", comment: "#5c6370", fn: "#7dcfff" } },
+    lightAccents: { ok: "#2e8b57", warn: "#b8860b", syntax: { kw: "#0b5fb3", str: "#297a3a", num: "#b25000", comment: "#8a919e", fn: "#0a7ea4" } },
+  },
+  {
+    id: "basalt-light",
+    name: "Basalt Light",
+    description: "Clean light theme with inverted surfaces.",
+    lightFirst: true,
     light: { primary: "#2f6fd0", onPrimary: "#ffffff", background: "#ffffff", surface: "#e9ebef", onSurface: "#1c2530", onSurfaceVariant: "#3d4757", outline: "#cdd2da", error: "#c0392b" },
     dark: { primary: "#4e8cd9", onPrimary: "#ffffff", background: "#0e1116", surface: "#1e242e", onSurface: "#e6e9ef", onSurfaceVariant: "#b6bdc9", outline: "#323b47", error: "#e06c75" },
     accents: { ok: "#6cc070", warn: "#d6a55c", syntax: { kw: "#7aa2f7", str: "#9ece6a", num: "#ff9e64", comment: "#5c6370", fn: "#7dcfff" } },
@@ -70,6 +82,7 @@ export const THEME_SEEDS: ThemeSeed[] = [
     id: "basalt-paper",
     name: "Basalt Paper",
     description: "Warm paper theme with soft sepia contrast.",
+    lightFirst: true,
     light: { primary: "#a65d00", onPrimary: "#ffffff", background: "#faf7f0", surface: "#e8e1d3", onSurface: "#2b2620", onSurfaceVariant: "#4d463b", outline: "#c9bfab", error: "#b23b3b" },
     dark: { primary: "#d9973a", onPrimary: "#2a1c08", background: "#1a1611", surface: "#241f18", onSurface: "#ece4d5", onSurfaceVariant: "#b9ad98", outline: "#4a4234", error: "#e08a7d" },
     accents: { ok: "#4f8a3d", warn: "#9a6b12", syntax: { kw: "#1e6fb8", str: "#2f7d32", num: "#b5591f", comment: "#9a9180", fn: "#0f8a8a" } },
@@ -228,31 +241,30 @@ export const DEFAULT_CUSTOM_COLORS = {
   text: "#e6e9ef",
 } as const;
 
-// OLED surfaces: true-black base + near-black raised, retaining the Basalt dark
-// accents/text. One preset, not a modifier applied to every palette.
-const OLED = { surface: "#000000", container: "#0b0b0b", containerHigh: "#151515" } as const;
-export const OLED_THEME_ID = "basalt-oled";
+// AMOLED surfaces: true-black base + near-black raised, retaining the theme's
+// dark accents/text. A modifier over any palette, not a palette of its own.
+const AMOLED = { surface: "#000000", container: "#0b0b0b", containerHigh: "#151515" } as const;
 
 const mix = (color: string, pct: number, into: string): string =>
   `color-mix(in srgb, ${color} ${pct}%, ${into})`;
 
 /**
- * Map a seed + category to the full Basalt token contract (DESIGN.md §3). The one
+ * Map a seed + variant to the full Basalt token contract (DESIGN.md §3). The one
  * derivation point: surfaces build a 5-level tonal ladder, borders/grid/danger are
  * mixed from the palette, and accent/syntax hues are nudged toward the text colour
- * on a light palette so they retain contrast on a light background.
+ * on the light variant so they retain contrast on a light background.
  */
-export function themeTokens(seed: ThemeSeed, category: ThemeCategory): Record<string, string> {
-  const light = category === "light";
-  const oled = category === "oled";
-  const base = light ? seed.light : seed.dark; // oled builds on the dark palette
+export function themeTokens(seed: ThemeSeed, variant: ThemeVariant): Record<string, string> {
+  const light = variant === "light";
+  const amoled = variant === "amoled";
+  const base = light ? seed.light : seed.dark; // amoled builds on the dark palette
 
-  const background = oled ? OLED.surface : base.background;
-  const surface = oled ? OLED.containerHigh : base.surface;
-  const panel = oled ? OLED.container : mix(base.surface, light ? 58 : 72, base.background);
+  const background = amoled ? AMOLED.surface : base.background;
+  const surface = amoled ? AMOLED.containerHigh : base.surface;
+  const panel = amoled ? AMOLED.container : mix(base.surface, light ? 58 : 72, base.background);
 
   // Authored light accents win; otherwise pull hues toward onSurface (a dark tone)
-  // so they keep contrast on a light background. Dark/OLED use them as authored.
+  // so they keep contrast on a light background. Dark/AMOLED use them as authored.
   const accents = light ? (seed.lightAccents ?? seed.accents) : seed.accents;
   const nudge = light && !seed.lightAccents;
   const forLight = (c: string): string => (nudge ? mix(c, 78, base.onSurface) : c);
@@ -306,62 +318,16 @@ export function themeTokens(seed: ThemeSeed, category: ThemeCategory): Record<st
   };
 }
 
-/** One selectable theme: a seed rendered in one of its authored appearances. */
-export interface ThemeEntry {
-  id: string;
-  seedId: string;
-  name: string;
-  description: string;
-  category: ThemeCategory;
-}
-
-const seedById = new Map(THEME_SEEDS.map((s) => [s.id, s]));
-
-/** Every built-in theme: both appearances of every seed, plus the one OLED preset. */
-export const THEME_ENTRIES: ThemeEntry[] = [
-  ...THEME_SEEDS.flatMap((seed): ThemeEntry[] => [
-    {
-      id: `${seed.id}-light`,
-      seedId: seed.id,
-      name: `${seed.name} Light`,
-      description: seed.description,
-      category: "light",
-    },
-    {
-      id: `${seed.id}-dark`,
-      seedId: seed.id,
-      name: `${seed.name} Dark`,
-      description: seed.description,
-      category: "dark",
-    },
-  ]),
-  {
-    id: OLED_THEME_ID,
-    seedId: "basalt",
-    name: "Basalt OLED",
-    description: "True black surfaces for OLED panels.",
-    category: "oled",
-  },
-];
-
-export function themeEntry(id: string): ThemeEntry | undefined {
-  return THEME_ENTRIES.find((e) => e.id === id);
-}
-
-export function seedOf(entry: ThemeEntry): ThemeSeed {
-  return seedById.get(entry.seedId)!;
-}
-
-/** The three-swatch preview the picker draws — read from the appearance the row
- *  actually selects, so the swatch can never disagree with the result. */
-export function themeSwatch(entry: ThemeEntry): [string, string, string] {
-  const seed = seedOf(entry);
-  const base = entry.category === "light" ? seed.light : seed.dark;
-  return [entry.category === "oled" ? OLED.surface : base.background, base.primary, base.outline];
+/** The three-swatch preview the theme picker draws for a palette. Read from the
+ *  seed's own headline appearance, so a row keeps its identity while the variant
+ *  switch above the grid changes independently. */
+export function themeSwatch(seed: ThemeSeed): [string, string, string] {
+  const b = seed.lightFirst ? seed.light : seed.dark;
+  return [b.background, b.primary, b.outline];
 }
 
 /** Perceptual lightness of a #rrggbb colour, 0 (black) → 1 (white). */
-export function luminance(hex: string): number {
+function luminance(hex: string): number {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
   if (!m) return 0;
   const n = Number.parseInt(m[1], 16);
@@ -376,21 +342,21 @@ export interface CustomColors {
   text: string;
 }
 
-/** A custom theme is Light or Dark by its authored surface — read the raw hex the
- *  user picked, never the expanded palette (whose derived fields are
- *  `color-mix()` strings that `luminance` cannot parse). */
-export function customCategory(c: CustomColors): ThemeCategory {
+/** The variant a custom theme renders at: it has no light/dark inversion, so the
+ *  authored surface decides. Read the raw hex the user picked, never the expanded
+ *  palette (whose derived fields are `color-mix()` strings `luminance` can't parse). */
+export function customVariant(c: CustomColors): Exclude<ThemeVariant, "amoled"> {
   return luminance(c.surface) > 0.5 ? "light" : "dark";
 }
 
 /**
  * Expand a 4-colour custom theme into a full seed so it drives the whole token
  * contract (not just a handful) — otherwise switching to a custom theme would
- * leave the previous theme's grid/syntax tokens behind. Both appearances hold the
- * same authored palette, so the theme renders exactly as the user drew it.
+ * leave the previous theme's grid/syntax tokens behind. Both palettes hold the
+ * same authored colours, so the theme renders exactly as the user drew it.
  */
 export function customSeed(id: string, name: string, c: CustomColors): ThemeSeed {
-  const light = customCategory(c) === "light";
+  const light = customVariant(c) === "light";
   const palette: BasePalette = {
     primary: c.primary,
     onPrimary: luminance(c.primary) > 0.6 ? "#111111" : "#ffffff",

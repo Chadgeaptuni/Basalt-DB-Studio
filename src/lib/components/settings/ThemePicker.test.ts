@@ -15,47 +15,45 @@ afterEach(() => {
   dialogs.cancel();
   theme.saveCustomThemes([]);
   theme.set("basalt-dark");
+  theme.setVariant("dark");
 });
 
 describe("ThemePicker", () => {
-  it("groups every theme under exactly one appearance section", () => {
+  it("offers every variant alongside one row per palette", () => {
     render(ThemePicker);
 
-    for (const title of ["Light", "Dark", "OLED"]) {
-      expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
+    // Rendered lowercase and uppercased in CSS, so the accessible name is the raw word.
+    for (const label of ["light", "dark", "OLED"]) {
+      expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
     }
-    // One row per theme id, and each id appears once across all sections.
-    const names = screen.getAllByRole("button").map((b) => b.textContent?.trim());
-    const themeRows = names.filter((n) => n?.startsWith("Catppuccin"));
-    expect(themeRows).toHaveLength(2); // Catppuccin Light + Catppuccin Dark
-    expect(screen.getAllByRole("button", { name: /^Basalt OLED/ })).toHaveLength(1);
+    // A palette is one row — the appearance is the separate variant choice.
+    expect(screen.getAllByRole("button", { name: /^Catppuccin/ })).toHaveLength(1);
   });
 
-  it("selects the appearance the row advertises", async () => {
+  it("switches the variant without changing the palette", async () => {
     render(ThemePicker);
+    theme.set("catppuccin");
 
-    await fireEvent.click(screen.getByRole("button", { name: /^Catppuccin Light/ }));
+    await fireEvent.click(screen.getByRole("button", { name: "light" }));
 
-    expect(theme.current).toBe("catppuccin-light");
-    expect(theme.isLight).toBe(true);
+    expect(theme.variant).toBe("light");
+    expect(theme.current).toBe("catppuccin");
   });
 
-  it("files a custom theme by its authored surface", () => {
-    const lightCustom: CustomTheme = {
-      id: "custom-light",
-      name: "Paperish",
-      colors: { ...DEFAULT_CUSTOM_COLORS, surface: "#f4f5f7", text: "#151515" },
-    };
-    theme.saveCustomThemes([custom, lightCustom]);
+  it("selects the palette the row advertises", async () => {
     render(ThemePicker);
 
-    const sections = screen.getAllByRole("heading").map((h) => h.textContent);
-    expect(sections).toEqual(["Light", "Dark", "OLED"]);
-    // Dark-surfaced custom sits with Dark, light-surfaced one with Light.
-    const lightSection = screen.getByRole("heading", { name: "Light" }).parentElement!;
-    const darkSection = screen.getByRole("heading", { name: "Dark" }).parentElement!;
-    expect(lightSection.textContent).toContain("Paperish");
-    expect(darkSection.textContent).toContain("Audit theme");
+    await fireEvent.click(screen.getByRole("button", { name: /^Catppuccin/ }));
+
+    expect(theme.current).toBe("catppuccin");
+  });
+
+  it("lists custom themes above the presets", () => {
+    theme.saveCustomThemes([custom]);
+    render(ThemePicker);
+
+    expect(screen.getByText("Custom Themes")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Audit theme/ })).toBeInTheDocument();
   });
 
   it("confirms before deleting a custom theme", async () => {
