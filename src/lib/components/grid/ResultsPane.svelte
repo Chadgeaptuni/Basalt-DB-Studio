@@ -67,7 +67,7 @@
 
 <div class="flex h-full flex-col bg-surface">
   <div
-    class="flex h-8 shrink-0 items-center gap-2 border-b border-outline-variant bg-surface-container px-2 text-data text-on-surface-muted"
+    class="flex h-10 shrink-0 items-center gap-2 border-b border-outline-variant bg-surface-container px-2 text-data text-on-surface-muted"
   >
     {#if tab?.running}
       <Spinner size="sm" /> <span>Running… {elapsed}s</span>

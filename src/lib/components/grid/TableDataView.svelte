@@ -161,7 +161,7 @@
   {/snippet}
   {#snippet b()}
 <div class="flex h-full flex-col bg-surface">
-  <div class="flex h-9 shrink-0 items-center gap-2 border-b border-outline-variant bg-surface-container px-2">
+  <div class="flex h-10 shrink-0 items-center gap-2 border-b border-outline-variant bg-surface-container px-2">
     <span class="text-data text-on-surface-variant">{tab.ref?.namespace}.{tab.ref?.table}</span>
     {#if browse && !queryMode}
       <span class="text-data text-on-surface-muted tabular-nums">

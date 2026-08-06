@@ -29,6 +29,38 @@ describe("Tabs", () => {
     expect(onSelect).toHaveBeenLastCalledWith("three");
   });
 
+  // M3 marks the active tab with a 3px indicator, not a background swap. Asserted
+  // structurally so the marker can't quietly regress to colour-only.
+  it("draws the indicator under exactly one tab", async () => {
+    const view = render(Tabs, { items, activeId: "one", onSelect: vi.fn() });
+    const indicators = () => document.querySelectorAll(".bg-primary");
+
+    expect(indicators()).toHaveLength(1);
+    expect(screen.getAllByRole("tab")[0].parentElement).toContainElement(
+      indicators()[0] as HTMLElement,
+    );
+
+    await view.rerender({ items, activeId: "three", onSelect: vi.fn() });
+    expect(indicators()).toHaveLength(1);
+    expect(screen.getAllByRole("tab")[2].parentElement).toContainElement(
+      indicators()[0] as HTMLElement,
+    );
+  });
+
+  // A failing statement's result tab must stay legible as an error after the tab
+  // strip lost its filled active state.
+  it("keeps a tab's tone whether or not it is active", async () => {
+    const toned: TabItem[] = [
+      { id: "ok", label: "Result 1" },
+      { id: "bad", label: "Error 2", tone: "danger" },
+    ];
+    const view = render(Tabs, { items: toned, activeId: "ok", onSelect: vi.fn() });
+    expect(screen.getByText("Error 2")).toHaveClass("text-error");
+
+    await view.rerender({ items: toned, activeId: "bad", onSelect: vi.fn() });
+    expect(screen.getByText("Error 2")).toHaveClass("text-error");
+  });
+
   it("gives each close action a specific accessible name", async () => {
     const onClose = vi.fn();
     render(Tabs, { items, activeId: "one", onSelect: vi.fn(), onClose });

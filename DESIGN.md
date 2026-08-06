@@ -109,6 +109,11 @@ container is *floating over* the layout rather than part of it.
 `e3` is for a dialog over another dialog. Any `shadow-*` on an in-layout element
 is a review failure.
 
+The values live on `--elevation-1/2/3` in `app.css`'s `@layer base`, and
+`@theme inline` maps `--shadow-e*` onto them. Anything that builds its own
+stylesheet and so cannot use a Tailwind utility — the CodeMirror theme — reads
+`var(--elevation-N)` rather than restating the numbers.
+
 - Five surface levels, base → most raised (in dark themes):
   `--surface` (app base: editor, grid body) → `--surface-container-low` (inset
   wells: search fields, sunken toolbars) → `--surface-container` (panels: nav
@@ -341,8 +346,11 @@ the primitive**, don't fork it locally.
   `--surface-container-highest`, `shadow-e2`, single line + optional text action;
   auto-dismiss 4s (errors 8s, or sticky with action). Created only via the global
   `toast.*` API (§9).
-- **Tooltip** — delay 400 ms, `text-body-sm`, `--surface-container-highest`,
-  no arrow.
+- **Tooltip** — M3 plain tooltip: 400 ms delay, `text-body-sm`,
+  `--surface-container-highest`, `rounded-xs`, no arrow. It replaces the native
+  `title` on icon-only controls; the accessible name stays on `aria-label`, so
+  the tooltip is decoration and nothing depends on it. Never set both — two
+  tooltips fire at different delays on top of each other.
 - **EmptyState** — icon (16px, `--on-surface-muted`) + one sentence + at most one action.
 - **Spinner** — 3 sizes; inline in buttons while pending (`Button` handles it via
   a `loading` prop).
@@ -408,7 +416,11 @@ Focus is **additionally** a 2px `--primary` ring via `:focus-visible` (app.css
 - Entrances (dialog, menu, snackbar, side sheet): `ease-emphasized`, ≤300 ms,
   fade + a small scale or slide. No spring, no bounce, no stagger, no parallax.
 - **Fade-through** when the nav rail swaps panels: 90 ms out, 210 ms in, no slide.
-- **Shared-axis-x** when switching workspace tabs, via the `uiSlide` helper.
+- A tab strip animates tabs **opening and closing** (`uiSlide`), never the
+  *content* behind a tab switch. Sliding a virtualized grid or a full editor on
+  every switch costs frames and makes a keyboard-driven tool feel sluggish —
+  switching to an already-loaded tab must be instant. The M3 cue that a tab
+  changed is the indicator, not a transition.
 - **Forbidden:** cascading/staggered reveals, fade-in-up hero entrances, skeleton
   shimmer, anything over 300 ms.
 - `prefers-reduced-motion` disables all of it (already enforced globally in

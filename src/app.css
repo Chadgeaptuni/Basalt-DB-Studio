@@ -55,10 +55,13 @@
   --radius-xl: 28px;
 
   /* M3 elevation. Dialogs/menus/snackbars only — surfaces still get their depth
-     from the tonal ladder (DESIGN §2), never from a shadow. */
-  --shadow-e1: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 1px 3px 1px rgb(0 0 0 / 0.15);
-  --shadow-e2: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 2px 6px 2px rgb(0 0 0 / 0.15);
-  --shadow-e3: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 4px 8px 3px rgb(0 0 0 / 0.15);
+     from the tonal ladder (DESIGN §2), never from a shadow. The values live on
+     `--elevation-*` below rather than here: `@theme inline` emits no custom
+     property, and CodeMirror builds its own stylesheet, so it needs a real
+     variable to read instead of a second copy of the numbers. */
+  --shadow-e1: var(--elevation-1);
+  --shadow-e2: var(--elevation-2);
+  --shadow-e3: var(--elevation-3);
 
   /* M3 motion — `standard` for everything routine, `emphasized` for entrances. */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
@@ -112,6 +115,12 @@
 }
 
 @layer base {
+  :root {
+    --elevation-1: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 1px 3px 1px rgb(0 0 0 / 0.15);
+    --elevation-2: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 2px 6px 2px rgb(0 0 0 / 0.15);
+    --elevation-3: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 4px 8px 3px rgb(0 0 0 / 0.15);
+  }
+
   html,
   body,
   #app {

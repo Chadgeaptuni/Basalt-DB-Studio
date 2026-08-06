@@ -388,10 +388,38 @@ label. The list caps at 50 and says how many it dropped rather than truncating
 silently. A new `stores/palette.svelte.ts` holds visibility so the shortcut, the
 top-bar button and the start panel can all open it without one owning the state.
 
-**U3 — Workspace.** Tab indicator, editor toolbar, results toolbar, statement
-tabs, CodeMirror theme.
-*Gate: tab switch animates on the shared axis; statement result tabs keep their
-error tone; editor and results survive `SplitPane` extremes.*
+**U3 — Workspace. ✅ done 2026-08-07.** M3 tab indicator, editor / results /
+table toolbars on the tier, CodeMirror theme aligned, `Tooltip` built and adopted
+by `IconButton`.
+*Gate: statement result tabs keep their error tone ✅ (asserted active **and**
+inactive); the indicator marks exactly one tab and follows the active one ✅;
+`svelte-check` 0 errors / 0 warnings and 120/120 vitest ✅.*
+
+**The shared-axis content transition was cut, and DESIGN.md §7 corrected.**
+Sliding a virtualized grid or a full editor on every tab switch costs frames and
+makes a keyboard-driven tool feel sluggish — switching to an already-loaded tab
+has to be instant. The M3 cue that a tab changed is the indicator, not a
+transition. The tab strip still animates tabs *opening and closing*.
+
+**Statement gutter markers are deferred.** Showing which statement will run at
+the cursor needs statement boundaries, and those come from `sqlgen/`'s splitter
+in the backend. The options were a new command returning statement ranges, or a
+second splitter in TypeScript — one is a backend change (a stated non-goal), the
+other is exactly the duplication the codebase rules forbid, with the added risk
+of the two disagreeing about what a statement is. It needs its own scoped
+decision.
+
+**Elevation moved to real custom properties.** `--shadow-e*` lived in
+`@theme inline`, which emits no CSS variable, so the CodeMirror theme — which
+builds its own stylesheet and cannot use Tailwind utilities — would have needed a
+second copy of the shadow values. `--elevation-1/2/3` now live in `@layer base`
+and `@theme inline` maps `--shadow-e*` onto them, so both readers share one
+source.
+
+`Tooltip` replaces the native `title` on every `IconButton`: native tooltips take
+about a second, ignore the theme, and render differently per OS. The accessible
+name stays on `aria-label`, which a regression test now pins — the tooltip is
+decoration and no screen reader depends on it.
 
 **U4 — Data surface.** Column header menus, sort/filter with filter chips, cell
 inspector side sheet, row detail.

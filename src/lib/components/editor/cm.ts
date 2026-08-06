@@ -4,6 +4,8 @@ import {
   keymap,
   lineNumbers,
   drawSelection,
+  highlightActiveLine,
+  highlightActiveLineGutter,
   type KeyBinding,
 } from "@codemirror/view";
 import { history, defaultKeymap, historyKeymap, indentWithTab } from "@codemirror/commands";
@@ -115,14 +117,25 @@ const highlight = HighlightStyle.define([
 ]);
 
 // Flat, tokenized editor chrome — the app owns the focus ring, so CM's is off.
+//
+// CodeMirror builds its own stylesheet, so it cannot use Tailwind utilities: the
+// values below restate the design system in px. They must track it by hand —
+// 12/16 is the `data` type role (DESIGN §4), 8px is `rounded-sm` and 12px
+// `rounded-md` from the shape scale (§2), and every colour is a role token.
 const theme = EditorView.theme({
   "&": { color: "var(--on-surface-variant)", backgroundColor: "var(--surface)", height: "100%" },
   "&.cm-focused": { outline: "none" },
-  ".cm-scroller": { fontFamily: "var(--font-mono)", fontSize: "13px", lineHeight: "1.5" },
-  ".cm-content": { caretColor: "var(--on-surface)" },
+  ".cm-scroller": { fontFamily: "var(--font-mono)", fontSize: "12px", lineHeight: "16px" },
+  ".cm-content": { caretColor: "var(--on-surface)", padding: "4px 0" },
   ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--on-surface)" },
   ".cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection": {
     backgroundColor: "var(--grid-sel)",
+  },
+  // The active line is the tonal ladder's next step up, not a tinted highlight.
+  ".cm-activeLine": { backgroundColor: "var(--surface-container-low)" },
+  ".cm-activeLineGutter": {
+    backgroundColor: "var(--surface-container-high)",
+    color: "var(--on-surface-variant)",
   },
   ".cm-gutters": {
     backgroundColor: "var(--surface-container)",
@@ -131,18 +144,32 @@ const theme = EditorView.theme({
     borderRight: "1px solid var(--outline-variant)",
   },
   ".cm-lineNumbers .cm-gutterElement": { padding: "0 8px 0 12px" },
-  ".cm-matchingBracket": { backgroundColor: "var(--surface-container-high)", outline: "1px solid var(--outline)" },
+  ".cm-matchingBracket": {
+    backgroundColor: "var(--surface-container-high)",
+    outline: "1px solid var(--outline)",
+  },
+  // Autocomplete and hover panels are floating containers, so they take an
+  // elevation (DESIGN §2) — the only place in the editor that does.
   ".cm-tooltip": {
     backgroundColor: "var(--surface-container-high)",
     border: "1px solid var(--outline-variant)",
-    borderRadius: "8px",
+    borderRadius: "12px",
     color: "var(--on-surface-variant)",
+    boxShadow: "var(--elevation-2)",
   },
-  ".cm-tooltip.cm-tooltip-autocomplete > ul": { fontFamily: "var(--font-mono)", fontSize: "12px" },
+  ".cm-tooltip.cm-tooltip-autocomplete > ul": {
+    fontFamily: "var(--font-mono)",
+    fontSize: "12px",
+    maxHeight: "16em",
+  },
+  ".cm-tooltip.cm-tooltip-autocomplete > ul > li": { padding: "4px 8px" },
   ".cm-tooltip-autocomplete ul li[aria-selected]": {
-    backgroundColor: "var(--primary)",
-    color: "var(--on-primary)",
+    backgroundColor: "var(--secondary-container)",
+    color: "var(--on-secondary-container)",
+    borderRadius: "8px",
   },
+  ".cm-completionIcon": { color: "var(--on-surface-muted)" },
+  ".cm-completionDetail": { color: "var(--on-surface-muted)", fontStyle: "normal" },
 });
 
 export function buildEditor(opts: {
@@ -153,6 +180,8 @@ export function buildEditor(opts: {
   const language = new Compartment();
   const extensions = [
     lineNumbers(),
+    highlightActiveLine(),
+    highlightActiveLineGutter(),
     history(),
     drawSelection(),
     indentOnInput(),

@@ -130,17 +130,17 @@
 </script>
 
 <div class="flex h-full flex-col bg-surface">
-  <div class="flex h-9 shrink-0 items-center gap-1.5 border-b border-outline-variant px-2">
+  <div class="flex h-10 shrink-0 items-center gap-2 border-b border-outline-variant px-2">
     <Button
-      variant="primary"
+      variant="filled"
       size="sm"
       disabled={!canRun}
       loading={tab?.running}
       onclick={() => tab && handleRun({ sql: tab.sql })}
     >
-      <Play size={13} strokeWidth={2} /> Run
+      <Play size={14} strokeWidth={2} /> Run
     </Button>
-    <span class="text-data text-on-surface-muted">{keyboard.label("mod+enter")} at cursor</span>
+    <span class="text-label-sm text-on-surface-muted">{keyboard.label("mod+enter")} at cursor</span>
     <div class="flex-1"></div>
     <IconButton
       icon={Save}

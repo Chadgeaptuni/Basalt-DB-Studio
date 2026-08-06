@@ -14,8 +14,9 @@
   import { uiSlide } from "$lib/utils/motion";
   import { stateLayer } from "./stateLayer";
 
-  // Shared horizontal tab strip (DESIGN §6). Used for editor tabs and per-statement
-  // result tabs. Dumb primitive: selection/close are callback props.
+  // Shared horizontal tab strip (DESIGN §6): M3 primary tabs — label with a 3px
+  // indicator underneath, no dividers, no filled active tab. Used for editor tabs
+  // and per-statement result tabs. Dumb primitive: selection/close are callbacks.
   interface Props {
     items: TabItem[];
     activeId: string | null;
@@ -60,10 +61,18 @@
   {#each items as item (item.id)}
     <div
       transition:uiSlide={{ axis: "x" }}
-      class="group flex h-full items-center border-r border-outline-variant text-data whitespace-nowrap
+      class="group relative flex h-full items-center text-data whitespace-nowrap
         transition-colors duration-200 ease-standard {stateLayer}
-        {item.id === activeId ? 'bg-surface text-on-surface' : 'text-on-surface-muted'}"
+        {item.id === activeId ? 'text-on-surface' : 'text-on-surface-muted'}"
     >
+      <!-- M3 marks the active tab with a 3px indicator under the label, not with
+           a background swap and dividers — that reads as a spreadsheet header. -->
+      {#if item.id === activeId}
+        <span
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-x-2 bottom-0 h-[3px] rounded-t-full bg-primary"
+        ></span>
+      {/if}
       <button
         type="button"
         role="tab"

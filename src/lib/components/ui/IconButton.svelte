@@ -1,11 +1,12 @@
 <script lang="ts">
   import type { IconComponent } from "./icon";
   import Spinner from "./Spinner.svelte";
+  import Tooltip from "./Tooltip.svelte";
   import { stateLayer, focusRing } from "./stateLayer";
 
   interface Props {
     icon: IconComponent;
-    /** Required — doubles as tooltip and aria-label (DESIGN §6). */
+    /** Required — renders as the tooltip and as `aria-label` (DESIGN §6). */
     title: string;
     size?: "sm" | "md";
     disabled?: boolean;
@@ -32,21 +33,24 @@
   const px = $derived(size === "sm" ? 16 : 18);
 </script>
 
-<button
-  type="button"
-  {title}
-  aria-label={title}
-  aria-pressed={active}
-  disabled={disabled || loading}
-  {onclick}
-  class="grid place-items-center rounded-full {box} {stateLayer} {focusRing}
-    {active === true
-    ? 'bg-secondary-container text-on-secondary-container'
-    : 'text-on-surface-variant'}"
->
-  {#if loading}
-    <Spinner size="sm" />
-  {:else}
-    <Icon size={px} strokeWidth={2} />
-  {/if}
-</button>
+<!-- No native `title`: it would duplicate the tooltip, and the two appear at
+     different delays on top of each other. `aria-label` still carries the name. -->
+<Tooltip label={title}>
+  <button
+    type="button"
+    aria-label={title}
+    aria-pressed={active}
+    disabled={disabled || loading}
+    {onclick}
+    class="grid place-items-center rounded-full {box} {stateLayer} {focusRing}
+      {active === true
+      ? 'bg-secondary-container text-on-secondary-container'
+      : 'text-on-surface-variant'}"
+  >
+    {#if loading}
+      <Spinner size="sm" />
+    {:else}
+      <Icon size={px} strokeWidth={2} />
+    {/if}
+  </button>
+</Tooltip>
