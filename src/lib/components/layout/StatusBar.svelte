@@ -2,6 +2,7 @@
   import PanelLeft from "@lucide/svelte/icons/panel-left";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import Badge from "$lib/components/ui/Badge.svelte";
+  import { stateLayer, focusRing } from "$lib/components/ui/stateLayer";
   import { zoom } from "$lib/stores/zoom.svelte";
   import { keyboard } from "$lib/utils/keyboard";
   import { editorTabs } from "$lib/stores/tabs.svelte";
@@ -21,14 +22,14 @@
 
 <footer
   class="flex h-8 shrink-0 items-center gap-3 border-t border-outline-variant bg-surface-container
-    px-2 font-mono text-[11px] text-on-surface-muted"
+    px-2 text-data text-on-surface-muted"
 >
   <IconButton icon={PanelLeft} title="Toggle sidebar" size="sm" onclick={onToggleSidebar} />
 
   {#if tx === "inTx"}
     <Badge variant="warn">TX</Badge>
   {:else if tx === "error"}
-    <Badge variant="danger">TX ERR</Badge>
+    <Badge variant="error">TX ERR</Badge>
   {/if}
   {#if stmt && !stmt.error}
     <span class="tabular-nums">
@@ -43,8 +44,7 @@
   <div class="flex-1"></div>
   <button
     type="button"
-    class="rounded-full px-2 py-0.5 tabular-nums transition-colors duration-200 ease-standard
-      hover:bg-on-surface/8 hover:text-on-surface-variant"
+    class="h-6 rounded-full px-2 tabular-nums {stateLayer} {focusRing}"
     title="Display size — click to reset ({keyboard.label('mod+0')})"
     onclick={zoom.reset}
   >

@@ -39,12 +39,12 @@
     children,
   }: Props = $props();
 
-  // M3 buttons are pills. Heights are M3 small (32) and standard (40) — the
-  // densest values that still clear M3's 32px minimum target.
+  // M3 buttons are pills. Both sizes sit on the density −2 tier (DESIGN §5): 32px
+  // is the standard control, 28px the dense in-toolbar one.
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap " +
-    `select-none ${stateLayer} ${focusRing}`;
-  const sizes: Record<Size, string> = { sm: "h-8 px-3 text-xs", md: "h-10 px-6 text-sm" };
+    "inline-flex items-center justify-center gap-2 rounded-full whitespace-nowrap " +
+    `select-none text-label-lg ${stateLayer} ${focusRing}`;
+  const sizes: Record<Size, string> = { sm: "h-7 px-3", md: "h-8 px-5" };
   const variants: Record<Variant, string> = {
     filled: "bg-primary text-on-primary",
     tonal: "bg-primary-container text-on-primary-container",

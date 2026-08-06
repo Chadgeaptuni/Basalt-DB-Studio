@@ -22,7 +22,7 @@
   );
 </script>
 
-<div class="shrink-0 border-t border-outline-variant bg-surface-container px-2 py-1 font-mono text-[11px] text-on-surface-muted">
+<div class="shrink-0 border-t border-outline-variant bg-surface-container px-2 py-1 text-data text-on-surface-muted">
   <div class="flex h-8 items-center gap-1.5">
     <GitBranch size={12} strokeWidth={2} class="shrink-0" />
     {#if !st || !st.installed}

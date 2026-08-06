@@ -75,15 +75,16 @@
         {#if contentOpen}
           <div {...props}>
             <div
-              class="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-lg border
+              class="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-xl border
                 border-outline-variant bg-surface-container-high shadow-e3"
               transition:uiScale
             >
               {#if !headerHidden}
                 <header
-                  class="flex shrink-0 items-center justify-between border-b border-outline-variant px-4 py-3"
+                  class="flex h-14 shrink-0 items-center justify-between gap-2 border-b
+                    border-outline-variant pr-3 pl-6"
                 >
-                  <Dialog.Title level={2} class="text-base font-medium text-on-surface">
+                  <Dialog.Title level={2} class="min-w-0 truncate text-title-lg text-on-surface">
                     {title}
                   </Dialog.Title>
                   <IconButton icon={X} title="Close" size="sm" onclick={close} />
@@ -92,15 +93,16 @@
                 <Dialog.Title level={2} class="sr-only">{title}</Dialog.Title>
               {/if}
               <div
-                class="min-h-0 min-w-0 flex-1 text-sm text-on-surface-variant {padding
-                  ? 'overflow-auto p-4'
+                class="min-h-0 min-w-0 flex-1 text-body-md text-on-surface-variant {padding
+                  ? 'overflow-auto px-6 py-4'
                   : 'flex flex-col overflow-hidden'}"
               >
                 {@render children()}
               </div>
               {#if footer}
                 <footer
-                  class="flex shrink-0 items-center justify-end gap-2 border-t border-outline-variant px-4 py-3"
+                  class="flex h-14 shrink-0 items-center justify-end gap-2 border-t
+                    border-outline-variant px-6"
                 >
                   {@render footer()}
                 </footer>

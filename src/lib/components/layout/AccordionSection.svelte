@@ -8,6 +8,7 @@
   import type { Snippet } from "svelte";
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
+  import { stateLayer, focusRing } from "$lib/components/ui/stateLayer";
   import { sidebar, SECTIONS, type SectionId } from "$lib/stores/sidebar.svelte";
   import { zoom } from "$lib/stores/zoom.svelte";
 
@@ -55,15 +56,15 @@
       type="button"
       onclick={() => sidebar.toggle(id)}
       aria-expanded={open}
-      class="flex min-w-0 flex-1 items-center gap-1.5 text-left text-on-surface-muted transition-colors
-        hover:text-on-surface-variant"
+      class="flex h-full min-w-0 flex-1 items-center gap-1.5 rounded-full px-1 text-left
+        text-on-surface-muted {stateLayer} {focusRing}"
     >
       {#if open}
         <ChevronDown size={13} class="shrink-0" />
       {:else}
         <ChevronRight size={13} class="shrink-0" />
       {/if}
-      <span class="truncate text-xs font-medium tracking-wider uppercase">{title}</span>
+      <span class="truncate text-label-sm tracking-wider uppercase">{title}</span>
     </button>
     {#if actions}
       <div class="flex shrink-0 items-center gap-1">{@render actions()}</div>

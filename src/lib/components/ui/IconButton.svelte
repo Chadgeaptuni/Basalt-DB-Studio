@@ -26,9 +26,10 @@
     onclick,
   }: Props = $props();
 
-  // M3 icon buttons are circular; 32/40px are the dense and standard targets.
-  const box = $derived(size === "sm" ? "h-8 w-8" : "h-10 w-10");
-  const px = $derived(size === "sm" ? 16 : 20);
+  // M3 icon buttons are circular; 28/32px are the dense and standard targets on
+  // the density −2 tier (DESIGN §5).
+  const box = $derived(size === "sm" ? "h-7 w-7" : "h-8 w-8");
+  const px = $derived(size === "sm" ? 16 : 18);
 </script>
 
 <button

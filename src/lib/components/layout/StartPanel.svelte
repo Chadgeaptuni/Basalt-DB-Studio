@@ -33,7 +33,7 @@
          and shares the pane gutter, where EmptyState carries its own padding for
          the panels it sits inside. -->
     <div class="flex flex-col items-start gap-4">
-      <div class="flex items-center gap-2 text-sm text-on-surface-variant">
+      <div class="flex items-center gap-2 text-body-md text-on-surface-variant">
         <BrandMark size={24} />
         <span>Connect to a database to start querying.</span>
       </div>
@@ -41,13 +41,13 @@
     </div>
 
     {#if !connections.loaded}
-      <div class="flex items-center gap-2 text-sm text-on-surface-muted">
+      <div class="flex items-center gap-2 text-body-md text-on-surface-muted">
         <Spinner size="sm" /> Loading…
       </div>
     {:else if connections.loadError}
-      <div class="rounded-md bg-error-container p-4 text-sm text-on-error-container">
+      <div class="rounded-md bg-error-container p-4 text-body-md text-on-error-container">
         <div class="font-medium">Couldn't read your saved connections.</div>
-        <div class="mt-1 font-mono text-[11px] break-words opacity-90">
+        <div class="mt-1 text-data break-words opacity-90">
           {connections.loadError.message}
         </div>
         <!-- -ml-3 cancels the text button's own padding so its label sits on the
@@ -58,7 +58,7 @@
       </div>
     {:else if connections.profiles.length > 0}
       <section>
-        <h2 class="pb-2 text-xs font-medium tracking-wider text-on-surface-muted uppercase">
+        <h2 class="pb-2 text-label-sm tracking-wider text-on-surface-muted uppercase">
           Connections
         </h2>
         <ul
@@ -71,12 +71,12 @@
               <ConnectionRow profile={p} onclick={() => void connections.activate(p.id)} />
               {#if st.status === "error" && st.error}
                 <div
-                  class="flex items-start gap-3 bg-error-container px-3 py-2 text-xs
+                  class="flex items-start gap-3 bg-error-container px-3 py-2 text-body-sm
                     text-on-error-container"
                 >
                   <div class="min-w-0 flex-1">
                     <div class="font-medium">{connectErrorTitle(st.error.kind)}</div>
-                    <div class="mt-1 font-mono text-[11px] break-words opacity-90">
+                    <div class="mt-1 text-data break-words opacity-90">
                       {st.error.message}
                     </div>
                   </div>
@@ -96,7 +96,7 @@
 
     {#each STARTUP_SHORTCUT_GROUPS as group (group.title)}
       <section>
-        <h2 class="pb-2 text-xs font-medium tracking-wider text-on-surface-muted uppercase">
+        <h2 class="pb-2 text-label-sm tracking-wider text-on-surface-muted uppercase">
           {group.title}
         </h2>
         <div class="grid grid-cols-1 gap-x-8 sm:grid-cols-2">
@@ -104,7 +104,7 @@
             <div class="flex h-8 items-center justify-between gap-3">
               <span class="flex min-w-0 items-center gap-2">
                 <item.icon size={14} class="shrink-0 text-on-surface-muted" />
-                <span class="truncate text-xs text-on-surface-variant">{item.label}</span>
+                <span class="truncate text-body-sm text-on-surface-variant">{item.label}</span>
               </span>
               <span class="flex shrink-0 items-center gap-1">
                 {#each item.combos as combo (combo)}<Kbd {combo} />{/each}

@@ -11,8 +11,8 @@
 </script>
 
 <label
-  class="inline-flex items-center gap-2 text-sm text-on-surface-variant select-none
-    {disabled ? 'opacity-50' : 'cursor-pointer'}"
+  class="inline-flex h-8 items-center gap-2 text-body-md text-on-surface-variant select-none
+    {disabled ? 'opacity-[0.38]' : 'cursor-pointer'}"
 >
   <input
     {id}

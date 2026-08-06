@@ -22,7 +22,7 @@
 
 <Modal open title={`Rename ${table}`} onclose={ddl.close}>
   <label class="flex flex-col gap-1">
-    <span class="text-xs tracking-wider text-on-surface-muted uppercase">New name</span>
+    <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">New name</span>
     <Input bind:value={newName} autofocus />
   </label>
 

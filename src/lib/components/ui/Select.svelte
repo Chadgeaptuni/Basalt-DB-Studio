@@ -23,7 +23,7 @@
     value = e.currentTarget.value;
     onchange?.(value);
   }}
-  class="h-10 w-full rounded-sm border border-outline-variant bg-surface px-4 text-sm
+  class="h-8 w-full rounded-sm border border-outline-variant bg-surface px-3 text-body-md
     text-on-surface transition-colors duration-200 ease-standard disabled:opacity-[0.38]
     focus:outline-2 focus:-outline-offset-1 focus:outline-primary"
 >

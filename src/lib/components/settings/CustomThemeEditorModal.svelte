@@ -46,7 +46,7 @@
 <Modal open title={themeToEdit ? "Edit Custom Theme" : "Create Custom Theme"} size="lg" {onclose}>
   <div class="flex flex-col gap-4">
     <label class="flex flex-col gap-1.5">
-      <span class="text-xs font-semibold tracking-wider text-on-surface-muted uppercase">Theme Name</span>
+      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Theme Name</span>
       <Input value={name} oninput={(e) => (name = (e.target as HTMLInputElement).value)} />
     </label>
 
@@ -59,8 +59,8 @@
           class="h-8 w-10 cursor-pointer rounded-xs border-0 bg-transparent"
         />
         <div class="flex flex-1 flex-col">
-          <span class="text-xs font-medium text-on-surface">Primary Accent</span>
-          <span class="font-mono text-[11px] text-on-surface-muted">{primary}</span>
+          <span class="text-label-md text-on-surface">Primary Accent</span>
+          <span class="text-data text-on-surface-muted">{primary}</span>
         </div>
       </label>
 
@@ -72,8 +72,8 @@
           class="h-8 w-10 cursor-pointer rounded-xs border-0 bg-transparent"
         />
         <div class="flex flex-1 flex-col">
-          <span class="text-xs font-medium text-on-surface">Surface Background</span>
-          <span class="font-mono text-[11px] text-on-surface-muted">{surface}</span>
+          <span class="text-label-md text-on-surface">Surface Background</span>
+          <span class="text-data text-on-surface-muted">{surface}</span>
         </div>
       </label>
 
@@ -85,8 +85,8 @@
           class="h-8 w-10 cursor-pointer rounded-xs border-0 bg-transparent"
         />
         <div class="flex flex-1 flex-col">
-          <span class="text-xs font-medium text-on-surface">Border Color</span>
-          <span class="font-mono text-[11px] text-on-surface-muted">{border}</span>
+          <span class="text-label-md text-on-surface">Border Color</span>
+          <span class="text-data text-on-surface-muted">{border}</span>
         </div>
       </label>
 
@@ -98,8 +98,8 @@
           class="h-8 w-10 cursor-pointer rounded-xs border-0 bg-transparent"
         />
         <div class="flex flex-1 flex-col">
-          <span class="text-xs font-medium text-on-surface">Text Color</span>
-          <span class="font-mono text-[11px] text-on-surface-muted">{text}</span>
+          <span class="text-label-md text-on-surface">Text Color</span>
+          <span class="text-data text-on-surface-muted">{text}</span>
         </div>
       </label>
     </div>

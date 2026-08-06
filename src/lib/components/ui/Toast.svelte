@@ -4,6 +4,7 @@
   import Info from "@lucide/svelte/icons/info";
   import X from "@lucide/svelte/icons/x";
   import IconButton from "./IconButton.svelte";
+  import { stateLayer, focusRing } from "./stateLayer";
 
   // Dumb: kind restated locally so ui/ stays decoupled from the toasts store.
   type Kind = "success" | "error" | "info";
@@ -27,15 +28,14 @@
 
 <div
   class="flex w-80 items-center gap-2 rounded-sm border border-outline-variant
-    bg-surface-container-highest px-4 py-3 text-sm text-on-surface shadow-e2"
+    bg-surface-container-highest px-4 py-3 text-body-md text-on-surface shadow-e2"
 >
   <Icon size={16} strokeWidth={2} class={tone[kind]} />
   <span class="flex-1 truncate">{message}</span>
   {#if action}
     <button
       type="button"
-      class="rounded-full px-2 py-1 text-xs font-medium text-primary
-        transition-colors duration-200 ease-standard hover:bg-primary/8"
+      class="h-7 shrink-0 rounded-full px-3 text-label-lg text-primary {stateLayer} {focusRing}"
       onclick={() => {
         action.run();
         ondismiss();

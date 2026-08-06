@@ -37,7 +37,7 @@
   // Autofit: size each column to its header + a sample of cell text. Cells are mono,
   // so char-count → px is a reliable estimate with no DOM measuring/reflow. Clamped
   // so one long cell can't blow the layout out; anything past MAX still truncates.
-  const CHAR_W = 7.3; // px per char at font-mono text-xs (~12px)
+  const CHAR_W = 7.3; // px per char at text-data (~12px)
   const CELL_PAD = 22; // px-2 both sides + border + slack
   const MIN_COL = 64;
   const MAX_COL = 400;
@@ -81,7 +81,9 @@
     edit?.onSelect?.(r, c);
     if (focus) grid?.focus();
     if (!viewport) return;
-    const headerHeight = 36;
+    // Must track the sticky header's own height below, or scroll-into-view parks
+    // the top row underneath it.
+    const headerHeight = 40;
     const rowTop = headerHeight + r * ROW_H;
     const rowBottom = rowTop + ROW_H;
     if (rowTop < viewport.scrollTop + headerHeight) viewport.scrollTop = Math.max(0, rowTop - headerHeight);
@@ -163,13 +165,15 @@
           <div
             role="columnheader"
             aria-colindex={i + 1}
-            class="flex h-9 shrink-0 flex-col justify-center gap-0.5 border-r border-b border-outline-variant
-              px-2 font-mono"
+            class="flex h-10 shrink-0 flex-col justify-center gap-0.5 border-r border-b
+              border-outline-variant px-2"
             style="width:{colWidths[i]}px"
             title={`${col.name} · ${col.typeName}${col.isPk ? " · PK" : ""}`}
           >
-            <span class="truncate text-xs font-medium text-on-surface-variant">{col.name}</span>
-            <span class="truncate text-[10px] leading-none text-on-surface-muted">{col.typeName}</span>
+            <!-- The column name is data (it is an identifier); the type under it is
+                 an annotation, so it takes the label role rather than mono. -->
+            <span class="truncate text-data text-on-surface-variant">{col.name}</span>
+            <span class="truncate text-label-sm leading-none text-on-surface-muted">{col.typeName}</span>
           </div>
         {/each}
       </div>
@@ -187,7 +191,7 @@
             aria-colindex={c + 1}
             aria-selected={selected}
             class="relative flex h-7 shrink-0 items-center border-r border-b border-outline-variant px-2
-              font-mono text-xs {cell.numeric ? 'justify-end tabular-nums' : ''}
+              text-data {cell.numeric ? 'justify-end tabular-nums' : ''}
               {dirty ? 'bg-grid-edited' : ''}
               {selected ? 'outline outline-1 -outline-offset-1 outline-primary' : ''}
               {edit?.rowState(r) === 'deleted' ? 'text-on-surface-muted line-through' : 'text-on-surface-variant'}"
@@ -200,8 +204,7 @@
               <input
                 use:focusSelect
                 bind:value={draft}
-                class="absolute inset-0 h-full w-full border border-primary bg-surface-container-high px-2 font-mono
-                  text-xs text-on-surface outline-none"
+                class="absolute inset-0 h-full w-full border border-primary bg-surface-container-high px-2 text-data text-on-surface outline-none"
                 onkeydown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();

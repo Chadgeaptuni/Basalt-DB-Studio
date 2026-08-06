@@ -1,7 +1,11 @@
 <script lang="ts" module>
+  import type { IconComponent } from "./icon";
+
   export interface MenuItem {
     label: string;
+    icon?: IconComponent;
     danger?: boolean;
+    disabled?: boolean;
     onselect: () => void;
   }
 </script>
@@ -33,11 +37,16 @@
       {#each items as item (item.label)}
         <ContextMenuPrimitive.Item
           onSelect={item.onselect}
-          class="flex h-8 cursor-default items-center px-3 font-mono text-xs outline-none
+          disabled={item.disabled}
+          class="flex h-9 cursor-default items-center gap-2 px-3 text-label-md outline-none
             transition-colors duration-200 ease-standard
-            data-[highlighted]:bg-secondary-container
+            data-[highlighted]:bg-surface-container-highest
+            data-[disabled]:pointer-events-none data-[disabled]:opacity-[0.38]
             {item.danger ? 'text-error' : 'text-on-surface-variant'}"
         >
+          {#if item.icon}
+            <item.icon size={16} strokeWidth={2} class="shrink-0 text-on-surface-muted" />
+          {/if}
           {item.label}
         </ContextMenuPrimitive.Item>
       {/each}

@@ -20,7 +20,7 @@
 >
   <div class="flex min-w-0 items-center gap-2 pl-1">
     <BrandMark size={16} />
-    <span class="truncate text-sm font-medium text-on-surface">Basalt</span>
+    <span class="truncate text-title-sm text-on-surface">Basalt</span>
   </div>
 
   <ConnectionSwitcher />

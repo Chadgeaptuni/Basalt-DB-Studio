@@ -9,6 +9,7 @@
   import Select, { type SelectOption } from "$lib/components/ui/Select.svelte";
   import Input from "$lib/components/ui/Input.svelte";
   import Kbd from "$lib/components/ui/Kbd.svelte";
+  import { stateLayer, focusRing } from "$lib/components/ui/stateLayer";
   import ThemePicker from "./ThemePicker.svelte";
   import { THEME_DEFINITIONS } from "./themeDefinitions";
   import { settings } from "$lib/stores/settings.svelte";
@@ -71,7 +72,7 @@
       class="flex w-56 shrink-0 flex-col gap-1 border-r border-outline-variant bg-surface-container/40 p-4"
       aria-label="Settings sections"
     >
-      <span class="mb-3 px-3 pt-1 text-xs font-semibold tracking-wider text-on-surface-muted uppercase">
+      <span class="mb-3 px-3 pt-1 text-label-sm tracking-wider text-on-surface-muted uppercase">
         Settings
       </span>
 
@@ -80,11 +81,11 @@
           type="button"
           aria-current={activeTab === dest.id}
           onclick={() => (activeTab = dest.id)}
-          class="flex cursor-pointer items-center gap-3 rounded-sm px-3.5 py-2.5 text-xs font-medium
-            transition-colors duration-200 ease-standard
+          class="flex h-9 shrink-0 cursor-pointer items-center gap-3 rounded-full px-3 text-label-md
+            {stateLayer} {focusRing}
             {activeTab === dest.id
-            ? 'border border-outline-variant bg-surface-container font-semibold text-on-surface'
-            : 'text-on-surface-muted hover:bg-on-surface/8 hover:text-on-surface-variant'}"
+            ? 'bg-secondary-container text-on-secondary-container'
+            : 'text-on-surface-muted'}"
         >
           <dest.icon size={17} class={activeTab === dest.id ? "text-primary" : "text-on-surface-muted"} />
           {dest.label}
@@ -99,8 +100,8 @@
         class="flex shrink-0 items-center justify-between border-b border-outline-variant px-6 py-4"
       >
         <div class="min-w-0">
-          <h2 class="text-base font-semibold text-on-surface">{current.label}</h2>
-          <p class="text-xs text-on-surface-muted">{current.blurb}</p>
+          <h2 class="text-title-md text-on-surface">{current.label}</h2>
+          <p class="text-body-sm text-on-surface-muted">{current.blurb}</p>
         </div>
         <IconButton icon={X} title="Close" size="sm" onclick={onclose} />
       </header>
@@ -112,35 +113,35 @@
                and a second "General Preferences" title would just repeat it. -->
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <label class="flex flex-col gap-1.5 rounded-sm border border-outline-variant bg-surface/50 p-3.5">
-              <span class="text-xs font-medium text-on-surface">Date Time Display</span>
+              <span class="text-label-md text-on-surface">Date Time Display</span>
               <Select
                 value={settings.datetimeDisplay}
                 options={datetimeOptions}
                 onchange={(v) => settings.setDatetimeDisplay(v as DatetimeDisplay)}
               />
-              <span class="text-[11px] text-on-surface-muted">
+              <span class="text-body-sm text-on-surface-muted">
                 Transforms timestamp rendering in data grids.
               </span>
             </label>
 
             <label class="flex flex-col gap-1.5 rounded-sm border border-outline-variant bg-surface/50 p-3.5">
-              <span class="text-xs font-medium text-on-surface">Default Row Limit</span>
+              <span class="text-label-md text-on-surface">Default Row Limit</span>
               <Input type="number" value={String(settings.defaultRowLimit)} oninput={setLimit} />
-              <span class="text-[11px] text-on-surface-muted">Fetch ceiling per statement execution.</span>
+              <span class="text-body-sm text-on-surface-muted">Fetch ceiling per statement execution.</span>
             </label>
           </div>
         {:else if activeTab === "appearance"}
           <section class="flex flex-col gap-3">
             <div class="flex items-center justify-between gap-3">
               <div class="min-w-0">
-                <h3 class="text-xs font-semibold tracking-wider text-on-surface-muted uppercase">
+                <h3 class="text-label-sm tracking-wider text-on-surface-muted uppercase">
                   Themes &amp; Variants
                 </h3>
-                <p class="text-xs text-on-surface-muted">Choose a color palette and display mode.</p>
+                <p class="text-body-sm text-on-surface-muted">Choose a color palette and display mode.</p>
               </div>
               <span
                 class="shrink-0 rounded-xs border border-outline-variant bg-surface px-2 py-0.5
-                  font-mono text-[11px] text-on-surface-muted"
+                  text-data text-on-surface-muted"
               >
                 {THEME_DEFINITIONS.length + theme.customThemes.length} themes
               </span>
@@ -151,7 +152,7 @@
           <div class="flex flex-col gap-6">
             {#each SHORTCUT_GROUPS as group (group.title)}
               <section class="flex flex-col gap-2">
-                <h3 class="text-[11px] font-semibold tracking-wider text-on-surface-muted uppercase">
+                <h3 class="text-label-sm tracking-wider text-on-surface-muted uppercase">
                   {group.title}
                 </h3>
 
@@ -163,7 +164,7 @@
                     <div class="flex items-center justify-between gap-3 px-3.5 py-2.5">
                       <div class="flex min-w-0 items-center gap-3">
                         <item.icon size={15} class="shrink-0 text-on-surface-muted" />
-                        <span class="truncate text-xs text-on-surface-variant">{item.label}</span>
+                        <span class="truncate text-body-sm text-on-surface-variant">{item.label}</span>
                       </div>
                       <div class="flex shrink-0 items-center gap-1">
                         {#each item.combos as combo (combo)}<Kbd {combo} />{/each}

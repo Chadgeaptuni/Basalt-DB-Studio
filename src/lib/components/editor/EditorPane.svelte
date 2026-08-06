@@ -140,7 +140,7 @@
     >
       <Play size={13} strokeWidth={2} /> Run
     </Button>
-    <span class="font-mono text-[11px] text-on-surface-muted">{keyboard.label("mod+enter")} at cursor</span>
+    <span class="text-data text-on-surface-muted">{keyboard.label("mod+enter")} at cursor</span>
     <div class="flex-1"></div>
     <IconButton
       icon={Save}

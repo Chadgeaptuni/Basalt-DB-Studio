@@ -5,6 +5,7 @@
   import type { Snippet } from "svelte";
   import Badge from "$lib/components/ui/Badge.svelte";
   import Spinner from "$lib/components/ui/Spinner.svelte";
+  import { stateLayerPill, focusRing } from "$lib/components/ui/stateLayer";
   import { connections } from "$lib/stores/connections.svelte";
   import type { ConnectionProfile, Engine } from "$lib/api/types";
 
@@ -33,14 +34,21 @@
 </script>
 
 <div
-  class="group flex h-9 items-center gap-2 px-3 text-sm transition-colors duration-200 ease-standard
-    {selected ? 'bg-surface-container-high' : 'hover:bg-on-surface/8'}"
+  class="group flex h-9 items-center gap-2 px-3 text-body-md {stateLayerPill}
+    {selected ? 'bg-surface-container-high' : ''}"
 >
   <span class="h-1.5 w-1.5 shrink-0 rounded-full {DOT[status]}"></span>
   <Badge>{ENGINE_TAG[profile.engine]}</Badge>
-  <button type="button" class="min-w-0 flex-1 text-left" {onclick} title={target}>
-    <div class="truncate text-on-surface">{profile.name}</div>
-    <div class="truncate font-mono text-[11px] text-on-surface-muted">{target}</div>
+  <!-- Name and target share one 36px row: two stacked lines would need M3's
+       two-line item (56px even at density −2), a third of a short list. -->
+  <button
+    type="button"
+    class="flex min-w-0 flex-1 items-baseline gap-2 text-left {focusRing}"
+    {onclick}
+    title={target}
+  >
+    <span class="truncate text-on-surface">{profile.name}</span>
+    <span class="min-w-0 flex-1 truncate text-data text-on-surface-muted">{target}</span>
   </button>
   {#if actions}
     <div class="flex shrink-0 items-center opacity-0 group-hover:opacity-100">{@render actions()}</div>

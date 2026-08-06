@@ -22,8 +22,7 @@ describe("ThemePicker", () => {
   it("offers every variant alongside one row per palette", () => {
     render(ThemePicker);
 
-    // Rendered lowercase and uppercased in CSS, so the accessible name is the raw word.
-    for (const label of ["light", "dark", "OLED"]) {
+    for (const label of ["Light", "Dark", "OLED"]) {
       expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
     }
     // A palette is one row — the appearance is the separate variant choice.
@@ -34,7 +33,7 @@ describe("ThemePicker", () => {
     render(ThemePicker);
     theme.set("catppuccin");
 
-    await fireEvent.click(screen.getByRole("button", { name: "light" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Light" }));
 
     expect(theme.variant).toBe("light");
     expect(theme.current).toBe("catppuccin");

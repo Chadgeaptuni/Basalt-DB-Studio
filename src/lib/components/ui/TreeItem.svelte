@@ -2,6 +2,7 @@
   import type { IconComponent } from "./icon";
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
+  import { stateLayerPill, focusRing } from "./stateLayer";
 
   interface Props {
     label: string;
@@ -38,9 +39,9 @@
   aria-expanded={expandable ? expanded : undefined}
   aria-selected={selected}
   {title}
-  class="flex h-6 cursor-pointer items-center gap-1 pr-2 font-mono text-xs transition-colors
-    duration-200 ease-standard {selected ? 'bg-surface-container-high text-on-surface' : 'text-on-surface-variant hover:bg-on-surface/8'}"
-  style="padding-left:{depth * 12 + 4}px"
+  class="flex h-9 cursor-pointer items-center gap-1.5 pr-3 text-data {stateLayerPill} {focusRing}
+    {selected ? 'text-on-surface' : 'text-on-surface-variant'}"
+  style="padding-left:{depth * 12 + 8}px"
   onclick={() => onclick?.()}
   ondblclick={() => ondblclick?.()}
   oncontextmenu={(e) => {
@@ -56,6 +57,8 @@
     }
   }}
 >
+  <!-- Fixed 16px leading slot whether or not the row expands, so labels line up
+       across depths (DESIGN §6). -->
   {#if expandable}
     <button
       type="button"
@@ -67,11 +70,11 @@
         ontoggle?.();
       }}
     >
-      {#if expanded}<ChevronDown size={12} />{:else}<ChevronRight size={12} />{/if}
+      {#if expanded}<ChevronDown size={14} />{:else}<ChevronRight size={14} />{/if}
     </button>
   {:else}
     <span class="w-4 shrink-0"></span>
   {/if}
-  {#if Icon}<Icon size={13} strokeWidth={2} class="shrink-0 text-on-surface-muted" />{/if}
+  {#if Icon}<Icon size={14} strokeWidth={2} class="shrink-0 text-on-surface-muted" />{/if}
   <span class="truncate">{label}</span>
 </div>

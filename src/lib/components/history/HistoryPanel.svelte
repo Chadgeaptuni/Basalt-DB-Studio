@@ -6,6 +6,7 @@
   import VirtualList from "$lib/components/ui/VirtualList.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
+  import { stateLayerPill, focusRing } from "$lib/components/ui/stateLayer";
   import { history } from "$lib/stores/history.svelte";
   import { editorTabs } from "$lib/stores/tabs.svelte";
 
@@ -14,7 +15,7 @@
 </script>
 
 <div class="flex h-full flex-col">
-  <div class="flex h-8 shrink-0 items-center gap-2 border-b border-outline-variant px-2 font-mono text-[11px] text-on-surface-muted">
+  <div class="flex h-8 shrink-0 items-center gap-2 border-b border-outline-variant px-2 text-data text-on-surface-muted">
     <span class="tabular-nums">{items.length} in history</span>
     <div class="flex-1"></div>
     <IconButton icon={Trash2} title="Clear history" size="sm" disabled={items.length === 0} onclick={() => history.clear()} />
@@ -22,11 +23,11 @@
   {#if items.length === 0}
     <EmptyState icon={HistoryIcon} message="No queries run this session yet." />
   {:else}
-    <VirtualList items={items} rowHeight={24} class="flex-1">
+    <VirtualList items={items} rowHeight={36} class="flex-1">
       {#snippet row(e)}
         <button
-          class="flex h-6 w-full items-center gap-2 px-2 text-left font-mono text-xs text-on-surface-variant
-            transition-colors duration-200 ease-standard hover:bg-on-surface/8"
+          class="flex h-9 w-full items-center gap-2 px-3 text-left text-data text-on-surface-variant
+            {stateLayerPill} {focusRing}"
           title={e.sql}
           onclick={() => editorTabs.open(e.sql)}
         >

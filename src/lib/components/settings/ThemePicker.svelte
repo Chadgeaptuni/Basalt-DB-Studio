@@ -3,8 +3,12 @@
   import Plus from "@lucide/svelte/icons/plus";
   import Pencil from "@lucide/svelte/icons/pencil";
   import Trash2 from "@lucide/svelte/icons/trash-2";
+  import Button from "$lib/components/ui/Button.svelte";
+  import IconButton from "$lib/components/ui/IconButton.svelte";
+  import SegmentedButton, { type Segment } from "$lib/components/ui/SegmentedButton.svelte";
+  import { stateLayer, focusRing } from "$lib/components/ui/stateLayer";
   import { confirm } from "$lib/stores/dialogs.svelte";
-  import { theme, THEME_VARIANTS, type CustomTheme } from "$lib/stores/theme.svelte";
+  import { theme, THEME_VARIANTS, type CustomTheme, type ThemeVariant } from "$lib/stores/theme.svelte";
   import { THEME_DEFINITIONS } from "./themeDefinitions";
   import CustomThemeEditorModal from "./CustomThemeEditorModal.svelte";
 
@@ -12,6 +16,11 @@
   // the appearance, the grid below sets the colours (DESIGN §3).
   let editingCustomTheme = $state<CustomTheme | null>(null);
   let showEditorModal = $state(false);
+
+  const VARIANT_SEGMENTS: Segment[] = THEME_VARIANTS.map((v) => ({
+    value: v,
+    label: v === "amoled" ? "OLED" : v[0].toUpperCase() + v.slice(1),
+  }));
 
   function createNewTheme(): void {
     editingCustomTheme = null;
@@ -50,41 +59,25 @@
       bg-surface/60 p-3"
   >
     <div class="flex items-center gap-2">
-      <span class="text-xs font-semibold tracking-wider text-on-surface-muted uppercase">Variant:</span>
-      <div class="flex items-center gap-1 rounded-xs border border-outline-variant bg-surface-container p-0.5">
-        {#each THEME_VARIANTS as v (v)}
-          <button
-            type="button"
-            aria-pressed={theme.variant === v}
-            onclick={() => theme.setVariant(v)}
-            class="cursor-pointer rounded-xs px-2.5 py-1 text-xs font-medium uppercase
-              transition-colors duration-200 ease-standard
-              {theme.variant === v
-              ? 'bg-primary font-semibold text-on-primary'
-              : 'text-on-surface-muted hover:text-on-surface-variant'}"
-          >
-            {v === "amoled" ? "OLED" : v}
-          </button>
-        {/each}
-      </div>
+      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Variant:</span>
+      <SegmentedButton
+        label="Theme variant"
+        segments={VARIANT_SEGMENTS}
+        value={theme.variant}
+        onchange={(v) => theme.setVariant(v as ThemeVariant)}
+      />
     </div>
 
-    <button
-      type="button"
-      onclick={createNewTheme}
-      class="flex cursor-pointer items-center gap-1.5 rounded-xs border border-outline-variant
-        bg-surface-container px-3 py-1.5 text-xs font-medium text-on-surface
-        transition-colors duration-200 ease-standard hover:border-primary hover:text-primary"
-    >
+    <Button size="sm" onclick={createNewTheme}>
       <Plus size={14} />
       Create Theme
-    </button>
+    </Button>
   </div>
 
   <!-- Custom Themes Section (if any exist) -->
   {#if theme.customThemes.length > 0}
     <div class="flex flex-col gap-2">
-      <span class="text-xs font-semibold tracking-wider text-on-surface-muted uppercase">Custom Themes</span>
+      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Custom Themes</span>
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {#each theme.customThemes as custom (custom.id)}
           <!-- The card is a container, not a control: the edit/delete actions sit
@@ -93,13 +86,14 @@
             class="flex items-center gap-3 rounded-sm border p-3 transition-colors duration-200 ease-standard
               {theme.current === custom.id
               ? 'border-primary bg-surface-container text-on-surface'
-              : 'border-outline-variant bg-surface text-on-surface-variant hover:border-outline hover:bg-surface-container/60'}"
+              : 'border-outline-variant bg-surface text-on-surface-variant'}"
           >
             <button
               type="button"
               aria-pressed={theme.current === custom.id}
               onclick={() => theme.set(custom.id)}
-              class="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
+              class="flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-xs text-left
+                {stateLayer} {focusRing}"
             >
               <span
                 class="flex h-9 w-12 shrink-0 items-center justify-center rounded-xs border border-outline-variant p-1"
@@ -110,32 +104,28 @@
                 <span class="ml-1 h-5 w-2 rounded-full" style="background-color: {custom.colors.border}"></span>
               </span>
               <span class="min-w-0 flex-1">
-                <span class="flex items-center gap-1 text-xs font-semibold text-on-surface">
+                <span class="flex items-center gap-1 text-label-md text-on-surface">
                   <span class="truncate">{custom.name}</span>
                   {#if theme.current === custom.id}
                     <Check size={14} class="shrink-0 text-primary" />
                   {/if}
                 </span>
-                <span class="mt-0.5 block truncate text-[11px] text-on-surface-muted">User custom theme</span>
+                <span class="mt-0.5 block truncate text-body-sm text-on-surface-muted">User custom theme</span>
               </span>
             </button>
-            <div class="flex shrink-0 items-center gap-1">
-              <button
-                type="button"
+            <div class="flex shrink-0 items-center">
+              <IconButton
+                icon={Pencil}
                 title={`Edit ${custom.name}`}
+                size="sm"
                 onclick={() => handleEditCustom(custom)}
-                class="cursor-pointer p-1 text-on-surface-muted transition-colors duration-200 ease-standard hover:text-on-surface"
-              >
-                <Pencil size={13} />
-              </button>
-              <button
-                type="button"
+              />
+              <IconButton
+                icon={Trash2}
                 title={`Delete ${custom.name}`}
+                size="sm"
                 onclick={() => void handleDeleteCustom(custom)}
-                class="cursor-pointer p-1 text-on-surface-muted transition-colors duration-200 ease-standard hover:text-error"
-              >
-                <Trash2 size={13} />
-              </button>
+              />
             </div>
           </div>
         {/each}
@@ -151,10 +141,10 @@
         aria-pressed={theme.current === preset.id}
         onclick={() => theme.set(preset.id)}
         class="flex cursor-pointer items-center gap-3 rounded-sm border p-3 text-left
-          transition-colors duration-200 ease-standard
+          {stateLayer} {focusRing}
           {theme.current === preset.id
           ? 'border-primary bg-surface-container text-on-surface'
-          : 'border-outline-variant bg-surface text-on-surface-variant hover:border-outline hover:bg-surface-container/60'}"
+          : 'border-outline-variant bg-surface text-on-surface-variant'}"
       >
         <span
           class="flex h-9 w-12 shrink-0 items-center justify-center gap-1 rounded-xs border
@@ -166,13 +156,13 @@
           {/each}
         </span>
         <span class="min-w-0 flex-1">
-          <span class="flex items-center gap-1.5 text-xs font-semibold text-on-surface">
+          <span class="flex items-center gap-1.5 text-label-md text-on-surface">
             <span class="truncate">{preset.name}</span>
             {#if theme.current === preset.id}
               <Check size={14} class="shrink-0 text-primary" />
             {/if}
           </span>
-          <span class="mt-0.5 block truncate text-[11px] text-on-surface-muted">{preset.description}</span>
+          <span class="mt-0.5 block truncate text-body-sm text-on-surface-muted">{preset.description}</span>
         </span>
       </button>
     {/each}

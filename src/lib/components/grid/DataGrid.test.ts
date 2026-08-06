@@ -50,7 +50,12 @@ describe("DataGrid", () => {
 
     await fireEvent.keyDown(grid, { key: "ArrowDown" });
     expect(screen.getByText("Grace").closest("[role=gridcell]")).toHaveAttribute("aria-selected", "true");
-    expect(viewport.scrollTop).toBe(28);
+    // Scrolled just far enough to reveal the row's bottom edge. Derived from the
+    // header and row heights rather than hardcoded: a literal pixel breaks on any
+    // density change while saying nothing about the scroll behaviour itself.
+    const HEADER_H = 40;
+    const ROW_H = 28;
+    expect(viewport.scrollTop).toBe(HEADER_H + 2 * ROW_H - viewport.clientHeight);
 
     await fireEvent.keyDown(grid, { key: "c", metaKey: true });
     expect(writeText).toHaveBeenCalledWith("Grace");

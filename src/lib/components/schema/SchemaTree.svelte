@@ -77,9 +77,9 @@
     {#if !sessionId}
       <EmptyState icon={Boxes} message="Connect to browse the schema." />
     {:else if !view || view.loading}
-      <div class="flex items-center gap-2 p-3 text-sm text-on-surface-muted"><Spinner size="sm" /> Introspecting…</div>
+      <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-muted"><Spinner size="sm" /> Introspecting…</div>
     {:else if view.error}
-      <div class="p-3 text-sm text-error">
+      <div class="p-3 text-body-md text-error">
         {view.error.message}
         <div class="mt-2">
           <Button size="sm" onclick={() => sessionId && schema.loadTree(sessionId)}>Retry</Button>
@@ -120,7 +120,7 @@
                 {#if desc}
                   {#each desc.columns as col (col.name)}
                     <div
-                      class="flex h-6 items-center gap-1.5 font-mono text-xs text-on-surface-variant"
+                      class="flex h-6 items-center gap-1.5 text-data text-on-surface-variant"
                       style="padding-left:{2 * 12 + 4 + 16}px"
                       title={`${col.typeName}${col.nullable ? " · nullable" : " · not null"}${col.isPk ? " · primary key" : ""}`}
                     >
@@ -130,17 +130,17 @@
                     </div>
                   {/each}
                   {#if desc.columns.length === 0}
-                    <div class="py-1 text-xs text-on-surface-muted" style="padding-left:{2 * 12 + 20}px">No columns</div>
+                    <div class="py-1 text-body-sm text-on-surface-muted" style="padding-left:{2 * 12 + 20}px">No columns</div>
                   {/if}
                 {:else}
-                  <div class="flex items-center gap-2 py-1 text-xs text-on-surface-muted" style="padding-left:{2 * 12 + 20}px">
+                  <div class="flex items-center gap-2 py-1 text-body-sm text-on-surface-muted" style="padding-left:{2 * 12 + 20}px">
                     <Spinner size="sm" /> Loading columns…
                   </div>
                 {/if}
               {/if}
             {/each}
             {#if ns.relations.length === 0}
-              <div class="py-1 text-xs text-on-surface-muted" style="padding-left:16px">No tables</div>
+              <div class="py-1 text-body-sm text-on-surface-muted" style="padding-left:16px">No tables</div>
             {/if}
           {/if}
         {/each}

@@ -12,6 +12,7 @@
   import X from "@lucide/svelte/icons/x";
   import type { Snippet } from "svelte";
   import { uiSlide } from "$lib/utils/motion";
+  import { stateLayer } from "./stateLayer";
 
   // Shared horizontal tab strip (DESIGN §6). Used for editor tabs and per-statement
   // result tabs. Dumb primitive: selection/close are callback props.
@@ -54,14 +55,14 @@
   bind:this={tablist}
   role="tablist"
   aria-label={label}
-  class="flex h-8 items-stretch overflow-x-auto border-b border-outline-variant bg-surface-container"
+  class="flex h-10 items-stretch overflow-x-auto border-b border-outline-variant bg-surface-container"
 >
   {#each items as item (item.id)}
     <div
       transition:uiSlide={{ axis: "x" }}
-      class="group flex h-full items-center border-r border-outline-variant font-mono text-xs whitespace-nowrap
-        transition-colors duration-200 ease-standard
-        {item.id === activeId ? 'bg-surface text-on-surface' : 'text-on-surface-muted hover:bg-on-surface/8 hover:text-on-surface-variant'}"
+      class="group flex h-full items-center border-r border-outline-variant text-data whitespace-nowrap
+        transition-colors duration-200 ease-standard {stateLayer}
+        {item.id === activeId ? 'bg-surface text-on-surface' : 'text-on-surface-muted'}"
     >
       <button
         type="button"
@@ -87,9 +88,8 @@
         <button
           type="button"
           aria-label={`Close ${item.label}`}
-          class="flex h-4 w-4 items-center justify-center rounded-xs text-on-surface-muted opacity-0
-            transition-opacity hover:bg-on-surface/8 hover:text-on-surface group-hover:opacity-100
-            group-focus-within:opacity-100"
+          class="flex h-4 w-4 items-center justify-center rounded-full text-on-surface-muted opacity-0
+            transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 {stateLayer}"
           onclick={() => onClose?.(item.id)}
         >
           <X size={11} />

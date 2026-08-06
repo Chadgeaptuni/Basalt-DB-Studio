@@ -11,6 +11,7 @@
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import Badge from "$lib/components/ui/Badge.svelte";
   import Spinner from "$lib/components/ui/Spinner.svelte";
+  import { stateLayer, focusRing } from "$lib/components/ui/stateLayer";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import ConnectionForm from "./ConnectionForm.svelte";
   import ConnectionRow from "./ConnectionRow.svelte";
@@ -61,7 +62,7 @@
 <Popover.Root bind:open>
   <Popover.Trigger
     class="flex h-8 min-w-56 max-w-96 items-center gap-2 rounded-full border border-outline-variant
-      bg-surface px-2 text-xs transition-colors hover:bg-on-surface/8"
+      bg-surface px-3 text-body-sm {stateLayer} {focusRing}"
     title="Connection"
   >
     {#if connections.active && activeProfile}
@@ -83,11 +84,11 @@
         border-outline-variant bg-surface-container-high shadow-e2 outline-none"
     >
       {#if !connections.loaded}
-        <div class="flex items-center gap-2 p-3 text-sm text-on-surface-muted"><Spinner size="sm" /> Loading…</div>
+        <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-muted"><Spinner size="sm" /> Loading…</div>
       {:else if connections.loadError}
-        <div class="p-3 text-sm text-error">
+        <div class="p-3 text-body-md text-error">
           Couldn't read your saved connections.
-          <div class="mt-0.5 font-mono text-[11px] break-words opacity-90">
+          <div class="mt-0.5 text-data break-words opacity-90">
             {connections.loadError.message}
           </div>
           <div class="mt-2"><Button size="sm" onclick={() => connections.load()}>Retry</Button></div>
@@ -116,10 +117,10 @@
                 {/snippet}
               </ConnectionRow>
               {#if st.status === "error" && st.error}
-                <div class="flex items-start gap-2 bg-error-container px-3 py-1.5 text-xs text-error">
+                <div class="flex items-start gap-2 bg-error-container px-3 py-1.5 text-body-sm text-error">
                   <div class="min-w-0 flex-1">
                     <div class="font-medium">{connectErrorTitle(st.error.kind)}</div>
-                    <div class="mt-0.5 font-mono text-[11px] break-words opacity-90">
+                    <div class="mt-0.5 text-data break-words opacity-90">
                       {st.error.message}
                     </div>
                   </div>

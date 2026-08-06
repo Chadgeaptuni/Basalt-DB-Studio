@@ -44,11 +44,11 @@
   }}
   {onkeydown}
   aria-invalid={bad}
-  class="h-10 w-full rounded-sm border bg-surface px-4 text-sm text-on-surface
+  class="h-8 w-full rounded-sm border bg-surface px-3 text-body-md text-on-surface
     transition-colors duration-200 ease-standard placeholder:text-on-surface-muted
     disabled:opacity-[0.38] focus:outline-2 focus:-outline-offset-1
     {bad
     ? 'border-error focus:outline-error'
     : 'border-outline-variant focus:outline-primary'}"
 />
-{#if error}<p class="mt-1 px-4 text-xs text-error">{error}</p>{/if}
+{#if error}<p class="mt-1 px-3 text-body-sm text-error">{error}</p>{/if}

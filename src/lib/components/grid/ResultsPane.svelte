@@ -74,8 +74,7 @@
 
 <div class="flex h-full flex-col bg-surface">
   <div
-    class="flex h-8 shrink-0 items-center gap-2 border-b border-outline-variant bg-surface-container px-2 font-mono
-      text-[11px] text-on-surface-muted"
+    class="flex h-8 shrink-0 items-center gap-2 border-b border-outline-variant bg-surface-container px-2 text-data text-on-surface-muted"
   >
     {#if tab?.running}
       <Spinner size="sm" /> <span>Running… {elapsed}s</span>
@@ -112,27 +111,27 @@
     {:else if !tab}
       <EmptyState icon={Play} message="No editor tab open." />
     {:else if tab.running}
-      <div class="flex items-center gap-2 p-3 text-sm text-on-surface-muted"><Spinner size="sm" /> Running query…</div>
+      <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-muted"><Spinner size="sm" /> Running query…</div>
     {:else if tab.runError}
-      <div class="flex items-start gap-2 p-3 text-sm">
+      <div class="flex items-start gap-2 p-3 text-body-md">
         <TriangleAlert size={16} strokeWidth={2} class="mt-0.5 shrink-0 text-error" />
         <div class="min-w-0">
           <div class="text-on-surface">{title(tab.runError.kind)}</div>
-          <div class="mt-0.5 font-mono text-xs whitespace-pre-wrap text-on-surface-muted">{tab.runError.message}</div>
+          <div class="mt-0.5 text-data whitespace-pre-wrap text-on-surface-muted">{tab.runError.message}</div>
         </div>
       </div>
     {:else if !result}
       <EmptyState icon={Play} message="Run a query to see results." />
     {:else if current?.error}
-      <div class="flex items-start gap-2 p-3 text-sm">
+      <div class="flex items-start gap-2 p-3 text-body-md">
         <TriangleAlert size={16} strokeWidth={2} class="mt-0.5 shrink-0 text-error" />
         <div class="min-w-0">
           <div class="text-on-surface">{title(current.error.kind)}</div>
-          <div class="mt-0.5 font-mono text-xs whitespace-pre-wrap text-on-surface-muted">{current.error.message}</div>
+          <div class="mt-0.5 text-data whitespace-pre-wrap text-on-surface-muted">{current.error.message}</div>
         </div>
       </div>
     {:else if current && current.columns.length === 0}
-      <div class="flex items-center gap-2 p-3 text-sm text-on-surface-variant">
+      <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-variant">
         <CircleCheck size={16} strokeWidth={2} class="shrink-0 text-ok" />
         {current.rowsAffected} row{current.rowsAffected === 1 ? "" : "s"} affected.
       </div>

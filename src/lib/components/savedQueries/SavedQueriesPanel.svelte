@@ -71,9 +71,9 @@
 
   <div class="flex-1 overflow-auto py-1">
     {#if savedQueries.loading && savedQueries.items.length === 0}
-      <div class="flex items-center gap-2 p-3 text-sm text-on-surface-muted"><Spinner size="sm" /> Loading…</div>
+      <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-muted"><Spinner size="sm" /> Loading…</div>
     {:else if savedQueries.error}
-      <div class="p-3 text-xs text-error">
+      <div class="p-3 text-body-sm text-error">
         <div class="font-mono whitespace-pre-wrap">{savedQueries.error.message}</div>
         <div class="mt-2"><Button size="sm" onclick={() => void savedQueries.load()}>Retry</Button></div>
       </div>
