@@ -302,11 +302,17 @@ the primitive**, don't fork it locally.
   `text-label-sm` uppercase. `variant: 'neutral' | 'primary' | 'ok' | 'warn' | 'error'`.
   Used for tx state (`TX`), row-limit notices, read-only connections and engine
   tags (`PG` `MY` `SQ`) — all of which sit inside 32px bars.
-- **Chip** (U4) — the M3 chip: 32px, `rounded-full`, interactive, optionally
-  removable. For active grid filters and connection environment. **Not the same
-  thing as `Badge`** — a 32px chip inside a 32px bar fills it edge to edge, which
-  is why the two stay separate components.
-  `NULL` cells are neither — they are `--grid-null` italic mono in place.
+- **Chip** — the M3 chip: 32px, `rounded-full`, interactive, optionally
+  removable. **Not the same thing as `Badge`** — a 32px chip inside a 32px bar
+  fills it edge to edge, which is why the two stay separate components. Its job
+  is making state *visible and reversible*: an active grid sort or hidden column
+  shows as a chip you can click off, never as state buried in the menu that set
+  it. `NULL` cells are neither chip nor badge — they are `--grid-null` italic
+  mono in place.
+- **SideSheet** — right-edge M3 sheet, `absolute` inside its container so it
+  overlays content instead of resizing it. Not a dialog: the cell inspector
+  exists so you can read a value *while* still arrow-keying around the grid, and
+  a modal would trap focus and block exactly that.
 - **ListItem** — the M3 list row: 36px, leading icon slot, headline, optional
   supporting text, trailing slot, `stateLayerPill` hover. Every list of objects
   (connections, saved queries, history, settings destinations) uses it — a
@@ -316,8 +322,10 @@ the primitive**, don't fork it locally.
   rule in a Svelte component buys nothing.
 - **Menu** — the M3 menu surface: `rounded-md`, `--surface-container-high`,
   `shadow-e2`, 36px rows, `Kbd` hints right-aligned, destructive items `--error`
-  text. Currently implemented inside `ContextMenu`; it is extracted into a shared
-  primitive in U4, when data-grid column headers become its second consumer.
+  text. It is `ui/menu.ts` (surface + row classes + `MenuItem`) plus `MenuRow`,
+  shared by `ContextMenu` and `DropdownMenu` — a module rather than a wrapper
+  component, because anchoring, focus and dismissal differ per trigger and
+  bits-ui already solves each. A new menu consumes these; it never restyles rows.
 - **SegmentedButton** — M3 segmented button for 2–5 exclusive options that must
   stay visible (theme variant, grid view mode). Not a substitute for `Select`.
 - **Modal / ConfirmDialog** — M3 dialog: centered, `max-w-md`/`max-w-lg`,

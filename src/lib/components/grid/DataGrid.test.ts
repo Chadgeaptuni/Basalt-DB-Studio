@@ -110,6 +110,80 @@ describe("DataGrid", () => {
     expect(edit.commit).toHaveBeenCalledWith(0, 1, "Ada Lovelace");
   });
 
+  // Sorting is view-only, so the grid renders rows in display order while every
+  // edit still has to land on the row it came from. Getting this backwards writes
+  // an edit to the wrong record — the single worst failure this feature can have.
+  it("stages an edit against the original row after sorting", async () => {
+    const edit = editable();
+    const desc: CellValue[][] = [
+      [
+        { kind: "int", value: 1 },
+        { kind: "text", value: "Ada" },
+      ],
+      [
+        { kind: "int", value: 2 },
+        { kind: "text", value: "Grace" },
+      ],
+    ];
+    render(DataGrid, { columns, rows: desc, edit });
+
+    await fireEvent.click(screen.getByRole("button", { name: "id column menu" }));
+    await fireEvent.click(await screen.findByText("Sort descending"));
+
+    // Grace (original row 1) is now displayed first.
+    const firstRowCells = screen.getAllByRole("row")[1].querySelectorAll("[role=gridcell]");
+    expect(firstRowCells[1]).toHaveTextContent("Grace");
+
+    await fireEvent.dblClick(firstRowCells[1]);
+    const input = screen.getByRole("textbox");
+    await fireEvent.input(input, { target: { value: "Grace Hopper" } });
+    await fireEvent.blur(input);
+
+    expect(edit.commit).toHaveBeenCalledWith(1, 1, "Grace Hopper");
+  });
+
+  it("hides a column and drops it from the accessible structure", async () => {
+    render(DataGrid, { columns, rows });
+
+    await fireEvent.click(screen.getByRole("button", { name: "name column menu" }));
+    await fireEvent.click(await screen.findByText("Hide column"));
+
+    expect(screen.getAllByRole("columnheader")).toHaveLength(1);
+    expect(screen.getByRole("grid")).toHaveAttribute("aria-colcount", "1");
+    expect(screen.queryByText("Ada")).not.toBeInTheDocument();
+    // The state is reversible from the chip, not only from the menu that set it.
+    expect(screen.getByRole("button", { name: "Show all columns" })).toBeInTheDocument();
+  });
+
+  // Hiding every column would leave a grid with nothing in it and no way back
+  // except the chip, so the last one refuses. Asserted by outcome, not by the
+  // disabled attribute, which is bits-ui's business.
+  it("refuses to hide the last visible column", async () => {
+    render(DataGrid, { columns, rows });
+
+    await fireEvent.click(screen.getByRole("button", { name: "name column menu" }));
+    await fireEvent.click(await screen.findByText("Hide column"));
+    expect(screen.getAllByRole("columnheader")).toHaveLength(1);
+
+    await fireEvent.click(screen.getByRole("button", { name: "id column menu" }));
+    await fireEvent.click(await screen.findByText("Hide column"));
+
+    expect(screen.getAllByRole("columnheader")).toHaveLength(1);
+  });
+
+  it("opens the inspector for the selected cell on Space", async () => {
+    render(DataGrid, { columns, rows });
+    const grid = screen.getByRole("grid");
+
+    await fireEvent.focus(grid);
+    await fireEvent.keyDown(grid, { key: "ArrowRight" });
+    await fireEvent.keyDown(grid, { key: " " });
+
+    const sheet = await screen.findByRole("complementary", { name: "name" });
+    expect(sheet).toHaveTextContent("Ada");
+    expect(sheet).toHaveTextContent("text");
+  });
+
   it("exposes table structure to assistive technology", () => {
     render(DataGrid, { columns, rows });
     const grid = screen.getByRole("grid", { name: "Data grid" });

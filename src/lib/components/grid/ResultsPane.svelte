@@ -126,7 +126,12 @@
     {:else if current && current.rows.length === 0}
       <EmptyState icon={Play} message="0 rows returned." />
     {:else if current}
-      <DataGrid label="Query results" columns={current.columns} rows={current.rows} />
+      <DataGrid
+        label="Query results"
+        columns={current.columns}
+        rows={current.rows}
+        truncated={current.truncated}
+      />
     {/if}
   </div>
 </div>

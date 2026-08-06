@@ -1,5 +1,6 @@
 <script lang="ts">
-  import ContextMenu, { type MenuItem } from "./ContextMenu.svelte";
+  import ContextMenu from "./ContextMenu.svelte";
+  import type { MenuItem } from "./menu";
 
   interface Props {
     onselect: (label: string) => void;

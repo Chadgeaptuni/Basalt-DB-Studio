@@ -12,7 +12,8 @@
   import Panel from "$lib/components/layout/Panel.svelte";
   import SearchField from "$lib/components/ui/SearchField.svelte";
   import SegmentedButton, { type Segment } from "$lib/components/ui/SegmentedButton.svelte";
-  import ContextMenu, { type MenuItem } from "$lib/components/ui/ContextMenu.svelte";
+  import ContextMenu from "$lib/components/ui/ContextMenu.svelte";
+  import type { MenuItem } from "$lib/components/ui/menu";
   import { filterRank } from "$lib/utils/filter";
   import { connections } from "$lib/stores/connections.svelte";
   import { schema } from "$lib/stores/schema.svelte";

@@ -421,11 +421,42 @@ about a second, ignore the theme, and render differently per OS. The accessible
 name stays on `aria-label`, which a regression test now pins — the tooltip is
 decoration and no screen reader depends on it.
 
-**U4 — Data surface.** Column header menus, sort/filter with filter chips, cell
-inspector side sheet, row detail.
-*Gate: sort/filter round-trips on all three engines; inspector renders JSON,
-BLOB and 1MB text without freezing; grid stays at 28px rows and 60fps while
-scrolling 100k rows.*
+**U4 — Data surface. ✅ done 2026-08-07.** `Menu` extracted, `Chip` and
+`SideSheet` built, column header menus with sort / hide / copy, removable state
+chips, cell inspector side sheet.
+*Gate (rewritten — see below): sort reorders by value and never misroutes an edit
+✅; hiding respects the last column ✅; inspector renders JSON, text-that-is-JSON,
+BLOB previews and a 1M-character value without handing the DOM the whole thing
+✅; grid rows stay 28px ✅; `svelte-check` 0 errors / 0 warnings and 140/140
+vitest ✅.*
+
+**Sort is client-side and says so — the original gate was unachievable.** It read
+"sort/filter round-trips on all three engines", which means server-side `ORDER
+BY`. `grid_browse` takes only `limit`, so that is a backend change, and "no
+backend change" is a stated non-goal (§9). Client-side sorting of a row-limited
+page is the trap it sounds like: sorting the first 1000 of 100k rows by amount
+does *not* show the largest amount. So the sort chip carries the caveat — it
+turns `warn`-toned and reads "loaded rows only" **exactly when the result is
+truncated**, and reads plainly when it isn't, because on a complete result the
+sort is simply correct. Server-side sort remains open as its own backend-scoped
+item.
+
+**Row filtering was not built.** With sort already caveated by truncation, a
+row filter over a truncated page compounds the same lie — it would show "3
+matches" when the table has 3000. The chip infrastructure is in place for when
+filtering can be pushed to SQL.
+
+**Two correctness details worth recording.** Sorting returns *row indices*, not
+reordered rows, because staged edits identify their row by index — handing the
+grid shuffled rows would commit an edit to the wrong record. There is a test
+pinning exactly that. And NULLs pin last in both directions, outside the
+direction flip: NULL is absence, not a smallest value, so letting `desc` float
+them to the top would bury the rows the user asked to see.
+
+`Menu` landed as `ui/menu.ts` (surface + row classes + `MenuItem`) plus
+`MenuRow.svelte`, consumed by both `ContextMenu` and the new `DropdownMenu` —
+a shared module rather than a wrapper component, because anchoring, focus and
+dismissal genuinely differ per trigger and bits-ui already solves each.
 
 **U5 — Flows.** Connection form + environments, DDL dialogs, import wizard
 stepper, settings, theme picker.

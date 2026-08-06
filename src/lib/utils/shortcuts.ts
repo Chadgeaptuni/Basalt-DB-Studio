@@ -21,6 +21,7 @@ import Move from "@lucide/svelte/icons/move";
 import Edit3 from "@lucide/svelte/icons/edit-3";
 import Eraser from "@lucide/svelte/icons/eraser";
 import Copy from "@lucide/svelte/icons/copy";
+import Maximize2 from "@lucide/svelte/icons/maximize-2";
 import Undo from "@lucide/svelte/icons/undo";
 
 export interface ShortcutItem {
@@ -67,6 +68,7 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { label: "Edit selected cell", combos: ["enter"], icon: Edit3 },
       { label: "Set cell to NULL", combos: ["delete"], icon: Eraser },
       { label: "Copy cell", combos: ["mod+c"], icon: Copy },
+      { label: "Inspect cell", combos: ["space"], icon: Maximize2 },
       { label: "Revert cell edit", combos: ["escape"], icon: Undo },
     ],
   },

@@ -11,7 +11,8 @@
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import Panel from "$lib/components/layout/Panel.svelte";
   import SearchField from "$lib/components/ui/SearchField.svelte";
-  import ContextMenu, { type MenuItem } from "$lib/components/ui/ContextMenu.svelte";
+  import ContextMenu from "$lib/components/ui/ContextMenu.svelte";
+  import type { MenuItem } from "$lib/components/ui/menu";
   import { filterRank } from "$lib/utils/filter";
   import { savedQueries } from "$lib/stores/savedQueries.svelte";
   import { saveQuery } from "$lib/stores/saveQuery.svelte";

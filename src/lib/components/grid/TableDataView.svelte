@@ -248,6 +248,7 @@
         label={tab.ref ? `Table data for ${tab.ref.namespace}.${tab.ref.table}` : "Table data"}
         {columns}
         rows={gridRows}
+        truncated={browse?.truncated ?? false}
         edit={browse?.editable ? controller : undefined}
       />
     {/if}
