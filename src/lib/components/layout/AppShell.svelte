@@ -5,8 +5,10 @@
   import StatusBar from "./StatusBar.svelte";
   import StartPanel from "./StartPanel.svelte";
   import Workspace from "$lib/components/workspace/Workspace.svelte";
+  import CommandPalette from "$lib/components/command/CommandPalette.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { panel } from "$lib/stores/panel.svelte";
+  import { palette } from "$lib/stores/palette.svelte";
   import { keyboard } from "$lib/utils/keyboard";
   import { zoom } from "$lib/stores/zoom.svelte";
 
@@ -18,6 +20,7 @@
   // VSCode: Cmd/Ctrl + = (in), - (out), 0 (reset).
   $effect(() => {
     const offs = [
+      keyboard.register("mod+k", palette.toggle),
       keyboard.register("mod+b", panel.toggleCollapsed),
       keyboard.register("mod+=", zoom.in),
       keyboard.register("mod+-", zoom.out),
@@ -42,3 +45,7 @@
   </div>
   <StatusBar />
 </div>
+
+{#if palette.open}
+  <CommandPalette onclose={palette.close} />
+{/if}

@@ -11,7 +11,9 @@
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import ConnectionRow from "$lib/components/connections/ConnectionRow.svelte";
   import ConnectionForm from "$lib/components/connections/ConnectionForm.svelte";
+  import SearchIcon from "@lucide/svelte/icons/search";
   import { connections } from "$lib/stores/connections.svelte";
+  import { palette } from "$lib/stores/palette.svelte";
   import { connectErrorTitle } from "$lib/utils/connectionErrors";
   import { STARTUP_SHORTCUT_GROUPS } from "$lib/utils/shortcuts";
 
@@ -37,7 +39,13 @@
         <BrandMark size={24} />
         <span>Connect to a database to start querying.</span>
       </div>
-      <Button variant="filled" size="sm" onclick={() => (formOpen = true)}>New connection</Button>
+      <div class="flex items-center gap-2">
+        <Button variant="filled" size="sm" onclick={() => (formOpen = true)}>New connection</Button>
+        <Button variant="text" size="sm" onclick={palette.show}>
+          <SearchIcon size={14} strokeWidth={2} /> Search
+          <Kbd combo="mod+k" />
+        </Button>
+      </div>
     </div>
 
     {#if !connections.loaded}

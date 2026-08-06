@@ -15,6 +15,7 @@ import FilePlus from "@lucide/svelte/icons/file-plus";
 import FileX from "@lucide/svelte/icons/file-x";
 import Layers from "@lucide/svelte/icons/layers";
 import PanelLeft from "@lucide/svelte/icons/panel-left";
+import Search from "@lucide/svelte/icons/search";
 import ZoomIn from "@lucide/svelte/icons/zoom-in";
 import Move from "@lucide/svelte/icons/move";
 import Edit3 from "@lucide/svelte/icons/edit-3";
@@ -50,6 +51,7 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { label: "Close editor tab", combos: ["mod+w"], icon: FileX },
       // Literal Ctrl on every platform, matching Workspace.svelte's binding.
       { label: "Previous / next tab", combos: ["ctrl+pageup", "ctrl+pagedown"], icon: Layers },
+      { label: "Search tables, queries, actions", combos: ["mod+k"], icon: Search },
       { label: "Toggle side panel", combos: ["mod+b"], icon: PanelLeft },
       { label: "Zoom in / out / reset", combos: ["mod+=", "mod+-", "mod+0"], icon: ZoomIn },
     ],

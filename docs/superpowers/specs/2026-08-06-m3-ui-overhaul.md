@@ -359,11 +359,34 @@ target is the whole block but M3 draws the layer on one child (the rail item's
 72×56 block vs. its 56×32 indicator pill). This is a variant, not a carve-out:
 the rail still never hand-writes a hover colour.
 
-**U2 — Search.** `SearchField`, `CommandPalette` (`⌘K`), schema filter with kind
-chips and row counts, saved-queries and history search.
-*Gate: `⌘K` opens from anywhere and reaches tables, saved queries, connections
-and actions; schema filter is usable on a 300-table fixture; zero IPC per
-keystroke (DESIGN §10).*
+**U2 — Search. ✅ done 2026-08-06.** `SearchField`, `CommandPalette` (`mod+k`),
+the shared matcher, schema filter with a kind selector, saved-queries and history
+search, top-bar and start-panel entry points.
+*Gate: `mod+k` opens from anywhere and reaches tables, saved queries, connections
+and actions ✅; schema filter usable on a 300-table fixture ✅; zero IPC per
+keystroke ✅ (asserted by counting IPC calls while typing, not by feel);
+`svelte-check` 0 errors / 0 warnings and 117/117 vitest ✅.*
+
+**Row counts were dropped.** `RelationNode` carries only `name` and `kind` —
+counts would need new per-engine introspection in `src-tauri/`, and "no backend
+change" is a stated non-goal of this programme (§9). The kind filter ships; if
+row counts are wanted they are a backend change with their own scope.
+
+**Kind filtering uses `SegmentedButton`, not filter chips.** All / Tables / Views
+is a single exclusive choice over three fixed options, which is exactly what a
+segmented button is for — and it already exists from U0. `Chip` stays in U4,
+where removable *multi*-value grid filters actually need it.
+
+**`CommandPalette` is a domain container, not a `ui/` primitive.** It reads four
+stores (schema, saved queries, connections, panel), and `ui/` may not import
+stores (DESIGN §9). It lives at `components/command/`. `SearchField` — which owns
+only text — is the `ui/` half.
+
+Results are ranked globally rather than grouped by kind: when you type, the best
+match should be first whatever it is, with the group riding along as a trailing
+label. The list caps at 50 and says how many it dropped rather than truncating
+silently. A new `stores/palette.svelte.ts` holds visibility so the shortcut, the
+top-bar button and the start panel can all open it without one owning the state.
 
 **U3 — Workspace.** Tab indicator, editor toolbar, results toolbar, statement
 tabs, CodeMirror theme.

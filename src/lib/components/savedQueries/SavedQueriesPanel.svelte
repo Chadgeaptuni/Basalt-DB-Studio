@@ -10,7 +10,9 @@
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import Panel from "$lib/components/layout/Panel.svelte";
+  import SearchField from "$lib/components/ui/SearchField.svelte";
   import ContextMenu, { type MenuItem } from "$lib/components/ui/ContextMenu.svelte";
+  import { filterRank } from "$lib/utils/filter";
   import { savedQueries } from "$lib/stores/savedQueries.svelte";
   import { saveQuery } from "$lib/stores/saveQuery.svelte";
   import { editorTabs } from "$lib/stores/tabs.svelte";
@@ -22,11 +24,17 @@
 
   $effect(() => void savedQueries.load());
 
+  // The filter runs over the loaded index, so a keystroke reads no files
+  // (DESIGN §10) — only opening a query does. Matching against the full path
+  // means "reports/daily" narrows by folder as well as by name.
+  let filter = $state("");
+  const visible = $derived(filterRank(savedQueries.items, filter, (q) => q.path));
+
   // Group by folder (the path minus its last segment); root ("") first, then
   // folders alphabetically. Deeper nesting collapses to a full-path header — v1.
   const groups = $derived.by(() => {
     const by = new Map<string, SavedQuery[]>();
-    for (const q of savedQueries.items) {
+    for (const q of visible) {
       const slash = q.path.lastIndexOf("/");
       const folder = slash === -1 ? "" : q.path.slice(0, slash);
       (by.get(folder) ?? by.set(folder, []).get(folder)!).push(q);
@@ -69,6 +77,12 @@
     <IconButton icon={RefreshCw} title="Refresh" size="sm" onclick={() => void savedQueries.load()} />
   {/snippet}
 
+  {#if savedQueries.items.length > 0}
+    <div class="shrink-0 border-b border-outline-variant p-2">
+      <SearchField bind:value={filter} label="Filter saved queries" placeholder="Filter…" />
+    </div>
+  {/if}
+
   <div class="flex-1 overflow-auto py-1">
     {#if savedQueries.loading && savedQueries.items.length === 0}
       <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-muted"><Spinner size="sm" /> Loading…</div>
@@ -79,6 +93,8 @@
       </div>
     {:else if savedQueries.items.length === 0}
       <EmptyState icon={BookMarked} message={`No saved queries. Save one with ${keyboard.label("mod+s")}.`} />
+    {:else if visible.length === 0}
+      <EmptyState icon={BookMarked} message={`Nothing matches “${filter}”.`} />
     {:else}
       <div role="tree">
         {#each groups as g (g.folder)}

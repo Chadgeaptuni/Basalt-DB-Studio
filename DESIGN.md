@@ -326,8 +326,17 @@ the primitive**, don't fork it locally.
 - **NavRail / NavRailItem** — 72px rail, 56px items, icon over
   `text-label-sm` label, active item marked by the M3 pill indicator
   (`--secondary-container`), never by colour alone.
-- **SearchField / CommandPalette** — M3 docked search bar. `CommandPalette` is
-  the `⌘K` surface over the same field and is the only global search entry point.
+- **SearchField** — M3 docked search field: 32px pill on
+  `--surface-container-low`, leading search icon, trailing clear. It owns text
+  only; filtering is the caller's job, and no consumer debounces or fetches —
+  every filter runs over an in-memory list, so a keystroke costs no IPC (§10).
+- **CommandPalette** (`components/command/`, not `ui/` — it reads stores) — the
+  one global search surface, opened with `mod+k` from anywhere. Tables, saved
+  queries, connections and actions in a single **globally ranked** list; the kind
+  rides along as a trailing label rather than splitting the list into groups, so
+  the best match is always first. Matching is `utils/filter.ts` — subsequence,
+  not substring — which is also what every panel filter uses, so "does `usr` find
+  `users`?" has one answer everywhere.
 - **Toast / ToastHost** — M3 **snackbar**: bottom-left stack, `rounded-sm`,
   `--surface-container-highest`, `shadow-e2`, single line + optional text action;
   auto-dismiss 4s (errors 8s, or sticky with action). Created only via the global

@@ -10,7 +10,10 @@
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import Panel from "$lib/components/layout/Panel.svelte";
+  import SearchField from "$lib/components/ui/SearchField.svelte";
+  import SegmentedButton, { type Segment } from "$lib/components/ui/SegmentedButton.svelte";
   import ContextMenu, { type MenuItem } from "$lib/components/ui/ContextMenu.svelte";
+  import { filterRank } from "$lib/utils/filter";
   import { connections } from "$lib/stores/connections.svelte";
   import { schema } from "$lib/stores/schema.svelte";
   import { editorTabs } from "$lib/stores/tabs.svelte";
@@ -18,6 +21,12 @@
 
   const sessionId = $derived(connections.active?.sessionId ?? null);
   let expanded = $state<Record<string, boolean>>({});
+
+  const KIND_SEGMENTS: Segment[] = [
+    { value: "all", label: "All" },
+    { value: "table", label: "Tables" },
+    { value: "view", label: "Views" },
+  ];
 
   function newTable(namespace: string): void {
     ddl.open({ type: "newTable", namespace });
@@ -51,6 +60,33 @@
 
   const view = $derived(sessionId ? schema.get(sessionId) : undefined);
 
+  // Filtering is pure client-side over the cached tree — a keystroke costs no IPC
+  // (DESIGN §10). A namespace with no surviving relation drops out entirely, and
+  // while a filter is active every namespace is force-expanded, because a match
+  // hidden behind a collapsed node is the same as no match.
+  let filter = $state("");
+  let kind = $state<"all" | "table" | "view">("all");
+  const filtering = $derived(filter.trim().length > 0 || kind !== "all");
+
+  const namespaces = $derived.by(() => {
+    const tree = view?.tree;
+    if (!tree) return [];
+    if (!filtering) return tree.namespaces;
+    return tree.namespaces
+      .map((ns) => ({
+        ...ns,
+        relations: filterRank(
+          kind === "all" ? ns.relations : ns.relations.filter((r) => r.kind === kind),
+          filter,
+          (r) => r.name,
+        ),
+      }))
+      .filter((ns) => ns.relations.length > 0);
+  });
+
+  const matchCount = $derived(namespaces.reduce((n, ns) => n + ns.relations.length, 0));
+  const isExpanded = (key: string): boolean => filtering || Boolean(expanded[key]);
+
   function toggleNs(name: string): void {
     expanded[`ns:${name}`] = !expanded[`ns:${name}`];
   }
@@ -73,6 +109,23 @@
     {/if}
   {/snippet}
 
+  {#if view?.tree && view.tree.namespaces.length > 0}
+    <div class="flex shrink-0 flex-col gap-2 border-b border-outline-variant p-2">
+      <SearchField bind:value={filter} label="Filter tables and views" placeholder="Filter…" />
+      <div class="flex items-center gap-2">
+        <SegmentedButton
+          label="Relation kind"
+          segments={KIND_SEGMENTS}
+          value={kind}
+          onchange={(v) => (kind = v as typeof kind)}
+        />
+        {#if filtering}
+          <span class="text-label-sm text-on-surface-muted tabular-nums">{matchCount}</span>
+        {/if}
+      </div>
+    </div>
+  {/if}
+
   <div class="flex-1 overflow-auto py-1">
     {#if !sessionId}
       <EmptyState icon={Boxes} message="Connect to browse the schema." />
@@ -85,21 +138,23 @@
           <Button size="sm" onclick={() => sessionId && schema.loadTree(sessionId)}>Retry</Button>
         </div>
       </div>
+    {:else if filtering && matchCount === 0}
+      <EmptyState icon={Boxes} message={`Nothing matches “${filter}”.`} />
     {:else if view.tree && view.tree.namespaces.length > 0}
       <div role="tree">
-        {#each view.tree.namespaces as ns (ns.name)}
+        {#each namespaces as ns (ns.name)}
           <ContextMenu items={nsMenu(ns.name)}>
             <TreeItem
               label={ns.name}
               icon={Boxes}
               depth={0}
               expandable
-              expanded={expanded[`ns:${ns.name}`]}
+              expanded={isExpanded(`ns:${ns.name}`)}
               onclick={() => toggleNs(ns.name)}
               ontoggle={() => toggleNs(ns.name)}
             />
           </ContextMenu>
-          {#if expanded[`ns:${ns.name}`]}
+          {#if isExpanded(`ns:${ns.name}`)}
             {#each ns.relations as rel (rel.name)}
               {@const tkey = `tbl:${ns.name}:${rel.name}`}
               <ContextMenu items={relMenu(ns.name, rel.name)}>
