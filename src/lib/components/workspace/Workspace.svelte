@@ -12,8 +12,6 @@
 
   // Shared tab bar over both tab kinds; SQL tabs get the editor/results split,
   // table tabs get the editable data view (DESIGN §5).
-  let showHistory = $state(false);
-
   $effect(() => {
     if (editorTabs.list.length === 0) editorTabs.open();
   });
@@ -62,7 +60,7 @@
     {:else}
       <SplitPane direction="vertical" initial={0.5} min={120} label="Resize editor and results">
         {#snippet a()}<EditorPane />{/snippet}
-        {#snippet b()}<ResultsPane {showHistory} onToggleHistory={() => (showHistory = !showHistory)} />{/snippet}
+        {#snippet b()}<ResultsPane />{/snippet}
       </SplitPane>
     {/if}
   </div>

@@ -1,6 +1,6 @@
 <script lang="ts">
   // The connection identity row: status dot, engine tag, name over target. Shared
-  // by the sidebar list and the start panel; each container supplies its own
+  // by the connection switcher and the start panel; each container supplies its own
   // trailing `actions` snippet (revealed on hover via this row's `group`).
   import type { Snippet } from "svelte";
   import Badge from "$lib/components/ui/Badge.svelte";

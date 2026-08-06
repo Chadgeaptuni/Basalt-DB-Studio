@@ -9,7 +9,7 @@
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
-  import AccordionSection from "$lib/components/layout/AccordionSection.svelte";
+  import Panel from "$lib/components/layout/Panel.svelte";
   import ContextMenu, { type MenuItem } from "$lib/components/ui/ContextMenu.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { schema } from "$lib/stores/schema.svelte";
@@ -61,7 +61,7 @@
   }
 </script>
 
-<AccordionSection id="schema" title="Schema">
+<Panel title="Schema">
   {#snippet actions()}
     {#if view?.tree && view.tree.namespaces.length > 0}
       <IconButton
@@ -149,4 +149,4 @@
       <EmptyState icon={Boxes} message="No tables or views." />
     {/if}
   </div>
-</AccordionSection>
+</Panel>

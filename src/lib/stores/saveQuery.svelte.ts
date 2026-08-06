@@ -3,7 +3,7 @@ import { savedQueries } from "./savedQueries.svelte";
 import { toast } from "./toasts.svelte";
 
 // Bridges the Ctrl+S / Save button (from anywhere) to the SaveQueryDialog host in
-// App.svelte, without coupling the editor to the sidebar. If the active tab is
+// App.svelte, without coupling the editor to the Queries panel. If the active tab is
 // already bound to a path, saving overwrites silently; otherwise the dialog asks
 // for a folder-relative path first.
 

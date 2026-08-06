@@ -9,7 +9,7 @@
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
-  import AccordionSection from "$lib/components/layout/AccordionSection.svelte";
+  import Panel from "$lib/components/layout/Panel.svelte";
   import ContextMenu, { type MenuItem } from "$lib/components/ui/ContextMenu.svelte";
   import { savedQueries } from "$lib/stores/savedQueries.svelte";
   import { saveQuery } from "$lib/stores/saveQuery.svelte";
@@ -63,7 +63,7 @@
   }
 </script>
 
-<AccordionSection id="saved" title="Saved">
+<Panel title="Queries">
   {#snippet actions()}
     <IconButton icon={Save} title="Save current query" size="sm" onclick={() => void saveQuery.trigger()} />
     <IconButton icon={RefreshCw} title="Refresh" size="sm" onclick={() => void savedQueries.load()} />
@@ -100,4 +100,4 @@
       </div>
     {/if}
   </div>
-</AccordionSection>
+</Panel>

@@ -6,6 +6,7 @@
   import VirtualList from "$lib/components/ui/VirtualList.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
+  import Panel from "$lib/components/layout/Panel.svelte";
   import { stateLayerPill, focusRing } from "$lib/components/ui/stateLayer";
   import { history } from "$lib/stores/history.svelte";
   import { editorTabs } from "$lib/stores/tabs.svelte";
@@ -14,12 +15,18 @@
   const fmtTime = (ms: number): string => new Date(ms).toLocaleTimeString();
 </script>
 
-<div class="flex h-full flex-col">
-  <div class="flex h-8 shrink-0 items-center gap-2 border-b border-outline-variant px-2 text-data text-on-surface-muted">
-    <span class="tabular-nums">{items.length} in history</span>
-    <div class="flex-1"></div>
-    <IconButton icon={Trash2} title="Clear history" size="sm" disabled={items.length === 0} onclick={() => history.clear()} />
-  </div>
+<Panel title="History">
+  {#snippet actions()}
+    <span class="pr-1 text-data text-on-surface-muted tabular-nums">{items.length}</span>
+    <IconButton
+      icon={Trash2}
+      title="Clear history"
+      size="sm"
+      disabled={items.length === 0}
+      onclick={() => history.clear()}
+    />
+  {/snippet}
+
   {#if items.length === 0}
     <EmptyState icon={HistoryIcon} message="No queries run this session yet." />
   {:else}
@@ -45,4 +52,4 @@
       {/snippet}
     </VirtualList>
   {/if}
-</div>
+</Panel>

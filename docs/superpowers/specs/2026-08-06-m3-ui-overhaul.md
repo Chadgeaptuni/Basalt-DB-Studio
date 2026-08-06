@@ -328,11 +328,36 @@ native `<select>` until U4, when `Menu` gains its second consumer and the popup
 pattern is proven — converting it now would mean inventing a bits-ui Select API
 against a primitive nothing else uses yet.
 
-**U1 — Shell.** Nav rail, M3 top app bar, `PanelHost`; `Sidebar` and
-`AccordionSection` retired; `StartPanel` rebuilt.
-*Gate: all five rail destinations reachable by mouse and keyboard; panel resize
-and `mod+b` collapse preserved; no auto-collapse effect remains; window down to
-900×600 without clipping.*
+**U1 — Shell. ✅ done 2026-08-06.** Nav rail, 56px M3 top app bar, `PanelHost`
+and `Panel`; `Sidebar`, `AccordionSection` and `stores/sidebar.svelte.ts`
+retired.
+*Gate: every rail destination reachable by mouse and keyboard ✅ (5 new
+`NavRail` tests); panel resize and `mod+b` collapse preserved ✅; no auto-collapse
+effect remains ✅ (the store it lived in is deleted); `svelte-check` 0 errors /
+0 warnings and 97/97 vitest ✅.*
+
+**The rail carries four destinations, not five — Transfer was dropped.** There
+is no transfer *panel* to show: `ImportWizard` is a per-table modal launched from
+`TableDataView`, and export is a per-result action in `ResultsPane`. A fifth rail
+item would have been an empty shell. Import/export stay where the object they act
+on lives; if a transfer history or queue is ever built, the destination comes
+back with it.
+
+**History moved out of `ResultsPane` in U1 rather than U2.** Once the rail had a
+History destination, leaving the old toggle in the results toolbar would have
+been two routes to one panel — the duplication rule, not a scheduling
+preference. `ResultsPane` lost its `showHistory`/`onToggleHistory` props.
+
+**`StartPanel` was not rebuilt.** Its planned U1 content was the connection list
+(already there) plus a command-palette hint, and the palette does not exist until
+U2. Advertising a shortcut that does nothing is worse than leaving the pane
+alone; it is rebuilt in U2 alongside `CommandPalette`.
+
+`stateLayer.ts` gained a third export, `stateLayerGroup` — the layer driven by an
+ancestor `group` rather than its own hover, for composite controls where the hit
+target is the whole block but M3 draws the layer on one child (the rail item's
+72×56 block vs. its 56×32 indicator pill). This is a variant, not a carve-out:
+the rail still never hand-writes a hover colour.
 
 **U2 — Search.** `SearchField`, `CommandPalette` (`⌘K`), schema filter with kind
 chips and row counts, saved-queries and history search.

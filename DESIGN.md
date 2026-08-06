@@ -226,12 +226,18 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
 
 - **App shell:** M3 **top app bar** (Basalt mark · search/command entry ·
   connection with its environment colour) · **navigation rail** on the left
-  (Schema · Queries · History · Transfer · Git) · one **full-height panel** for
-  the rail's active destination · main workspace (editor tabs above, results
-  below, both in a `SplitPane`) · bottom `StatusBar` (tx state, row count,
-  duration, row-limit notice, zoom). The connection lives in the top bar and
-  appears nowhere else; the status bar carries per-run state only. All resizable
-  panes use the shared `SplitPane` primitive.
+  (Schema · Queries · History · Git) · one **full-height panel** for the rail's
+  active destination · main workspace (editor tabs above, results below, both in
+  a `SplitPane`) · bottom `StatusBar` (tx state, row count, duration, row-limit
+  notice, zoom). The connection lives in the top bar and appears nowhere else;
+  the status bar carries per-run state only. All resizable panes use the shared
+  `SplitPane` primitive.
+- **A rail destination needs a panel of its own.** Import and export are actions
+  on the object in front of you — a table, a result — so they live at that object
+  (`TableDataView`, `ResultsPane`), not behind a rail item with nothing to show.
+- Every destination wraps itself in `Panel` (40px header carrying its title and
+  its own actions, over a scrolling body). Panels never stack: if a layout has to
+  auto-collapse the user's open sections to fit, it belongs behind the rail.
 - **One panel at a time.** The rail selects what the panel shows. Panels never
   stack and compete for height — if a layout needs to auto-collapse the user's
   open sections to fit, it is over-subscribed and belongs behind the rail.

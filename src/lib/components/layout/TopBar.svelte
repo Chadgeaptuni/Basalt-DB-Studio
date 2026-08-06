@@ -15,12 +15,12 @@
 </script>
 
 <header
-  class="grid h-10 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-outline-variant
-    bg-surface-container px-2"
+  class="grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-outline-variant
+    bg-surface-container px-3"
 >
-  <div class="flex min-w-0 items-center gap-2 pl-1">
-    <BrandMark size={16} />
-    <span class="truncate text-title-sm text-on-surface">Basalt</span>
+  <div class="flex min-w-0 items-center gap-2">
+    <BrandMark size={20} />
+    <span class="truncate text-title-md text-on-surface">Basalt</span>
   </div>
 
   <ConnectionSwitcher />

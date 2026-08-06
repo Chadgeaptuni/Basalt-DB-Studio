@@ -4,7 +4,7 @@ import { toast } from "./toasts.svelte";
 import { connections } from "./connections.svelte";
 import { savedQueries } from "./savedQueries.svelte";
 
-// Git-sync state for the sidebar bar. `status` drives the badge; `sync()` runs
+// Git-sync state for the Git panel. `status` drives the readout; `sync()` runs
 // the manual push/pull and, on success, reloads the two synced units (profiles +
 // saved queries) so a pull's incoming changes appear without a restart. Error
 // kinds (gitConflict / gitNotInstalled / gitDirty) are held for inline display.

@@ -32,7 +32,7 @@ describe("ResultsPane", () => {
     tab.lastRunSql = "SELECT 1";
     tab.sql = "DROP TABLE users"; // draft moved on after the run
 
-    render(ResultsPane, { showHistory: false, onToggleHistory: () => {} });
+    render(ResultsPane, {});
     await fireEvent.click(screen.getByRole("button", { name: "Export query result" }));
     await Promise.resolve();
 
@@ -43,7 +43,7 @@ describe("ResultsPane", () => {
     connections.setActive(session);
     editorTabs.open("SELECT 1");
 
-    render(ResultsPane, { showHistory: false, onToggleHistory: () => {} });
+    render(ResultsPane, {});
 
     expect(screen.getByRole("button", { name: "Export query result" })).toBeDisabled();
   });

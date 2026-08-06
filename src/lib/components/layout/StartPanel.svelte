@@ -17,8 +17,8 @@
 
   let formOpen = $state(false);
 
-  // The sidebar list normally loads these, but it isn't mounted while the
-  // sidebar is collapsed (mod+b) — this pane can't depend on that.
+  // The Queries panel does not load these, and the Schema panel may be collapsed
+  // (mod+b) — this pane cannot depend on either being mounted.
   $effect(() => {
     void connections.load();
   });

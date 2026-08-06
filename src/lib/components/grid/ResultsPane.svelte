@@ -1,6 +1,5 @@
 <script lang="ts">
   import Play from "@lucide/svelte/icons/play";
-  import HistoryIcon from "@lucide/svelte/icons/history";
   import Download from "@lucide/svelte/icons/download";
   import CircleCheck from "@lucide/svelte/icons/circle-check";
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
@@ -10,20 +9,14 @@
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import Tabs, { type TabItem } from "$lib/components/ui/Tabs.svelte";
   import DataGrid from "./DataGrid.svelte";
-  import HistoryPanel from "$lib/components/history/HistoryPanel.svelte";
   import { runExport } from "$lib/components/importExport/runExport";
   import { editorTabs } from "$lib/stores/tabs.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { ioApi } from "$lib/api/io";
   import type { ErrorKind, StatementResult } from "$lib/api/types";
 
-  // History is a SQL-tab affordance; a table tab renders results without it.
-  interface Props {
-    showHistory?: boolean;
-    onToggleHistory?: () => void;
-  }
-  let { showHistory = false, onToggleHistory }: Props = $props();
-
+  // History used to live here behind a toggle; it is a rail destination now, so
+  // this pane only ever shows results (DESIGN §5).
   const tab = $derived(editorTabs.active);
   const result = $derived(tab?.result ?? null);
   const stmts = $derived(result?.statements ?? []);
@@ -91,12 +84,9 @@
     {/if}
     <div class="flex-1"></div>
     <IconButton icon={Download} title="Export query result" size="sm" disabled={!canExport} onclick={exportResult} />
-    {#if onToggleHistory}
-      <IconButton icon={HistoryIcon} title="History" size="sm" active={showHistory} onclick={onToggleHistory} />
-    {/if}
   </div>
 
-  {#if statementTabs.length > 1 && !showHistory}
+  {#if statementTabs.length > 1}
     <Tabs
       label="Statement results"
       items={statementTabs}
@@ -106,9 +96,7 @@
   {/if}
 
   <div class="min-h-0 flex-1 overflow-hidden">
-    {#if showHistory}
-      <HistoryPanel />
-    {:else if !tab}
+    {#if !tab}
       <EmptyState icon={Play} message="No editor tab open." />
     {:else if tab.running}
       <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-muted"><Spinner size="sm" /> Running query…</div>

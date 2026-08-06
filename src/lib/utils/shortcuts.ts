@@ -50,7 +50,7 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { label: "Close editor tab", combos: ["mod+w"], icon: FileX },
       // Literal Ctrl on every platform, matching Workspace.svelte's binding.
       { label: "Previous / next tab", combos: ["ctrl+pageup", "ctrl+pagedown"], icon: Layers },
-      { label: "Toggle sidebar", combos: ["mod+b"], icon: PanelLeft },
+      { label: "Toggle side panel", combos: ["mod+b"], icon: PanelLeft },
       { label: "Zoom in / out / reset", combos: ["mod+=", "mod+-", "mod+0"], icon: ZoomIn },
     ],
   },

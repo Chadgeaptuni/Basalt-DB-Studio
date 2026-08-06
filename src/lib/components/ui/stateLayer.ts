@@ -35,6 +35,16 @@ export const stateLayer =
 export const stateLayerPill =
   `relative isolate ${LAYER} before:inset-x-1 before:inset-y-0.5 before:rounded-full ${OPACITY}`;
 
+/**
+ * The same layer, driven by an ancestor marked `group` instead of by its own
+ * hover. For composite controls where the hit target is the whole block but the
+ * layer belongs to one child — the nav rail item, whose 72×56 block is clickable
+ * while M3 draws the layer on its 56×32 indicator pill.
+ */
+export const stateLayerGroup =
+  `relative isolate overflow-hidden ${LAYER} before:inset-0 ` +
+  "group-hover:before:opacity-[0.08] group-active:before:opacity-[0.10]";
+
 /** Focus ring is additive to the layer — never a replacement (DESIGN §7). */
 export const focusRing =
   "focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-1";

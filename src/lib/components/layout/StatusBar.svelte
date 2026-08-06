@@ -6,13 +6,10 @@
   import { zoom } from "$lib/stores/zoom.svelte";
   import { keyboard } from "$lib/utils/keyboard";
   import { editorTabs } from "$lib/stores/tabs.svelte";
+  import { panel } from "$lib/stores/panel.svelte";
 
   // Run state only: connection identity lives in the top bar, theme and settings
   // in its right-hand group. What stays here is per-run (DESIGN §5).
-  interface Props {
-    onToggleSidebar: () => void;
-  }
-  let { onToggleSidebar }: Props = $props();
 
   // Query stats for the active editor tab's shown statement (DESIGN §5).
   const tab = $derived(editorTabs.active);
@@ -24,7 +21,13 @@
   class="flex h-8 shrink-0 items-center gap-3 border-t border-outline-variant bg-surface-container
     px-2 text-data text-on-surface-muted"
 >
-  <IconButton icon={PanelLeft} title="Toggle sidebar" size="sm" onclick={onToggleSidebar} />
+  <IconButton
+    icon={PanelLeft}
+    title={`Toggle panel · ${keyboard.label("mod+b")}`}
+    size="sm"
+    active={!panel.collapsed}
+    onclick={panel.toggleCollapsed}
+  />
 
   {#if tx === "inTx"}
     <Badge variant="warn">TX</Badge>
