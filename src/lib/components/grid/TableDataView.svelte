@@ -52,8 +52,8 @@
   function exportTable(): void {
     const ref = tab.ref;
     if (!sess || !ref) return;
-    void runExport(`${ref.table}.csv`, (format, path, ch) =>
-      ioApi.exportTable(sess.sessionId, ref.namespace, ref.table, format, path, ch),
+    void runExport(`${ref.table}.csv`, (format, path) =>
+      ioApi.exportTable(sess.sessionId, ref.namespace, ref.table, format, path),
     );
   }
 

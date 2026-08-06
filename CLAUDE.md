@@ -76,6 +76,25 @@ before writing or editing any Svelte/Tailwind code. Zero-tolerance summary
   outside `src/lib/api/`, or logic inside `components/ui/` — rewrite it before
   presenting it (full checklist: DESIGN.md "Agent Execution Directive").
 
+## graphify
+
+This project has a knowledge graph at `graphify-out/` with god nodes, community
+structure, and cross-file relationships across `src/`, `src-tauri/src/`, and
+`docs/`.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when
+  `graphify-out/graph.json` exists — answer from the graph instead of
+  re-reading/grepping files from scratch; it's the token-cheap path.
+- Use `graphify path "<A>" "<B>"` for how two things relate and
+  `graphify explain "<concept>"` for a focused explanation of one node.
+- If `graphify-out/wiki/index.md` exists, use it for broad navigation instead
+  of raw source browsing.
+- Read `graphify-out/GRAPH_REPORT.md` only for broad architecture review or
+  when query/path/explain don't surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current
+  (AST-only re-extraction, no API cost — safe after every substantive change).
+
 ## Architecture map
 
 Backend layering — dependencies point one way: `commands → services → everything
@@ -122,9 +141,10 @@ frontend, never a collapsed generic error.
 ## Code-quality hard rules
 
 1. **No code duplication — ever.** Before writing anything, search the codebase
-   for existing logic/components that already do it; reuse or extend. A second
-   copy of any logic (a local toast, a re-implemented debounce, a forked button)
-   is a bug to fix, not a style choice.
+   (and `graphify query` — see "graphify" above) for existing logic/components
+   that already do it; reuse or extend. A second copy of any logic (a local
+   toast, a re-implemented debounce, a forked button) is a bug to fix, not a
+   style choice.
 2. **No dead code, no unused variables/params/imports.** Delete, don't comment
    out. Enforced: `cargo clippy -- -D warnings` and `svelte-check` must pass
    clean; both are build-blocking.

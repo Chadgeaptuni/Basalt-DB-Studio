@@ -68,9 +68,7 @@
     const sess = connections.active;
     const sql = tab?.lastRunSql;
     if (!sess || !sql) return;
-    void runExport("query.csv", (format, path, ch) =>
-      ioApi.exportQuery(sess.sessionId, sql, format, path, ch),
-    );
+    void runExport("query.csv", (format, path) => ioApi.exportQuery(sess.sessionId, sql, format, path));
   }
 </script>
 

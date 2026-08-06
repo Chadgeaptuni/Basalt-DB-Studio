@@ -5,5 +5,6 @@ node_modules
 .env.*
 !.env.example
 vite.config.ts.timestamp-*
+graphify-out/
 
 # Tauri build artifacts live under src-tauri/target (see src-tauri/.gitignore)

@@ -9,7 +9,7 @@
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
-  import AccordionSection from "$lib/components/ui/AccordionSection.svelte";
+  import AccordionSection from "$lib/components/layout/AccordionSection.svelte";
   import ContextMenu, { type MenuItem } from "$lib/components/ui/ContextMenu.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { schema } from "$lib/stores/schema.svelte";
