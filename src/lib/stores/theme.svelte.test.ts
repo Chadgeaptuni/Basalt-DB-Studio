@@ -59,9 +59,9 @@ describe("theme store (DOM application)", () => {
     expect(theme.variant).toBe("light");
   });
 
-  // Regression: TopBar wires `onclick={theme.toggleAppearance}`, which detaches
-  // the receiver — the method threw "this.setVariant is not a function" at runtime
-  // while every call-with-receiver test stayed green.
+  // Regression: the command palette stores this method bare as an item's `run`,
+  // which detaches the receiver — it threw "this.setVariant is not a function" at
+  // runtime while every call-with-receiver test stayed green.
   it("toggles when the method is detached from the store", () => {
     const detached = theme.toggleAppearance;
     expect(() => detached()).not.toThrow();

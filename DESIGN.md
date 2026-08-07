@@ -45,9 +45,9 @@ been used to justify 4px radii and hand-picked text sizes — it does not.
 3. **Type scale (§4).** Text uses a named role utility — `text-title-md`,
    `text-body-sm`, `text-label-lg`, `text-data`. A raw `text-xs`, `text-sm` or
    `text-[11px]` in a component is a review failure.
-4. **Density (§5).** One tier, everywhere: 56px top bar · 40px toolbars and tab
-   strips · 36px rows · 32px controls · 28px dense controls. The data grid row is
-   the one exemption at 28px.
+4. **Density (§5).** One tier, everywhere: 56px dialog headers and rail items ·
+   40px title bar, toolbars and tab strips · 36px rows · 32px controls · 28px
+   dense controls. The data grid row is the one exemption at 28px.
 5. **State layers (§7).** Interaction is a translucent overlay of the *content*
    colour over the container: hover 8%, focus/pressed 10%. Components import
    `stateLayer` or `stateLayerPill` from `ui/stateLayer.ts` — never a hand-picked
@@ -246,14 +246,27 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
 
 ## 5. Layout
 
-- **App shell:** M3 **top app bar** (Basalt mark · search/command entry ·
-  connection with its environment colour) · **navigation rail** on the left
-  (Schema · Queries · History · Git) · one **full-height panel** for the rail's
-  active destination · main workspace (editor tabs above, results below, both in
-  a `SplitPane`) · bottom `StatusBar` (tx state, row count, duration, row-limit
-  notice, zoom). The connection lives in the top bar and appears nowhere else;
-  the status bar carries per-run state only. All resizable panes use the shared
-  `SplitPane` primitive.
+- **App shell:** **title bar** (Basalt mark · centred search/command entry ·
+  appearance · window controls) · **navigation rail** on the left (Schema ·
+  Queries · History · Git, with Settings in a trailing group) · one **full-height
+  panel** for the rail's active destination · main workspace (editor tabs above,
+  results below, both in a `SplitPane`) · bottom `StatusBar` (connection with its
+  environment badge, tx state, row count, duration, row-limit notice, zoom). All
+  resizable panes use the shared `SplitPane` primitive.
+- **Three bars, three jobs, and nothing crosses over.** The top bar is
+  *navigation* — where you go. The status bar is *session state* — what is true
+  right now. The rail is *destinations*, with app-level actions in its trailing
+  group. So the connection switcher sits in the status bar beside the transaction
+  badge (which database you are pointed at is state, not navigation) and settings
+  sits at the foot of the rail. A bar that carries session state, navigation and
+  app settings at once is three bars wearing one hat, which is what the top bar
+  had become.
+- **The top bar is the title bar.** The native one is removed on every platform
+  (`drop_native_titlebar` in `lib.rs`; macOS keeps its traffic lights floated over
+  ours via `titleBarStyle: "Overlay"`). It carries `data-tauri-drag-region="deep"`
+  so the whole bar drags — Tauri's hit test excludes buttons and inputs, so no
+  control has to opt out — and it insets its leading edge on macOS to clear the
+  traffic lights. Both constants live in `utils/platform.ts`.
 - **A rail destination needs a panel of its own.** Import and export are actions
   on the object in front of you — a table, a result — so they live at that object
   (`TableDataView`, `ResultsPane`), not behind a rail item with nothing to show.
@@ -267,8 +280,8 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
 
   | Element | Height |
   |---|---|
-  | Top app bar | 56px (`h-14`) |
-  | Toolbar, tab strip | 40px (`h-10`) |
+  | Dialog header/footer, nav rail item | 56px (`h-14`) |
+  | Title bar, toolbar, tab strip | 40px (`h-10`) |
   | List / tree / menu row | 36px (`h-9`) |
   | Control (button, icon button, field) | 32px (`h-8`) |
   | Dense control (in-toolbar icon button) | 28px (`h-7`) |
@@ -359,7 +372,12 @@ the primitive**, don't fork it locally.
   displaces the grid.
 - **NavRail / NavRailItem** — 72px rail, 56px items, icon over
   `text-label-sm` label, active item marked by the M3 pill indicator
-  (`--secondary-container`), never by colour alone.
+  (`--secondary-container`), never by colour alone. `NavRailItem` passes all ARIA
+  through and takes no view on what it is: a destination arrives carrying
+  `role="tab"` and roving `tabindex`, a trailing action (Settings) arrives as a
+  plain button. Actions stay **outside** the tablist — inside it, `End` would
+  land on something that is not a destination and assistive tech would count it
+  as one.
 - **SearchField** — M3 docked search field: 32px pill on
   `--surface-container-low`, leading search icon, trailing clear. It owns text
   only; filtering is the caller's job, and no consumer debounces or fetches —
@@ -502,8 +520,8 @@ Focus is **additionally** a 2px `--primary` ring via `:focus-visible` (app.css
 - **Environment is a first-class guardrail.** A connection profile is `local`,
   `staging`, `prod`, or **untagged** — untagged is a real state and never
   defaults to `local`, because a reassuring badge on an unclassified connection
-  is worse than none. The value tints its badge in the top app bar and the
-  connection list, and on `prod` every destructive confirm names the environment
+  is worse than none. The value tints its badge on the status bar's connection
+  chip and in the connection list, and on `prod` every destructive confirm names the environment
   in its title via `envConfirmTitle()`. Only operations that *write* escalate —
   discarding staged edits touches nothing on the server. Environment is never
   conveyed by colour alone; the badge always carries the label. All of it flows

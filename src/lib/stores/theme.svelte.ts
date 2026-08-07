@@ -145,12 +145,12 @@ export const theme = {
     applyThemeToDOM(currentTheme, v, customThemesList);
   },
 
-  /** Quick toggle for the top-bar sun/moon button — AMOLED is reachable only from
-   *  the picker, so it toggles into light like any other dark variant.
+  /** The command palette's "Switch to light/dark" action — AMOLED is reachable
+   *  only from the picker, so it toggles into light like any other dark variant.
    *
-   *  Self-references go through `theme`, not `this`: call sites pass these methods
-   *  straight to `onclick={theme.toggleAppearance}`, which detaches the receiver
-   *  and would make `this` undefined. */
+   *  Self-references go through `theme`, not `this`: call sites hand the method
+   *  over bare (the palette stores it as an item's `run`), which detaches the
+   *  receiver and would make `this` undefined. */
   toggleAppearance() {
     theme.setVariant(theme.isLight ? "dark" : "light");
   },

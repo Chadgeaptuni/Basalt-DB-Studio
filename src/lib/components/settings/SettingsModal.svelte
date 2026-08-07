@@ -1,7 +1,3 @@
-<script lang="ts" module>
-  export type SettingsTab = "general" | "appearance" | "shortcuts";
-</script>
-
 <script lang="ts">
   import { untrack } from "svelte";
   import Modal from "$lib/components/ui/Modal.svelte";
@@ -15,6 +11,7 @@
   import { settings } from "$lib/stores/settings.svelte";
   import { theme } from "$lib/stores/theme.svelte";
   import { SHORTCUT_GROUPS } from "$lib/utils/shortcuts";
+  import type { SettingsTab } from "$lib/stores/settingsDialog.svelte";
   import type { DatetimeDisplay } from "$lib/api/types";
 
   import Sliders from "@lucide/svelte/icons/sliders-horizontal";

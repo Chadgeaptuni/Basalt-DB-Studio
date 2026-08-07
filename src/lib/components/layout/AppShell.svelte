@@ -6,9 +6,11 @@
   import StartPanel from "./StartPanel.svelte";
   import Workspace from "$lib/components/workspace/Workspace.svelte";
   import CommandPalette from "$lib/components/command/CommandPalette.svelte";
+  import SettingsModal from "$lib/components/settings/SettingsModal.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { panel } from "$lib/stores/panel.svelte";
   import { palette } from "$lib/stores/palette.svelte";
+  import { settingsDialog } from "$lib/stores/settingsDialog.svelte";
   import { keyboard } from "$lib/utils/keyboard";
   import { zoom } from "$lib/stores/zoom.svelte";
 
@@ -46,6 +48,12 @@
   <StatusBar />
 </div>
 
+<!-- Both overlays are hosted here, once, because more than one surface opens each
+     of them and none of those surfaces contains the others (DESIGN §9). -->
 {#if palette.open}
   <CommandPalette onclose={palette.close} />
+{/if}
+
+{#if settingsDialog.tab}
+  <SettingsModal initialTab={settingsDialog.tab} onclose={settingsDialog.close} />
 {/if}

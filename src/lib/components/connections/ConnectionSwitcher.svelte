@@ -23,6 +23,12 @@
 
   // The app's one connection surface (DESIGN §5): the trigger states which
   // database the workspace is pointed at, the panel manages every profile.
+  //
+  // It lives in the status bar rather than the top app bar. Which database you
+  // are pointed at is *run state* — the same class of thing as the transaction
+  // badge and the row count it now sits beside — and the top bar is for
+  // navigation. It also has to stay visible at all times for the environment
+  // badge to be worth anything, which rules out the start panel.
   const ENGINE_TAG: Record<Engine, string> = { postgres: "PG", mysql: "MY", sqlite: "SQ" };
 
   let open = $state(false);
@@ -61,15 +67,19 @@
 </script>
 
 <Popover.Root bind:open>
+  <!-- Sized to its content, not to a minimum: in a 32px bar a fixed-width pill
+       reads as a form control wedged into the chrome. No border either — the bar
+       is already a distinct surface, so the state layer alone marks it as
+       pressable (DESIGN §2). -->
   <Popover.Trigger
-    class="flex h-8 min-w-56 max-w-96 items-center gap-2 rounded-full border border-outline-variant
-      bg-surface px-3 text-body-sm {stateLayer} {focusRing}"
+    class="flex h-6 max-w-72 items-center gap-1.5 rounded-full px-2 text-data
+      {stateLayer} {focusRing}"
     title="Connection"
   >
     {#if connections.active && activeProfile}
       <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-ok"></span>
-      <Badge>{ENGINE_TAG[connections.active.engine]}</Badge>
-      <span class="min-w-0 flex-1 truncate text-left text-on-surface">{activeProfile.name}</span>
+      <span class="shrink-0 text-on-surface-muted">{ENGINE_TAG[connections.active.engine]}</span>
+      <span class="min-w-0 truncate text-left text-on-surface-variant">{activeProfile.name}</span>
       <!-- Label as well as colour: which database you are pointed at is exactly
            the thing that must not depend on distinguishing red from amber. -->
       {#if activeProfile.environment}
@@ -80,13 +90,17 @@
       {#if connections.active.readOnly}<Badge variant="warn">read-only</Badge>{/if}
     {:else}
       <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-on-surface-muted"></span>
-      <span class="min-w-0 flex-1 truncate text-left text-on-surface-muted">Not connected</span>
+      <span class="min-w-0 truncate text-left text-on-surface-muted">Not connected</span>
     {/if}
-    <ChevronDown size={13} class="shrink-0 text-on-surface-muted" />
+    <ChevronDown size={12} class="shrink-0 text-on-surface-muted" />
   </Popover.Trigger>
 
   <Popover.Portal>
+    <!-- Opens upward and aligned to its leading edge: the trigger sits on the
+         bottom edge of the window, so there is nowhere below to put it. -->
     <Popover.Content
+      side="top"
+      align="start"
       sideOffset={4}
       class="z-50 max-h-[min(28rem,calc(100dvh-4rem))] w-96 overflow-auto rounded-md border
         border-outline-variant bg-surface-container-high shadow-e2 outline-none"
@@ -94,13 +108,11 @@
       {#if !connections.loaded}
         <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-muted"><Spinner size="sm" /> Loading…</div>
       {:else if connections.loadError}
-        <div class="p-3 text-body-md text-error">
-          Couldn't read your saved connections.
-          <div class="mt-0.5 text-data break-words opacity-90">
-            {connections.loadError.message}
-          </div>
-          <div class="mt-2"><Button size="sm" onclick={() => connections.load()}>Retry</Button></div>
-        </div>
+        <ErrorState kind={connections.loadError.kind} message={connections.loadError.message}>
+          {#snippet action()}
+            <Button size="sm" onclick={() => connections.load()}>Retry</Button>
+          {/snippet}
+        </ErrorState>
       {:else if connections.profiles.length === 0}
         <EmptyState icon={Database} message="No connections yet" />
       {:else}

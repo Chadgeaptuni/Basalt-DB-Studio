@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it } from "vitest";
 import { panel } from "$lib/stores/panel.svelte";
+import { settingsDialog } from "$lib/stores/settingsDialog.svelte";
 import { DESTINATIONS } from "./destinations";
 import NavRail from "./NavRail.svelte";
 
@@ -59,5 +60,33 @@ describe("NavRail", () => {
     await fireEvent.keyDown(schema, { key: "ArrowUp" });
     const last = DESTINATIONS[DESTINATIONS.length - 1].label;
     expect(document.activeElement).toBe(screen.getByRole("tab", { name: last }));
+  });
+
+  // Settings opens a dialog instead of selecting a panel, so it must stay out of
+  // the tablist: inside it, End and ArrowUp would land on something that is not a
+  // destination and screen readers would count it as one.
+  it("keeps settings out of the destination tabs", async () => {
+    render(NavRail);
+    const settings = screen.getByRole("button", { name: "Settings" });
+
+    expect(settings).not.toHaveAttribute("role", "tab");
+    expect(screen.getAllByRole("tab")).toHaveLength(DESTINATIONS.length);
+
+    const schema = screen.getByRole("tab", { name: "Schema" });
+    schema.focus();
+    await fireEvent.keyDown(schema, { key: "End" });
+
+    const last = DESTINATIONS[DESTINATIONS.length - 1].label;
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: last }));
+  });
+
+  it("opens settings on General", async () => {
+    render(NavRail);
+    expect(settingsDialog.tab).toBeNull();
+
+    await fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+    expect(settingsDialog.tab).toBe("general");
+
+    settingsDialog.close();
   });
 });

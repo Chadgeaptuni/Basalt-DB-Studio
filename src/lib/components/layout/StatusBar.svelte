@@ -2,14 +2,16 @@
   import PanelLeft from "@lucide/svelte/icons/panel-left";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import Badge from "$lib/components/ui/Badge.svelte";
+  import ConnectionSwitcher from "$lib/components/connections/ConnectionSwitcher.svelte";
   import { stateLayer, focusRing } from "$lib/components/ui/stateLayer";
   import { zoom } from "$lib/stores/zoom.svelte";
   import { keyboard } from "$lib/utils/keyboard";
   import { editorTabs } from "$lib/stores/tabs.svelte";
   import { panel } from "$lib/stores/panel.svelte";
 
-  // Run state only: connection identity lives in the top bar, theme and settings
-  // in its right-hand group. What stays here is per-run (DESIGN §5).
+  // Run state, all of it: which database the workspace points at, whether a
+  // transaction is open, what the last statement cost. The top bar is navigation;
+  // this bar is the state of the session (DESIGN §5).
 
   // Query stats for the active editor tab's shown statement (DESIGN §5).
   const tab = $derived(editorTabs.active);
@@ -28,6 +30,8 @@
     active={!panel.collapsed}
     onclick={panel.toggleCollapsed}
   />
+
+  <ConnectionSwitcher />
 
   {#if tx === "inTx"}
     <Badge variant="warn">TX</Badge>

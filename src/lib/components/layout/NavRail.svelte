@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { focusRing, stateLayerGroup } from "$lib/components/ui/stateLayer";
+  import SettingsIcon from "@lucide/svelte/icons/settings";
+  import NavRailItem from "./NavRailItem.svelte";
   import { panel } from "$lib/stores/panel.svelte";
+  import { settingsDialog } from "$lib/stores/settingsDialog.svelte";
   import { DESTINATIONS } from "./destinations";
 
-  // M3 navigation rail (DESIGN §5/§6): 72px, one 56px block per destination —
-  // a 32px pill indicator with the icon, label underneath.
+  // M3 navigation rail (DESIGN §5/§6): 72px, one 56px block per destination.
   //
   // Arrow keys move between destinations without selecting, matching the ARIA
   // tablist pattern the rail implements; Enter/Space selects. Selecting the
@@ -28,42 +29,44 @@
 </script>
 
 <!-- `nav > div[role=tablist]`: the landmark and the widget are separate elements
-     because a <nav> may not itself carry an interactive role. -->
-<nav aria-label="Panels" class="shrink-0 border-r border-outline-variant bg-surface-container">
+     because a <nav> may not itself carry an interactive role. Settings sits
+     outside the tablist — it opens a dialog rather than selecting a panel, so
+     joining the tabs' roving focus would make ArrowDown land on something that
+     is not a destination. -->
+<nav
+  aria-label="Panels"
+  class="flex w-18 shrink-0 flex-col items-center border-r border-outline-variant
+    bg-surface-container py-2"
+>
   <div
     bind:this={rail}
     role="tablist"
     aria-orientation="vertical"
     aria-label="Panels"
-    class="flex h-full w-18 flex-col items-center gap-1 py-2"
+    class="flex w-full flex-1 flex-col items-center gap-1"
   >
     {#each DESTINATIONS as dest (dest.id)}
       {@const showing = panel.active === dest.id && !panel.collapsed}
-      <button
-        type="button"
+      <NavRailItem
+        icon={dest.icon}
+        label={dest.label}
+        active={showing}
         role="tab"
         aria-selected={showing}
         tabindex={panel.active === dest.id ? 0 : -1}
-        title={dest.label}
         onclick={() => panel.select(dest.id)}
         onkeydown={onKeydown}
-        class="group flex h-14 w-full shrink-0 flex-col items-center justify-center gap-1
-          text-label-sm {focusRing}
-          {showing ? 'text-on-surface' : 'text-on-surface-variant'}"
-      >
-        <!-- The indicator is the pill, not the icon colour: M3 marks the active
-             destination with a filled 56×32 container so it reads without relying
-             on colour alone. -->
-        <span
-          class="grid h-8 w-14 place-items-center rounded-full transition-colors duration-200
-            ease-standard {showing
-            ? 'bg-secondary-container text-on-secondary-container'
-            : stateLayerGroup}"
-        >
-          <dest.icon size={18} strokeWidth={2} />
-        </span>
-        {dest.label}
-      </button>
+      />
     {/each}
+  </div>
+
+  <!-- Bottom group: app-level actions, pinned below the destinations the way M3
+       rails carry a trailing section. -->
+  <div class="flex w-full shrink-0 flex-col items-center">
+    <NavRailItem
+      icon={SettingsIcon}
+      label="Settings"
+      onclick={() => settingsDialog.open("general")}
+    />
   </div>
 </nav>
