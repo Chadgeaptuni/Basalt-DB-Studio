@@ -1,6 +1,80 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" aria-label="Basalt DB Studio" viewBox="0 0 256 256"><title>Basalt DB Studio</title><defs><linearGradient id="a" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#1e242c"/><stop offset="1" stop-color="#0d1014"/></linearGradient><linearGradient id="b" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#5a6675"/><stop offset="1" stop-color="#222a33"/></linearGradient></defs><rect width="256" height="256" fill="url(#a)" rx="50"/><rect width="253" height="253" x="1.5" y="1.5" fill="none" stroke="url(#b)" stroke-width="3" rx="48.5"/><g transform="translate(-15.36 -.8)scale(1.12)"><!--Outer frame: the stack's own silhouette hexagon, offset 12px outward on
-         every edge, so it stays parallel to the mark all the way round. Three
-         passes on one path build the band outwards from the centre:
-         grey 2.5 | dark 2 | light 6 | dark 2 | grey 2.5.--><g fill="none" stroke-linejoin="round"><path stroke="#5b6674" stroke-width="15" d="m46 60.1 82-24.6 82 24.6v109.8l-82 24.6-82-24.6Z"/><path stroke="#070a0d" stroke-width="10" d="m46 60.1 82-24.6 82 24.6v109.8l-82 24.6-82-24.6Z"/><path stroke="#dfe5ec" stroke-width="6" d="m46 60.1 82-24.6 82 24.6v109.8l-82 24.6-82-24.6Z"/></g><!--Left/right faces are separate fills that butt at x=128; each slab's
-         silhouette is one stroked path so the centre seam stays bare.--><!--Top face, hollowed at the hexagon inset 10px so the tile gradient shows
-         through the ring band.--><path fill="#dfe5ec" fill-rule="evenodd" d="m58 69 70-21 70 21v38l-70 21-70-21Zm10 7.4 60-18 60 18v23.2l-60 18-60-18Z"/><!--Inner hexagon (inset 15px).--><path fill="#31629e" d="m73 80.2 55-16.5 55 16.5v15.6l-55 16.5-55-16.5Z"/><path fill="#9aa5b3" d="m58 112 70 21v22l-70-21Z"/><path fill="#6c7683" d="M198 112v22l-70 21v-22Z"/><path fill="#4e8cd9" d="m58 139 70 21v22l-70-21Z"/><path fill="#31629e" d="M198 139v22l-70 21v-22Z"/><!--2.5 = half the 5px slab spacing, so stroke and visible gap are equal.--><g fill="none" stroke="#5b6674" stroke-linejoin="round" stroke-width="2.5"><path d="m58 69 70-21 70 21v38l-70 21-70-21Z"/><path d="m58 112 70 21 70-21v22l-70 21-70-21Z"/><path stroke="#1f4576" d="m58 139 70 21 70-21v22l-70 21-70-21Z"/><path d="m68 76.4 60-18 60 18v23.2l-60 18-60-18Z"/><path stroke="#1f4576" d="m73 80.2 55-16.5 55 16.5v15.6l-55 16.5-55-16.5Z"/></g></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" aria-label="Basalt DB Studio" viewBox="0 0 256 256">
+  <title>Basalt DB Studio</title>
+
+  <!--
+    The app icon: what the OS renders (taskbar, installer, favicon), where there
+    is no theme to read. Its palette is fixed by necessity and exempt from the
+    token rules (DESIGN §1) — but it is not arbitrary. It is `BrandMark.svelte`
+    as the Monochrome theme draws it, composited onto a tile:
+
+      tone     #f3f3f3   monochrome-dark on-surface   (BrandMark's currentColor)
+      accent   #eeeeee   monochrome-dark primary
+      tile     #1d1d1d → #111111   its surface → background
+
+    The faces carry `fill-opacity` rather than eight pre-mixed colours, so each
+    one composites over the gradient the same way BrandMark composites over a
+    surface — the same numbers, and no baked approximation that only lands at one
+    point of the tile.
+
+    In monochrome the accent *is* white, so the gem and the lit slab sit at the
+    same tone as the top face. The stack still reads: what separates the slabs is
+    the opacity ladder (1 · 0.55 · 0.3) and the bare gaps between them, which is
+    what carried it in the coloured version too.
+  -->
+  <defs>
+    <linearGradient id="tile" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#1d1d1d"/>
+      <stop offset="1" stop-color="#111111"/>
+    </linearGradient>
+    <!-- The rim: a light source at the top-left, in neutral grey rather than the
+         blue-grey it used to be. -->
+    <linearGradient id="rim" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#5c5c5c"/>
+      <stop offset="1" stop-color="#242424"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" fill="url(#tile)" rx="50"/>
+  <rect width="253" height="253" x="1.5" y="1.5" fill="none" stroke="url(#rim)" stroke-width="3" rx="48.5"/>
+
+  <g transform="translate(-15.36 -.8)scale(1.12)">
+    <!--Outer frame: the stack's own silhouette hexagon, offset 12px outward on
+        every edge, so it stays parallel to the mark all the way round. Three
+        passes on one path build the band outwards from the centre:
+        bevel 2.5 | recess 2 | lit 6 | recess 2 | bevel 2.5.
+
+        The recess pass is the tile's own dark end rather than transparent: it
+        has to sit *under* the light band, and a stroke cannot subtract.-->
+    <g fill="none" stroke-linejoin="round">
+      <path stroke="#f3f3f3" stroke-opacity=".28" stroke-width="15" d="m46 60.1 82-24.6 82 24.6v109.8l-82 24.6-82-24.6Z"/>
+      <path stroke="#111111" stroke-width="10" d="m46 60.1 82-24.6 82 24.6v109.8l-82 24.6-82-24.6Z"/>
+      <path stroke="#f3f3f3" stroke-width="6" d="m46 60.1 82-24.6 82 24.6v109.8l-82 24.6-82-24.6Z"/>
+    </g>
+
+    <!--Top face, hollowed at the hexagon inset 10px so the tile gradient shows
+        through the ring band.-->
+    <path fill="#f3f3f3" fill-rule="evenodd" d="m58 69 70-21 70 21v38l-70 21-70-21Zm10 7.4 60-18 60 18v23.2l-60 18-60-18Z"/>
+    <!--Inner hexagon (inset 15px) — the accent.-->
+    <path fill="#eeeeee" d="m73 80.2 55-16.5 55 16.5v15.6l-55 16.5-55-16.5Z"/>
+
+    <!--Left/right faces are separate fills that butt at x=128; each slab's
+        silhouette is one stroked path so the centre seam stays bare. The middle
+        slab is stone, the bottom one is the lit accent slab.-->
+    <path fill="#f3f3f3" fill-opacity=".55" d="m58 112 70 21v22l-70-21Z"/>
+    <path fill="#f3f3f3" fill-opacity=".3" d="M198 112v22l-70 21v-22Z"/>
+    <path fill="#eeeeee" d="m58 139 70 21v22l-70-21Z"/>
+    <path fill="#eeeeee" fill-opacity=".55" d="M198 139v22l-70 21v-22Z"/>
+
+    <!--2.5 = half the 5px slab spacing, so stroke and visible gap are equal. One
+        grey for every seam now: the coloured version needed a second, darker
+        stroke on the blue slabs to stay darker than them, and with no hue left
+        there is nothing for it to distinguish.-->
+    <g fill="none" stroke="#6e6e6e" stroke-linejoin="round" stroke-width="2.5">
+      <path d="m58 69 70-21 70 21v38l-70 21-70-21Z"/>
+      <path d="m58 112 70 21 70-21v22l-70 21-70-21Z"/>
+      <path d="m58 139 70 21 70-21v22l-70 21-70-21Z"/>
+      <path d="m68 76.4 60-18 60 18v23.2l-60 18-60-18Z"/>
+      <path d="m73 80.2 55-16.5 55 16.5v15.6l-55 16.5-55-16.5Z"/>
+    </g>
+  </g>
+</svg>

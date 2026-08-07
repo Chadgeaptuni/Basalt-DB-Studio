@@ -93,6 +93,16 @@ carry their own fixed palette and are exempt from the color token and
 no-gradient rules. They are what the *OS* renders — taskbar, installer, favicon
 — where there is no theme to read, so a fixed palette is the only option.
 
+Fixed is not arbitrary: that palette is `BrandMark.svelte` as the **Monochrome**
+theme draws it (`on-surface` for the tone, `primary` for the accent, its surfaces
+for the tile), with the faces carrying `fill-opacity` rather than pre-mixed
+colours so they composite over the tile gradient exactly as the component
+composites over a surface. Regenerate `src-tauri/icons/` with
+`pnpm tauri icon public/icon.svg` after any edit, and delete the `android/` and
+`ios/` output — this project ships neither. Note that `--` may not appear inside
+an XML comment, so a token name written in one has to lose its dashes; browsers
+tolerate it and the icon generator's parser does not.
+
 **The mark inside the app is not one of them.** It is `BrandMark.svelte`, an
 inline SVG drawn in `currentColor` and `--primary` and nothing else, so it
 repaints with the theme like every other pixel. Rendering the asset in-app is

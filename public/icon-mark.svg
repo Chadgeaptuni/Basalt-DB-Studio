@@ -1,120 +1,50 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg
-   width="256"
-   height="256"
-   aria-label="Basalt DB Studio"
-   viewBox="0 0 256 256"
-   version="1.1"
-   id="svg15"
-   sodipodi:docname="icon-mark.svg"
-   inkscape:version="1.3 (0e150ed, 2023-07-21)"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg">
-  <defs
-     id="defs15" />
-  <sodipodi:namedview
-     id="namedview15"
-     pagecolor="#ffffff"
-     bordercolor="#000000"
-     borderopacity="0.25"
-     inkscape:showpageshadow="2"
-     inkscape:pageopacity="0.0"
-     inkscape:pagecheckerboard="0"
-     inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="1.390625"
-     inkscape:cx="128"
-     inkscape:cy="127.64045"
-     inkscape:window-width="1392"
-     inkscape:window-height="1212"
-     inkscape:window-x="2240"
-     inkscape:window-y="30"
-     inkscape:window-maximized="0"
-     inkscape:current-layer="svg15" />
-  <title
-     id="title1">Basalt DB Studio</title>
-  <g
-     transform="matrix(1.3369355,0,0,1.3369355,-43.127748,-25.747586)"
-     id="g15">
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" aria-label="Basalt DB Studio" viewBox="0 0 256 256">
+  <title>Basalt DB Studio</title>
+
+  <!--
+    The bare mark, with no tile behind it — `icon.svg` is this plus the rounded
+    square the OS shows. Same fixed palette, and the same reasoning: it is
+    `BrandMark.svelte` as the Monochrome theme draws it.
+
+      tone     #f3f3f3   monochrome-dark on-surface
+      accent   #eeeeee   monochrome-dark primary
+
+    The frame's recess ring stays a literal dark grey rather than transparent:
+    the band is three concentric strokes and a stroke cannot subtract, so the
+    middle pass has to paint something. It matches the tile's dark end so the two
+    assets agree where they overlap.
+  -->
+  <g transform="matrix(1.3369355,0,0,1.3369355,-43.127748,-25.747586)">
     <!--Outer frame: the stack's own silhouette hexagon, offset 12px outward on
-         every edge, so it stays parallel to the mark all the way round. Three
-         passes on one path build the band outwards from the centre:
-         grey 2.5 | dark 2 | light 6 | dark 2 | grey 2.5.-->
-    <g
-       fill="none"
-       stroke-linejoin="round"
-       id="g3">
-      <path
-         stroke="#5b6674"
-         stroke-width="15"
-         d="m 46,60.1 82,-24.6 82,24.6 v 109.8 l -82,24.6 -82,-24.6 z"
-         id="path1" />
-      <path
-         stroke="#070a0d"
-         stroke-width="10"
-         d="m 46,60.1 82,-24.6 82,24.6 v 109.8 l -82,24.6 -82,-24.6 z"
-         id="path2" />
-      <path
-         stroke="#dfe5ec"
-         stroke-width="6"
-         d="m 46,60.1 82,-24.6 82,24.6 v 109.8 l -82,24.6 -82,-24.6 z"
-         id="path3" />
+        every edge, so it stays parallel to the mark all the way round. Three
+        passes on one path build the band outwards from the centre:
+        bevel 2.5 | recess 2 | lit 6 | recess 2 | bevel 2.5.-->
+    <g fill="none" stroke-linejoin="round">
+      <path stroke="#f3f3f3" stroke-opacity=".28" stroke-width="15" d="m 46,60.1 82,-24.6 82,24.6 v 109.8 l -82,24.6 -82,-24.6 z"/>
+      <path stroke="#111111" stroke-width="10" d="m 46,60.1 82,-24.6 82,24.6 v 109.8 l -82,24.6 -82,-24.6 z"/>
+      <path stroke="#f3f3f3" stroke-width="6" d="m 46,60.1 82,-24.6 82,24.6 v 109.8 l -82,24.6 -82,-24.6 z"/>
     </g>
-    <!--Left/right faces are separate fills that butt at x=128; each slab's
-         silhouette is one stroked path so the centre seam stays bare.-->
+
     <!--Top face, hollowed at the hexagon inset 10px so the backdrop shows
-         through the ring band.-->
-    <path
-       fill="#dfe5ec"
-       fill-rule="evenodd"
-       d="m 58,69 70,-21 70,21 v 38 l -70,21 -70,-21 z m 10,7.4 60,-18 60,18 v 23.2 l -60,18 -60,-18 z"
-       id="path4" />
-    <!--Inner hexagon (inset 15px).-->
-    <path
-       fill="#31629e"
-       d="m 73,80.2 55,-16.5 55,16.5 V 95.8 L 128,112.3 73,95.8 Z"
-       id="path5" />
-    <path
-       fill="#9aa5b3"
-       d="m 58,112 70,21 v 22 L 58,134 Z"
-       id="path6" />
-    <path
-       fill="#6c7683"
-       d="m 198,112 v 22 l -70,21 v -22 z"
-       id="path7" />
-    <path
-       fill="#4e8cd9"
-       d="m 58,139 70,21 v 22 L 58,161 Z"
-       id="path8" />
-    <path
-       fill="#31629e"
-       d="m 198,139 v 22 l -70,21 v -22 z"
-       id="path9" />
+        through the ring band.-->
+    <path fill="#f3f3f3" fill-rule="evenodd" d="m 58,69 70,-21 70,21 v 38 l -70,21 -70,-21 z m 10,7.4 60,-18 60,18 v 23.2 l -60,18 -60,-18 z"/>
+    <!--Inner hexagon (inset 15px) — the accent.-->
+    <path fill="#eeeeee" d="m 73,80.2 55,-16.5 55,16.5 V 95.8 L 128,112.3 73,95.8 Z"/>
+
+    <!--Left/right faces are separate fills that butt at x=128; each slab's
+        silhouette is one stroked path so the centre seam stays bare.-->
+    <path fill="#f3f3f3" fill-opacity=".55" d="m 58,112 70,21 v 22 L 58,134 Z"/>
+    <path fill="#f3f3f3" fill-opacity=".3" d="m 198,112 v 22 l -70,21 v -22 z"/>
+    <path fill="#eeeeee" d="m 58,139 70,21 v 22 L 58,161 Z"/>
+    <path fill="#eeeeee" fill-opacity=".55" d="m 198,139 v 22 l -70,21 v -22 z"/>
+
     <!--2.5 = half the 5px slab spacing, so stroke and visible gap are equal.-->
-    <g
-       fill="none"
-       stroke="#5b6674"
-       stroke-linejoin="round"
-       stroke-width="2.5"
-       id="g14">
-      <path
-         d="m 58,69 70,-21 70,21 v 38 l -70,21 -70,-21 z"
-         id="path10" />
-      <path
-         d="m 58,112 70,21 70,-21 v 22 l -70,21 -70,-21 z"
-         id="path11" />
-      <path
-         stroke="#1f4576"
-         d="m 58,139 70,21 70,-21 v 22 l -70,21 -70,-21 z"
-         id="path12" />
-      <path
-         d="m 68,76.4 60,-18 60,18 v 23.2 l -60,18 -60,-18 z"
-         id="path13" />
-      <path
-         stroke="#1f4576"
-         d="m 73,80.2 55,-16.5 55,16.5 V 95.8 L 128,112.3 73,95.8 Z"
-         id="path14" />
+    <g fill="none" stroke="#6e6e6e" stroke-linejoin="round" stroke-width="2.5">
+      <path d="m 58,69 70,-21 70,21 v 38 l -70,21 -70,-21 z"/>
+      <path d="m 58,112 70,21 70,-21 v 22 l -70,21 -70,-21 z"/>
+      <path d="m 58,139 70,21 70,-21 v 22 l -70,21 -70,-21 z"/>
+      <path d="m 68,76.4 60,-18 60,18 v 23.2 l -60,18 -60,-18 z"/>
+      <path d="m 73,80.2 55,-16.5 55,16.5 V 95.8 L 128,112.3 73,95.8 Z"/>
     </g>
   </g>
 </svg>
