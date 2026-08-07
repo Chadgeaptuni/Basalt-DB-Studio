@@ -3,7 +3,7 @@
 Basalt DB Studio is an open-source, cross-platform database GUI (PostgreSQL,
 MySQL/MariaDB, SQLite) — a lightweight, polished, keyboard-driven alternative to
 DBeaver/Beekeeper. Built with **Tauri 2 (Rust backend, sqlx) + Svelte 5 (runes) +
-Vite + Tailwind CSS v4 + CodeMirror 6**. MIT licensed.
+Vite + Tailwind CSS v4 + CodeMirror 6**. GPL-3.0-only.
 
 Frontend lives at `src/`, backend at `src-tauri/src/`. Use `pnpm` (not npm/yarn)
 for JS; run `cargo` from inside `src-tauri/`.

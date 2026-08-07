@@ -1,6 +1,7 @@
 //! Thin `#[tauri::command]` handlers, one file per domain (added M1+). Commands
 //! deserialize, call a service, and map the error — no business logic here.
 
+pub mod app_info;
 pub mod connections;
 pub mod ddl;
 pub mod export;

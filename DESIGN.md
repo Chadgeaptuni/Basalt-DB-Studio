@@ -331,6 +331,19 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
   ends at the same one, and a new setting is one more row rather than a relayout.
   `SettingRow` hands its label text to the control snippet — the control is a
   sibling of the label, not inside it, so it cannot inherit the accessible name.
+  Rows sit inside a `SettingsGroup`: one border around the group, hairlines
+  between, an optional overline title. Every settings pane uses it, so no pane
+  writes its own `divide-y … rounded-sm border …` container.
+- **About is pinned to the foot of the settings sidebar**, the way the nav rail
+  pins Settings — it reports on the app rather than configuring it. Its job is
+  the moment someone files an issue, so every value is exact and nothing is
+  inferred: build facts and the target triple come from Rust
+  (`commands/app_info.rs`), locale and display from the webview, and **the OS
+  version appears nowhere**, because it cannot be read without another crate and
+  the free sources lie (WebView2 reports `Windows NT 10.0` on Windows 11). A
+  field that is confidently wrong is worse in a bug report than one that is
+  absent. One [Copy diagnostics] button emits the set as `key: value` lines that
+  survive a markdown code fence (`utils/diagnostics.ts`).
 - **Forms** (connection editor, table designer): single column, `label above
   input` via the `Field` primitive — never a hand-written `<label><span
   class="text-label-sm …">` block. 12-col grid only when pairing short fields

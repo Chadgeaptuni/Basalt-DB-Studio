@@ -7,6 +7,8 @@
   import Kbd from "$lib/components/ui/Kbd.svelte";
   import ListItem from "$lib/components/ui/ListItem.svelte";
   import SettingRow from "./SettingRow.svelte";
+  import SettingsGroup from "./SettingsGroup.svelte";
+  import AboutTab from "./AboutTab.svelte";
   import ThemePicker from "./ThemePicker.svelte";
   import { THEME_DEFINITIONS } from "./themeDefinitions";
   import { settings } from "$lib/stores/settings.svelte";
@@ -18,6 +20,7 @@
   import Sliders from "@lucide/svelte/icons/sliders-horizontal";
   import Palette from "@lucide/svelte/icons/palette";
   import Keyboard from "@lucide/svelte/icons/keyboard";
+  import Info from "@lucide/svelte/icons/info";
   import X from "@lucide/svelte/icons/x";
 
   interface Props {
@@ -29,7 +32,7 @@
   // Seed only — the dialog is mounted per open, so later prop changes are moot.
   let activeTab = $state<SettingsTab>(untrack(() => initialTab));
 
-  const DESTINATIONS = [
+  const SECTIONS = [
     {
       id: "general",
       label: "General",
@@ -49,7 +52,18 @@
       blurb: "Keyboard shortcuts for quick navigation and control.",
     },
   ] as const;
-  const current = $derived(DESTINATIONS.find((d) => d.id === activeTab)!);
+
+  // Pinned to the foot of the list, the way the nav rail pins Settings: About
+  // reports on the app rather than configuring it, so it does not belong in the
+  // run of preference panes above.
+  const ABOUT = {
+    id: "about",
+    label: "About",
+    icon: Info,
+    blurb: "Version, build and device details for this install.",
+  } as const;
+
+  const current = $derived([...SECTIONS, ABOUT].find((d) => d.id === activeTab)!);
 
   const datetimeOptions: SelectOption[] = [
     { value: "stored", label: "As stored (raw)" },
@@ -69,7 +83,7 @@
         Settings
       </span>
 
-      {#each DESTINATIONS as dest (dest.id)}
+      {#each SECTIONS as dest (dest.id)}
         <ListItem
           headline={dest.label}
           icon={dest.icon}
@@ -77,6 +91,15 @@
           onclick={() => (activeTab = dest.id)}
         />
       {/each}
+
+      <div class="mt-auto border-t border-outline-variant pt-2">
+        <ListItem
+          headline={ABOUT.label}
+          icon={ABOUT.icon}
+          selected={activeTab === ABOUT.id}
+          onclick={() => (activeTab = ABOUT.id)}
+        />
+      </div>
     </nav>
 
     <!-- Right Main Content Panel -->
@@ -99,10 +122,7 @@
                and a second "General Preferences" title would just repeat it. One
                bordered list, hairlines between the rows — the border belongs to
                the group, not to each setting inside it. -->
-          <div
-            class="divide-y divide-outline-variant overflow-hidden rounded-sm border
-              border-outline-variant bg-surface"
-          >
+          <SettingsGroup>
             <SettingRow
               label="Date and time display"
               hint="How timestamp columns are rendered in every data grid. Stored values are never rewritten."
@@ -134,7 +154,7 @@
                 />
               {/snippet}
             </SettingRow>
-          </div>
+          </SettingsGroup>
         {:else if activeTab === "appearance"}
           <section class="flex flex-col gap-3">
             <div class="flex items-center justify-between gap-3">
@@ -153,33 +173,26 @@
             </div>
             <ThemePicker />
           </section>
-        {:else}
+        {:else if activeTab === "shortcuts"}
           <div class="flex flex-col gap-6">
             {#each SHORTCUT_GROUPS as group (group.title)}
-              <section class="flex flex-col gap-2">
-                <h3 class="text-label-sm tracking-wider text-on-surface-muted uppercase">
-                  {group.title}
-                </h3>
-
-                <div
-                  class="flex flex-col divide-y divide-outline-variant rounded-sm border
-                    border-outline-variant bg-surface/40"
-                >
-                  {#each group.items as item (item.label)}
-                    <div class="flex items-center justify-between gap-3 px-3.5 py-2.5">
-                      <div class="flex min-w-0 items-center gap-3">
-                        <item.icon size={15} class="shrink-0 text-on-surface-muted" />
-                        <span class="truncate text-body-sm text-on-surface-variant">{item.label}</span>
-                      </div>
-                      <div class="flex shrink-0 items-center gap-1">
-                        {#each item.combos as combo (combo)}<Kbd {combo} />{/each}
-                      </div>
+              <SettingsGroup title={group.title}>
+                {#each group.items as item (item.label)}
+                  <div class="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                    <div class="flex min-w-0 items-center gap-3">
+                      <item.icon size={15} class="shrink-0 text-on-surface-muted" />
+                      <span class="truncate text-body-sm text-on-surface-variant">{item.label}</span>
                     </div>
-                  {/each}
-                </div>
-              </section>
+                    <div class="flex shrink-0 items-center gap-1">
+                      {#each item.combos as combo (combo)}<Kbd {combo} />{/each}
+                    </div>
+                  </div>
+                {/each}
+              </SettingsGroup>
             {/each}
           </div>
+        {:else}
+          <AboutTab />
         {/if}
       </div>
     </div>

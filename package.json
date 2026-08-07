@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Lightweight, cross-platform database GUI (PostgreSQL, MySQL/MariaDB, SQLite)",
   "type": "module",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "packageManager": "pnpm@10.18.3",
   "scripts": {
     "dev": "vite",

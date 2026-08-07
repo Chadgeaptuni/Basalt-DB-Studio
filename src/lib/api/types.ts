@@ -283,3 +283,26 @@ export interface AppSettings {
   defaultRowLimit: number;
   datetimeDisplay: DatetimeDisplay;
 }
+
+// ── About ─────────────────────────────────────────────────────────────────────
+// Mirrors src-tauri/src/commands/app_info.rs. Build and runtime facts, all of
+// them compile-time constants, values Tauri already holds, or one `os_info` probe.
+
+export interface AppInfo {
+  name: string;
+  version: string;
+  identifier: string;
+  tauriVersion: string;
+  /** Null when the runtime declines to report it — a real state, not an error. */
+  webviewVersion: string | null;
+  /** The OS as a person names it: "Windows 11", "Mac OS", "Ubuntu". */
+  osName: string;
+  /** The build number under that name — `10.0.26200` for a Windows 11. */
+  osVersion: string | null;
+  /** Target triple parts: what the binary was *built* for. */
+  os: string;
+  arch: string;
+  family: string;
+  /** True for `tauri dev` builds. */
+  debug: boolean;
+}

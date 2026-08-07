@@ -3,7 +3,7 @@
 Open-source, cross-platform database GUI. A lightweight, polished alternative to
 DBeaver / Beekeeper Studio / pgAdmin. Query + admin in one app.
 
-- **License:** MIT
+- **License:** GPL-3.0-only
 - **Stack:** Tauri 2 · Svelte 5 (runes) + Vite · Tailwind CSS v4 · CodeMirror 6 · Lucide icons
 - **Backend:** Rust, `sqlx` 0.9
 - **v1 design:** 2026-07-21 · **v2 (implementation guide):** 2026-07-22

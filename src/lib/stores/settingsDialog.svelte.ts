@@ -6,7 +6,7 @@
 // The tab lives here rather than in the component so the openers name a tab
 // without importing the dialog.
 
-export type SettingsTab = "general" | "appearance" | "shortcuts";
+export type SettingsTab = "general" | "appearance" | "shortcuts" | "about";
 
 let tab = $state<SettingsTab | null>(null);
 

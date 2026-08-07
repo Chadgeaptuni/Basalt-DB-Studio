@@ -5,7 +5,7 @@ description = "Lightweight, cross-platform database GUI (PostgreSQL, MySQL/Maria
 authors = ["Basalt DB Studio contributors"]
 edition = "2021"
 rust-version = "1.94"
-license = "MIT"
+license = "GPL-3.0-only"
 
 [lib]
 # `_lib` suffix keeps the lib name distinct from the bin (Windows linker quirk,
@@ -21,6 +21,13 @@ tauri = { version = "2", features = [] }
 tauri-plugin-updater = "2"
 # File open/save dialogs for CSV/JSON import & export (M5).
 tauri-plugin-dialog = "2"
+# The OS version for the About tab. Used from Rust only — the JS side is never
+# registered, because `app_info` already answers in one call.
+tauri-plugin-os = "2"
+# The plugin's own dependency, declared so `edition()` is reachable: its
+# `version()` reports 10.0.26200 on Windows 11, and `edition()` is the field that
+# turns that into the name a person would give. No extra weight — same crate.
+os_info = "3"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"

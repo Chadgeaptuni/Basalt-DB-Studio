@@ -67,7 +67,8 @@ there is no generic error path, by design.
 
 ## Brand Commitments
 
-- Name: Basalt DB Studio. MIT licensed, open source.
+- Name: Basalt DB Studio. Free software under the GNU GPL v3 (`GPL-3.0-only`).
+  A copyleft licence, not a permissive one: derivative works stay open.
 - The brand mark's *asset files* (`public/icon.svg`, `public/icon-mark.svg`, and
   the generated `src-tauri/icons/`) carry a fixed palette and are exempt from the
   UI color rules — they are what the OS renders, where there is no theme to read.

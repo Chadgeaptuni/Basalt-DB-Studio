@@ -1,6 +1,6 @@
 # Basalt DB Studio
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Tauri](https://img.shields.io/badge/Tauri-v2-orange.svg)](https://v2.tauri.app)
 [![Svelte](https://img.shields.io/badge/Svelte-v5-ff3e00.svg)](https://svelte.dev)
 [![Rust](https://img.shields.io/badge/Rust-1.94%2B-000000.svg)](https://www.rust-lang.org)
@@ -189,4 +189,8 @@ The codebase maintains strict quality gates and complete test coverage:
 
 ## License
 
-This project is open-source under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+This project is free software under the **GNU General Public License v3.0**. See the
+[LICENSE](LICENSE) file for the full terms.
+
+It comes with absolutely no warranty. You are welcome to redistribute it under the
+terms of the GPL, and any derivative work must be released under the same licence.
