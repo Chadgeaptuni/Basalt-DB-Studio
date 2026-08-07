@@ -70,9 +70,10 @@
   <!-- Sized to its content, not to a minimum: in a 32px bar a fixed-width pill
        reads as a form control wedged into the chrome. No border either — the bar
        is already a distinct surface, so the state layer alone marks it as
-       pressable (DESIGN §2). -->
+       pressable (DESIGN §2). 28px is the dense control tier (DESIGN §5) and what
+       every other control in the status bar stands at. -->
   <Popover.Trigger
-    class="flex h-6 max-w-72 items-center gap-1.5 rounded-full px-2 text-data
+    class="flex h-7 max-w-72 items-center gap-1.5 rounded-full px-2 text-data
       {stateLayer} {focusRing}"
     title="Connection"
   >

@@ -68,9 +68,11 @@ there is no generic error path, by design.
 ## Brand Commitments
 
 - Name: Basalt DB Studio. MIT licensed, open source.
-- The brand mark (`public/icon.svg`, `public/icon-mark.svg`, and the generated
-  `src-tauri/icons/`) carries its own fixed palette and is exempt from the UI
-  color rules. The exemption covers those files only.
+- The brand mark's *asset files* (`public/icon.svg`, `public/icon-mark.svg`, and
+  the generated `src-tauri/icons/`) carry a fixed palette and are exempt from the
+  UI color rules — they are what the OS renders, where there is no theme to read.
+  The mark *inside* the app is `BrandMark.svelte`, drawn from theme tokens, and
+  is not exempt. The exemption covers those three paths only.
 - Reference family for the interface: professional data tools (Linear,
   DataGrip, lazygit) — a tool, not a marketing site.
 - Material 3 is adopted at the **colour-role layer only** — surface-container

@@ -32,6 +32,17 @@ export const zoom = {
   get level() {
     return level;
   },
+  /**
+   * Whether a step would change anything. The status bar's stepper disables its
+   * buttons on these rather than letting a click at the end of the range look
+   * broken — `clamp` would silently return the same level.
+   */
+  get canIn() {
+    return level < MAX;
+  },
+  get canOut() {
+    return level > MIN;
+  },
   /** Write persisted zoom to #app before first paint (main.ts). */
   apply,
   in: () => set(level + STEP),

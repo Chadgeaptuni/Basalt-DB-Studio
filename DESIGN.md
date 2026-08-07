@@ -87,12 +87,18 @@ If proposed code contains `bg-gradient-`, `backdrop-blur`, a colour literal, an
 off-scale radius, a raw text size, a hand-written hover, or a shadow on a
 non-floating element — **rewrite it before presenting it**.
 
-**Single exception — the brand mark.** `public/icon.svg`, `public/icon-mark.svg`,
-and the icons generated from them (`src-tauri/icons/`) are brand assets, not UI:
-they carry their own fixed palette and gradients and are exempt from the color
-token and no-gradient rules. The exemption covers those files only — it never
-extends to components that render them, and no other SVG or component may embed
-literal colors on the grounds of being "logo-like".
+**Single exception — the brand mark's asset files.** `public/icon.svg`,
+`public/icon-mark.svg`, and the icons generated from them (`src-tauri/icons/`)
+carry their own fixed palette and are exempt from the color token and
+no-gradient rules. They are what the *OS* renders — taskbar, installer, favicon
+— where there is no theme to read, so a fixed palette is the only option.
+
+**The mark inside the app is not one of them.** It is `BrandMark.svelte`, an
+inline SVG drawn in `currentColor` and `--primary` and nothing else, so it
+repaints with the theme like every other pixel. Rendering the asset in-app is
+the failure this replaced: its near-white top face disappeared into any light
+theme. The exemption covers those three asset paths only — no other SVG or
+component may embed literal colors on the grounds of being "logo-like".
 
 ## 2. Depth & Surface Model
 
@@ -250,9 +256,18 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
   appearance · window controls) · **navigation rail** on the left (Schema ·
   Queries · History · Git, with Settings in a trailing group) · one **full-height
   panel** for the rail's active destination · main workspace (editor tabs above,
-  results below, both in a `SplitPane`) · bottom `StatusBar` (connection with its
-  environment badge, tx state, row count, duration, row-limit notice, zoom). All
-  resizable panes use the shared `SplitPane` primitive.
+  results below, both in a `SplitPane`) · bottom `StatusBar`. All resizable panes
+  use the shared `SplitPane` primitive.
+- **The status bar has three zones, divided by hairlines, and a new item joins
+  one of them.** *Leading* — how the workspace is set up (panel toggle,
+  connection with its environment badge). *Session* — what is true about the
+  statement that just ran (tx badge, row count, row-limit badge, duration); every
+  item is conditional and the zone disappears with its divider, so an idle bar
+  carries no empty scaffolding. *Trailing* — controls for the view rather than
+  state (the zoom stepper), right-aligned. Zones are separated by 1px lines, not
+  by gaps: at 32px there is no room to space groups far enough apart to read as
+  groups. Metrics render value-bright/unit-muted with no punctuation between
+  them. Every control in the bar stands at the 28px dense tier.
 - **Three bars, three jobs, and nothing crosses over.** The top bar is
   *navigation* — where you go. The status bar is *session state* — what is true
   right now. The rail is *destinations*, with app-level actions in its trailing

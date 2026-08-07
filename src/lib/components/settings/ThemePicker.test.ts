@@ -19,15 +19,23 @@ afterEach(() => {
 });
 
 describe("ThemePicker", () => {
-  it("offers every variant alongside one row per palette", () => {
-    render(ThemePicker);
+  // The one place that mounts every palette in the app at once, and it pays the
+  // component's cold compile on top. Under the suite's parallel load that lands
+  // either side of the 5 s default, so the budget is stated rather than left to
+  // whatever else the machine is doing — the assertions below are unchanged.
+  it(
+    "offers every variant alongside one row per palette",
+    () => {
+      render(ThemePicker);
 
-    for (const label of ["Light", "Dark", "OLED"]) {
-      expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
-    }
-    // A palette is one row — the appearance is the separate variant choice.
-    expect(screen.getAllByRole("button", { name: /^Catppuccin/ })).toHaveLength(1);
-  });
+      for (const label of ["Light", "Dark", "OLED"]) {
+        expect(screen.getByRole("button", { name: label })).toBeInTheDocument();
+      }
+      // A palette is one row — the appearance is the separate variant choice.
+      expect(screen.getAllByRole("button", { name: /^Catppuccin/ })).toHaveLength(1);
+    },
+    20_000,
+  );
 
   it("switches the variant without changing the palette", async () => {
     render(ThemePicker);
