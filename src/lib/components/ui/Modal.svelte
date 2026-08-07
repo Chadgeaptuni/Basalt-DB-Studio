@@ -3,7 +3,7 @@
   import { Dialog } from "bits-ui";
   import X from "@lucide/svelte/icons/x";
   import IconButton from "./IconButton.svelte";
-  import { dialogIn, dialogOut, uiFade } from "$lib/utils/motion";
+  import { dialogIn, dialogOut, scrimIn, scrimOut } from "$lib/utils/motion";
 
   interface Props {
     open?: boolean;
@@ -57,8 +57,9 @@
     <Dialog.Overlay forceMount>
       {#snippet child({ props, open: overlayOpen })}
         {#if overlayOpen}
-          <!-- Scrim: dimmed --surface, no blur (DESIGN §6). -->
-          <div {...props} class="fixed inset-0 z-50 bg-surface/60" transition:uiFade></div>
+          <!-- Scrim: dimmed --surface, no blur (DESIGN §6). Timed to the frame,
+               not to itself — see `scrimIn` for what that was costing. -->
+          <div {...props} class="fixed inset-0 z-50 bg-surface/60" in:scrimIn out:scrimOut></div>
         {/if}
       {/snippet}
     </Dialog.Overlay>

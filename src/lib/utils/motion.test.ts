@@ -6,6 +6,7 @@ import {
   dialogIn,
   dialogOut,
   EASE_EMPHASIZED,
+  EASE_EMPHASIZED_ACCELERATE,
   EASE_STANDARD,
   fadeThroughIn,
   fadeThroughOut,
@@ -13,6 +14,8 @@ import {
   panelOut,
   popIn,
   popOut,
+  scrimIn,
+  scrimOut,
   sheetIn,
   sheetOut,
   toastIn,
@@ -54,6 +57,8 @@ describe("motion", () => {
     popOut,
     dialogIn,
     dialogOut,
+    scrimIn,
+    scrimOut,
     sheetIn,
     sheetOut,
     panelIn,
@@ -97,6 +102,7 @@ describe("motion", () => {
     const pairs = {
       pop: [popIn, popOut],
       dialog: [dialogIn, dialogOut],
+      scrim: [scrimIn, scrimOut],
       sheet: [sheetIn, sheetOut],
       panel: [panelIn, panelOut],
       toast: [toastIn, toastOut],
@@ -104,6 +110,28 @@ describe("motion", () => {
     for (const [name, [enter, exit]] of Object.entries(pairs)) {
       expect(lasts(exit(node())), name).toBeLessThan(lasts(enter(node())));
     }
+  });
+
+  // The scrim and the frame are one surface as far as the eye is concerned. When
+  // they ran at different durations the backdrop finished first on the way in and
+  // vanished first on the way out, leaving the dialog hanging over a live,
+  // undimmed app — which is what "abrupt" turned out to mean.
+  it("moves the scrim on the dialog's clock, both ways", () => {
+    matchReduced(false);
+    expect(scrimIn(node()).duration).toBe(dialogIn(node()).duration);
+    expect(scrimOut(node()).duration).toBe(dialogOut(node()).duration);
+  });
+
+  // The exit does not retrace the entrance: a frame travelling back down on
+  // dismissal pulls the eye after it instead of returning it to the app.
+  it("gives the dialog travel on the way in and none on the way out", () => {
+    matchReduced(false);
+    const at = (fn: (n: Element) => { css?: (t: number, u: number) => string }, t: number) =>
+      fn(node()).css?.(t, 1 - t) ?? "";
+
+    expect(at(dialogIn, 0)).toContain("translateY(8px)");
+    expect(at(dialogIn, 1)).toContain("translateY(0px)");
+    expect(at(dialogOut, 0)).not.toContain("translateY");
   });
 
   // DESIGN §7: nothing over 300 ms.
@@ -129,11 +157,17 @@ describe("motion", () => {
       }
     });
 
-    // Both curves decelerate — most of the distance is covered early — which is
-    // the whole reason for using them over `linear`.
-    it("front-loads the distance", () => {
+    // The entrance curves decelerate — most of the distance is covered early —
+    // which is the whole reason for using them over `linear`.
+    it("front-loads the distance on the entrance curves", () => {
       expect(cubicBezier(EASE_STANDARD)(0.5)).toBeGreaterThan(0.5);
       expect(cubicBezier(EASE_EMPHASIZED)(0.5)).toBeGreaterThan(0.5);
+    });
+
+    // And the exit curve does the opposite: it holds, then leaves. A dialog
+    // dismissed on a decelerating curve looks reluctant to go.
+    it("back-loads the distance on the exit curve", () => {
+      expect(cubicBezier(EASE_EMPHASIZED_ACCELERATE)(0.5)).toBeLessThan(0.5);
     });
 
     it("resolves a straight line exactly", () => {
@@ -158,6 +192,7 @@ describe("motion", () => {
 
     expect(points("standard")).toEqual([...EASE_STANDARD]);
     expect(points("emphasized")).toEqual([...EASE_EMPHASIZED]);
+    expect(points("emphasized-accelerate")).toEqual([...EASE_EMPHASIZED_ACCELERATE]);
   });
 
   // The reason the helpers can be trusted: nothing bypasses them. A raw

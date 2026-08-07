@@ -63,9 +63,15 @@
   --shadow-e2: var(--elevation-2);
   --shadow-e3: var(--elevation-3);
 
-  /* M3 motion — `standard` for everything routine, `emphasized` for entrances. */
+  /* M3 motion. `standard` for everything routine. `emphasized` is M3's
+     *emphasized decelerate*: it covers most of the distance early and settles,
+     which is what an entrance wants. `emphasized-accelerate` is its exit
+     partner — it starts slow and leaves fast, so a surface reads as being
+     dismissed rather than as retracing its entrance backwards. A dialog that
+     exits on a decelerating curve looks like it is reluctant to go. */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
 
   /* M3 type scale (DESIGN §4), desktop density −2. A component names the role it
      means; it never picks a size. Sizes are px, not rem: the app has its own

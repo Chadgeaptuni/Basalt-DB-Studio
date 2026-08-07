@@ -37,6 +37,8 @@ const ms = (n: number): number => (reduced() ? 0 : n);
 // there as literal CSS. `motion.test.ts` parses app.css and fails if they drift.
 export const EASE_STANDARD = [0.2, 0, 0, 1] as const;
 export const EASE_EMPHASIZED = [0.05, 0.7, 0.1, 1] as const;
+/** M3 emphasized *accelerate* — the exit partner. See app.css for why. */
+export const EASE_EMPHASIZED_ACCELERATE = [0.3, 0, 0.8, 0.15] as const;
 
 type Curve = readonly [number, number, number, number];
 
@@ -70,6 +72,7 @@ export function cubicBezier([x1, y1, x2, y2]: Curve): (t: number) => number {
 
 const standard = cubicBezier(EASE_STANDARD);
 const emphasized = cubicBezier(EASE_EMPHASIZED);
+const accelerate = cubicBezier(EASE_EMPHASIZED_ACCELERATE);
 
 // ── Durations ────────────────────────────────────────────────────────────────
 
@@ -88,8 +91,8 @@ const MS = {
   micro: 100,
   popIn: 150,
   popOut: 100,
-  dialogIn: 220,
-  dialogOut: 140,
+  dialogIn: 240,
+  dialogOut: 160,
   sheetIn: 240,
   sheetOut: 160,
   panelIn: 200,
@@ -123,18 +126,55 @@ export function popOut(_node: Element): TransitionConfig {
   return { duration: ms(MS.popOut), easing: standard, css: pop };
 }
 
-const DIALOG_SCALE = 0.96;
+// The entrance rises and settles; the exit only recedes. A dialog that leaves
+// along the path it arrived on reads as a rewind, and a big frame travelling
+// downward on dismissal is the part that looked abrupt — the eye follows it
+// instead of returning to the app underneath. So the exit drops the travel and
+// takes barely any scale: it is a fade with a hint of recession behind it.
+const DIALOG_IN_SCALE = 0.94;
+const DIALOG_IN_RISE = 8;
+const DIALOG_OUT_SCALE = 0.98;
 
-const dialog = (t: number): string =>
-  `opacity:${t};transform:scale(${DIALOG_SCALE + (1 - DIALOG_SCALE) * t})`;
-
-/** Centre dialogs. Scales the frame, never the centring translate around it. */
+/**
+ * Centre dialogs — settings, the command palette, the connection form, every
+ * confirm. Scales the frame, never the centring translate around it: that lives
+ * on the element above this one, and writing a transform here would replace it
+ * and throw the dialog into a corner mid-animation.
+ */
 export function dialogIn(_node: Element): TransitionConfig {
-  return { duration: ms(MS.dialogIn), easing: emphasized, css: dialog };
+  return {
+    duration: ms(MS.dialogIn),
+    easing: emphasized,
+    css: (t, u) =>
+      `opacity:${t};transform:` +
+      `translateY(${u * DIALOG_IN_RISE}px) ` +
+      `scale(${DIALOG_IN_SCALE + (1 - DIALOG_IN_SCALE) * t})`,
+  };
 }
 
 export function dialogOut(_node: Element): TransitionConfig {
-  return { duration: ms(MS.dialogOut), easing: standard, css: dialog };
+  return {
+    duration: ms(MS.dialogOut),
+    easing: accelerate,
+    css: (t) => `opacity:${t};transform:scale(${DIALOG_OUT_SCALE + (1 - DIALOG_OUT_SCALE) * t})`,
+  };
+}
+
+/**
+ * The scrim behind a dialog, timed to the dialog rather than to itself.
+ *
+ * This is the fix for the half of "abrupt" that was actually a bug: the scrim
+ * used to run at the 100 ms micro fade while the frame took twice that, so on
+ * the way in the backdrop was already solid before the dialog finished arriving,
+ * and on the way out it vanished first — leaving the dialog hanging over a live,
+ * undimmed app for its last frames. They arrive and leave together now.
+ */
+export function scrimIn(_node: Element): TransitionConfig {
+  return { duration: ms(MS.dialogIn), easing: standard, css: (t) => `opacity:${t}` };
+}
+
+export function scrimOut(_node: Element): TransitionConfig {
+  return { duration: ms(MS.dialogOut), easing: standard, css: (t) => `opacity:${t}` };
 }
 
 /**

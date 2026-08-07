@@ -599,6 +599,18 @@ Focus is **additionally** a 2px `--primary` ring via `:focus-visible` (app.css
   `fade` is **linear**. An overlay easing differently from the state layer of the
   control that opened it is what reads as stiff. A test parses app.css and fails
   if the JS and CSS curves drift.
+- **Three curves, and exits use the third.** `--ease-standard` for routine
+  changes; `--ease-emphasized` is M3's *emphasized decelerate*, for entrances;
+  `--ease-emphasized-accelerate` is its exit partner, which holds and then leaves.
+  A surface dismissed on a decelerating curve looks reluctant to go.
+- **An overlay and its scrim move on one clock.** They are a single surface to
+  the eye; at different durations the backdrop finishes first on the way in and
+  vanishes first on the way out, leaving the frame hanging over a live, undimmed
+  app. `scrimIn`/`scrimOut` take their durations from `dialogIn`/`dialogOut`.
+- **An exit does not retrace its entrance.** A dialog rises 8px and scales from
+  0.94 on the way in; on the way out it fades with a hint of recession and *no
+  travel at all* — a large frame moving downward on dismissal pulls the eye after
+  it instead of returning it to the app.
 - **Exits are shorter than entrances.** An entrance is the app answering; an exit
   is it getting out of the way, and one that takes as long as the entrance reads
   as lag. Svelte's `transition:` directive reuses one config for both directions,
