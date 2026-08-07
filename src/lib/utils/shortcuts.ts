@@ -74,5 +74,13 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
   },
 ];
 
-/** Groups worth showing on a cold start — the grid keys need an open table first. */
-export const STARTUP_SHORTCUT_GROUPS = SHORTCUT_GROUPS.slice(0, 2);
+/**
+ * What the empty workspace lists. The grid keys are dropped because they need an
+ * open table first, and `mod+k` because the top bar prints that binding on the
+ * search control itself — the same key twice on one screen, a hand's width apart.
+ * Filtered on the combo rather than the label: the binding is the row's identity,
+ * and labels get reworded.
+ */
+export const STARTUP_SHORTCUT_GROUPS: ShortcutGroup[] = SHORTCUT_GROUPS.slice(0, 2).map(
+  (group) => ({ ...group, items: group.items.filter((i) => !i.combos.includes("mod+k")) }),
+);

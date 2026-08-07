@@ -1,7 +1,13 @@
 <script lang="ts">
-  // The main pane before a session exists: what to connect to, and how to drive
-  // the app once connected. Dense and top-left aligned — content, not a hero
-  // (DESIGN §8). Shortcuts come from the single catalogue so this pane can never
+  // The empty workspace. It is centred rather than top-left aligned because there
+  // is nothing on screen to align to: a dense block in the corner of an otherwise
+  // empty 1200px pane reads as a rendering fault, not as density.
+  //
+  // The shape is VSCode's empty editor — the mark as a watermark, the keys that
+  // drive the app underneath — and everything on it is functional: one sentence,
+  // the connections that already exist, and a keyboard reference. No
+  // illustration, no headline above `text-title-sm`, nothing here to fill space
+  // (DESIGN §8). Shortcuts come from the single catalogue, so this pane can never
   // advertise a binding the app doesn't have.
   import RotateCw from "@lucide/svelte/icons/rotate-cw";
   import Button from "$lib/components/ui/Button.svelte";
@@ -11,10 +17,8 @@
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import ConnectionRow from "$lib/components/connections/ConnectionRow.svelte";
   import ConnectionForm from "$lib/components/connections/ConnectionForm.svelte";
-  import SearchIcon from "@lucide/svelte/icons/search";
-  import { connections } from "$lib/stores/connections.svelte";
-  import { palette } from "$lib/stores/palette.svelte";
   import ErrorState from "$lib/components/ui/ErrorState.svelte";
+  import { connections } from "$lib/stores/connections.svelte";
   import { STARTUP_SHORTCUT_GROUPS } from "$lib/utils/shortcuts";
 
   let formOpen = $state(false);
@@ -26,47 +30,47 @@
   });
 </script>
 
-<!-- One gutter for the whole pane; sections never set their own horizontal padding,
-     so every heading, row and card shares a single left edge (DESIGN §5). Vertical
-     rhythm is the 4dp grid: 24 between sections, 8 under a heading, 24 above it. -->
-<div class="h-full overflow-auto">
-  <div class="flex max-w-2xl flex-col gap-6 px-6 py-6">
-    <!-- Page intro, not an EmptyState: this block owns the pane's primary action
-         and shares the pane gutter, where EmptyState carries its own padding for
-         the panels it sits inside. -->
-    <div class="flex flex-col items-start gap-4">
-      <div class="flex items-center gap-2 text-body-md text-on-surface-variant">
-        <BrandMark size={24} />
-        <span>Connect to a database to start querying.</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <Button variant="filled" size="sm" onclick={() => (formOpen = true)}>New connection</Button>
-        <Button variant="text" size="sm" onclick={palette.show}>
-          <SearchIcon size={14} strokeWidth={2} /> Search
-          <Kbd combo="mod+k" />
-        </Button>
-      </div>
+<!-- `@container`, not a viewport breakpoint: this pane's width is the window
+     minus the rail and whatever the side panel is doing, so `mod+b` alone can
+     take it from two columns to one at a fixed window size. -->
+<div class="@container h-full overflow-auto">
+  <!-- `min-h-full` + `justify-center` centres on a tall window and scrolls on a
+       short one, instead of centring content off the top edge. -->
+  <div
+    class="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center gap-10 px-6 py-10"
+  >
+    <div class="flex flex-col items-center gap-5">
+      <!-- A watermark, so it sits behind the reading rather than in front of it:
+           at 20% the stack still resolves as a shape while every line of text on
+           the pane outranks it. -->
+      <BrandMark size={176} class="text-on-surface opacity-20 select-none" />
+      <p class="text-title-sm text-on-surface-variant">Connect to a database to start querying.</p>
     </div>
 
-    {#if !connections.loaded}
-      <div class="flex items-center gap-2 text-body-md text-on-surface-muted">
-        <Spinner size="sm" /> Loading…
-      </div>
-    {:else if connections.loadError}
-      <div class="overflow-hidden rounded-md">
-        <ErrorState kind={connections.loadError.kind} message={connections.loadError.message} filled>
-          {#snippet action()}
-            <Button variant="text-error" size="sm" onclick={() => connections.load()}>Retry</Button>
-          {/snippet}
-        </ErrorState>
-      </div>
-    {:else if connections.profiles.length > 0}
-      <section>
-        <h2 class="pb-2 text-label-sm tracking-wider text-on-surface-muted uppercase">
-          Connections
-        </h2>
+    <!-- The connections you have, then the way to add one: with a list on screen
+         the new-connection button is the alternative, not the instruction. -->
+    <div class="flex w-full flex-col items-center gap-4">
+      {#if !connections.loaded}
+        <div class="flex items-center gap-2 text-body-md text-on-surface-muted">
+          <Spinner size="sm" /> Loading…
+        </div>
+      {:else if connections.loadError}
+        <div class="w-full overflow-hidden rounded-md">
+          <ErrorState
+            kind={connections.loadError.kind}
+            message={connections.loadError.message}
+            filled
+          >
+            {#snippet action()}
+              <Button variant="text-error" size="sm" onclick={() => connections.load()}>
+                Retry
+              </Button>
+            {/snippet}
+          </ErrorState>
+        </div>
+      {:else if connections.profiles.length > 0}
         <ul
-          class="divide-y divide-outline-variant overflow-hidden rounded-md border
+          class="w-full divide-y divide-outline-variant overflow-hidden rounded-md border
             border-outline-variant bg-surface-container-low"
         >
           {#each connections.profiles as p (p.id)}
@@ -88,29 +92,37 @@
             </li>
           {/each}
         </ul>
-      </section>
-    {/if}
+      {/if}
 
-    {#each STARTUP_SHORTCUT_GROUPS as group (group.title)}
-      <section>
-        <h2 class="pb-2 text-label-sm tracking-wider text-on-surface-muted uppercase">
-          {group.title}
-        </h2>
-        <div class="grid grid-cols-1 gap-x-8 sm:grid-cols-2">
-          {#each group.items as item (item.label)}
-            <div class="flex h-8 items-center justify-between gap-3">
-              <span class="flex min-w-0 items-center gap-2">
-                <item.icon size={14} class="shrink-0 text-on-surface-muted" />
+      <Button variant="filled" size="sm" onclick={() => (formOpen = true)}>New connection</Button>
+    </div>
+
+    <!-- Reference, not navigation: nothing here is clickable, so it is the
+         quietest thing on the pane. The rule running off each heading is what
+         separates the two columns without a divider between them. -->
+    <div class="grid w-full grid-cols-1 gap-x-8 gap-y-6 @2xl:grid-cols-2">
+      {#each STARTUP_SHORTCUT_GROUPS as group (group.title)}
+        <section>
+          <h2
+            class="flex items-center gap-3 pb-1 text-label-sm tracking-wider text-on-surface-muted
+              uppercase"
+          >
+            {group.title}
+            <span class="h-px flex-1 bg-outline-variant"></span>
+          </h2>
+          <ul>
+            {#each group.items as item (item.label)}
+              <li class="flex h-8 items-center justify-between gap-4">
                 <span class="truncate text-body-sm text-on-surface-variant">{item.label}</span>
-              </span>
-              <span class="flex shrink-0 items-center gap-1">
-                {#each item.combos as combo (combo)}<Kbd {combo} />{/each}
-              </span>
-            </div>
-          {/each}
-        </div>
-      </section>
-    {/each}
+                <span class="flex shrink-0 items-center gap-1.5">
+                  {#each item.combos as combo (combo)}<Kbd {combo} />{/each}
+                </span>
+              </li>
+            {/each}
+          </ul>
+        </section>
+      {/each}
+    </div>
   </div>
 </div>
 

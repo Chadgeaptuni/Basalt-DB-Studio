@@ -282,6 +282,17 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
   so the whole bar drags — Tauri's hit test excludes buttons and inputs, so no
   control has to opt out — and it insets its leading edge on macOS to clear the
   traffic lights. Both constants live in `utils/platform.ts`.
+- **The empty workspace is the one centred surface in the app** (`StartPanel`,
+  shown until a session exists). Everything else aligns top-left because it has
+  siblings to align to; this pane has none, and a dense block in the corner of an
+  empty 1200px area reads as a rendering fault. Its shape is VSCode's empty
+  editor: the mark as a watermark at ~20% opacity, one sentence under it, the
+  saved connections, then the keyboard reference — reference material, so the
+  quietest thing on the pane. Still no illustration, no headline above
+  `text-title-sm`, and nothing present to fill space. It lays out on
+  `@container`, not a viewport breakpoint: `mod+b` alone changes this pane's
+  width at a fixed window size. A binding the top bar already prints on its own
+  control is not repeated here — the catalogue filters it (§7).
 - **A rail destination needs a panel of its own.** Import and export are actions
   on the object in front of you — a table, a result — so they live at that object
   (`TableDataView`, `ResultsPane`), not behind a rail item with nothing to show.
@@ -455,10 +466,14 @@ the primitive**, don't fork it locally.
   as separate caps and platform labels come from the one catalogue (§7).
   Modifiers render as the macOS glyph set (`⌘ ⇧ ⌥`) on **every** platform:
   "Ctrl+Shift+F" reads as a sentence where "⌘+⇧+F" reads as three keys. It is a
-  deliberate look, not a claim about the hardware. Two rules follow from it —
-  chords join with `+` off macOS (only macOS runs its modifiers together), and a
-  literal `ctrl` binding renders as `⌘` off macOS too, because there it is the
-  same physical key as `mod` and one key may not appear under two symbols.
+  deliberate look, not a claim about the hardware. A literal `ctrl` binding
+  renders as `⌘` off macOS too, because there it is the same physical key as
+  `mod` and one key may not appear under two symbols.
+  **`Kbd` puts no `+` between the caps** — each key is already its own bordered
+  box, so the separator restates what the boxes show, and at four boxes there is
+  more punctuation on the row than key. `keyboard.label()` is the opposite case
+  and keeps its `+` off macOS: a tooltip is plain text with no boxes doing that
+  job.
 - **Tabs** — M3 primary tabs: 40px strip, label + optional icon, active marked by
   a **3px `--primary` indicator** under the label. No vertical dividers between
   tabs, no background-swap-only active state.
