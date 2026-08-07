@@ -1,9 +1,17 @@
 <script lang="ts">
+  import { FIELD_BOX } from "./field";
+
   // Dynamic `type` rules out Svelte's `bind:value`, so we drive the $bindable
   // value through oninput manually (still two-way for callers via bind:value).
   interface Props {
     value?: string;
     type?: "text" | "password" | "number" | "email" | "search";
+    /**
+     * Accessible name, for the layouts that put the visible label somewhere a
+     * `<label for>` can't reach it — a settings row states the label in a text
+     * column of its own, several elements away from this control.
+     */
+    label?: string;
     placeholder?: string;
     disabled?: boolean;
     invalid?: boolean;
@@ -17,6 +25,7 @@
   let {
     value = $bindable(""),
     type = "text",
+    label,
     placeholder,
     disabled = false,
     invalid = false,
@@ -43,10 +52,10 @@
     oninput?.(e);
   }}
   {onkeydown}
+  aria-label={label}
   aria-invalid={bad}
-  class="h-8 w-full rounded-sm border bg-surface px-3 text-body-md text-on-surface
-    transition-colors duration-200 ease-standard placeholder:text-on-surface-muted
-    disabled:opacity-[0.38] focus:outline-2 focus:-outline-offset-1
+  class="{FIELD_BOX} no-native-spinner px-3 text-on-surface
+    placeholder:text-on-surface-muted focus:outline-2 focus:-outline-offset-1
     {bad
     ? 'border-error focus:outline-error'
     : 'border-outline-variant focus:outline-primary'}"

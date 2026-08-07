@@ -124,13 +124,24 @@
     </div>
     <div>
       <label for="conn-engine" class="mb-1 block text-body-sm text-on-surface-muted">Engine</label>
-      <Select id="conn-engine" value={engine} options={engineOptions} onchange={onEngineChange} />
+      <Select
+        id="conn-engine"
+        label="Engine"
+        value={engine}
+        options={engineOptions}
+        onchange={onEngineChange}
+      />
     </div>
 
     <!-- Environment travels with the profile through git-sync, so tagging it once
          warns everyone who pulls it — not just this machine. -->
     <Field label="Environment" hint="Production connections name themselves in every destructive confirmation.">
-      <Select value={environment ?? ""} options={environmentOptions} onchange={(v) => (environment = v as Environment | "")} />
+      <Select
+        label="Environment"
+        value={environment ?? ""}
+        options={environmentOptions}
+        onchange={(v) => (environment = v as Environment | "")}
+      />
     </Field>
 
     {#if isSqlite}

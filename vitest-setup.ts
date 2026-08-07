@@ -25,6 +25,16 @@ if (typeof Element.prototype.animate !== "function") {
   };
 }
 
+// jsdom implements pointer events but not the capture API bits-ui's popup
+// triggers probe before opening, and not scrollIntoView, which its listboxes call
+// to keep the highlighted row visible. Both are no-ops here: there is no layout.
+if (typeof Element.prototype.hasPointerCapture !== "function") {
+  Element.prototype.hasPointerCapture = () => false;
+}
+if (typeof Element.prototype.scrollIntoView !== "function") {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 // jsdom under vitest doesn't always expose localStorage as a global; stores read it
 // at import time, so install a minimal in-memory shim when it's missing.
 if (typeof globalThis.localStorage === "undefined") {

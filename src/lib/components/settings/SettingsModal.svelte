@@ -3,9 +3,10 @@
   import Modal from "$lib/components/ui/Modal.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import Select, { type SelectOption } from "$lib/components/ui/Select.svelte";
-  import Input from "$lib/components/ui/Input.svelte";
+  import NumberField from "$lib/components/ui/NumberField.svelte";
   import Kbd from "$lib/components/ui/Kbd.svelte";
   import ListItem from "$lib/components/ui/ListItem.svelte";
+  import SettingRow from "./SettingRow.svelte";
   import ThemePicker from "./ThemePicker.svelte";
   import { THEME_DEFINITIONS } from "./themeDefinitions";
   import { settings } from "$lib/stores/settings.svelte";
@@ -55,11 +56,6 @@
     { value: "local", label: "Local time" },
     { value: "utc", label: "UTC" },
   ];
-
-  function setLimit(e: Event): void {
-    const n = Number.parseInt((e.target as HTMLInputElement).value, 10);
-    if (Number.isFinite(n) && n > 0) settings.setDefaultRowLimit(n);
-  }
 </script>
 
 <Modal open title="Settings" size="4xl" headerHidden padding={false} {onclose}>
@@ -100,25 +96,44 @@
       <div class="min-h-0 flex-1 overflow-y-auto p-6">
         {#if activeTab === "general"}
           <!-- No section heading: the header bar above already names this pane,
-               and a second "General Preferences" title would just repeat it. -->
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label class="flex flex-col gap-1.5 rounded-sm border border-outline-variant bg-surface/50 p-3.5">
-              <span class="text-label-md text-on-surface">Date Time Display</span>
-              <Select
-                value={settings.datetimeDisplay}
-                options={datetimeOptions}
-                onchange={(v) => settings.setDatetimeDisplay(v as DatetimeDisplay)}
-              />
-              <span class="text-body-sm text-on-surface-muted">
-                Transforms timestamp rendering in data grids.
-              </span>
-            </label>
+               and a second "General Preferences" title would just repeat it. One
+               bordered list, hairlines between the rows — the border belongs to
+               the group, not to each setting inside it. -->
+          <div
+            class="divide-y divide-outline-variant overflow-hidden rounded-sm border
+              border-outline-variant bg-surface"
+          >
+            <SettingRow
+              label="Date and time display"
+              hint="How timestamp columns are rendered in every data grid. Stored values are never rewritten."
+            >
+              {#snippet control(label)}
+                <Select
+                  {label}
+                  value={settings.datetimeDisplay}
+                  options={datetimeOptions}
+                  onchange={(v) => settings.setDatetimeDisplay(v as DatetimeDisplay)}
+                />
+              {/snippet}
+            </SettingRow>
 
-            <label class="flex flex-col gap-1.5 rounded-sm border border-outline-variant bg-surface/50 p-3.5">
-              <span class="text-label-md text-on-surface">Default Row Limit</span>
-              <Input type="number" value={String(settings.defaultRowLimit)} oninput={setLimit} />
-              <span class="text-body-sm text-on-surface-muted">Fetch ceiling per statement execution.</span>
-            </label>
+            <SettingRow
+              label="Default row limit"
+              hint="Rows fetched per statement before the result is marked truncated."
+            >
+              {#snippet control(label)}
+                <!-- Steps by 100: a fetch ceiling moves in hundreds, and a
+                     stepper that takes 500 clicks to get anywhere is decoration.
+                     Typing stays the way to reach an exact number. -->
+                <NumberField
+                  {label}
+                  value={settings.defaultRowLimit}
+                  min={1}
+                  step={100}
+                  onchange={settings.setDefaultRowLimit}
+                />
+              {/snippet}
+            </SettingRow>
           </div>
         {:else if activeTab === "appearance"}
           <section class="flex flex-col gap-3">

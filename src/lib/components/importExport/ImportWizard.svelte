@@ -125,7 +125,7 @@
     {:else}
       <div class="flex flex-col gap-3">
         <Field label="Conflict mode">
-          <Select bind:value={conflict} options={conflictOptions} />
+          <Select label="Conflict mode" bind:value={conflict} options={conflictOptions} />
         </Field>
         <Checkbox bind:checked={hasHeader} label="First row is a header" />
         <p class="text-body-sm text-on-surface-muted">

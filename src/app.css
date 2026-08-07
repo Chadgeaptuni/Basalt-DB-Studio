@@ -114,6 +114,22 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* A number input's spin buttons, off. The engine draws them itself and exposes
+   no styling hook — not colour, not size — so on every theme but the platform
+   default they sit on a themed field as grey arrows that ignore it. `NumberField`
+   draws its own; `Input` just drops them, because stepping a port number one at a
+   time was never worth the widget. Chromium and WebKit need the pseudo-elements;
+   `appearance` alone is not enough on either. */
+@utility no-native-spinner {
+  appearance: textfield;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+}
+
 @layer base {
   :root {
     --elevation-1: 0 1px 2px 0 rgb(0 0 0 / 0.3), 0 1px 3px 1px rgb(0 0 0 / 0.15);

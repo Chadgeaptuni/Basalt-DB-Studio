@@ -4,7 +4,7 @@
   import Tooltip from "$lib/components/ui/Tooltip.svelte";
   import { focusRing, stateLayerGroup } from "$lib/components/ui/stateLayer";
 
-  // One rail block: a 56×32 pill holding the icon, and nothing else. The label
+  // One rail block: a 48×32 pill holding the icon, and nothing else. The label
   // shows on hover, to the side, through the shared `Tooltip` — four words of
   // permanent chrome under each icon is a lot of column to spend on names the
   // user learns in a day.
@@ -41,10 +41,11 @@
         {active ? 'text-on-surface' : 'text-on-surface-variant'}"
     >
       <!-- The indicator is the pill, not the icon colour: M3 marks the active
-           destination with a filled 56×32 container so it reads without relying
-           on colour alone. -->
+           destination with a filled container so it reads without relying on
+           colour alone. 48×32 rather than the spec's 56×32, to the same ratio as
+           the narrowed rail around it. -->
       <span
-        class="grid h-8 w-14 place-items-center rounded-full transition-colors duration-200
+        class="grid h-8 w-12 place-items-center rounded-full transition-colors duration-200
           ease-standard {active
           ? 'bg-secondary-container text-on-secondary-container'
           : stateLayerGroup}"

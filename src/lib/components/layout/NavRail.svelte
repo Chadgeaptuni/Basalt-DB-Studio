@@ -5,7 +5,10 @@
   import { settingsDialog } from "$lib/stores/settingsDialog.svelte";
   import { DESTINATIONS } from "./destinations";
 
-  // M3 navigation rail (DESIGN §5/§6): 72px, one 56px block per destination.
+  // M3 navigation rail (DESIGN §5/§6): 64px, one 48px indicator per destination.
+  // Narrower than M3's 80px and than the 72px this started at — the labels are
+  // gone, so the rail only has to hold a 20px glyph and its state layer, and the
+  // width it was reserving for two words of text is width the grid wants.
   //
   // Arrow keys move between destinations without selecting, matching the ARIA
   // tablist pattern the rail implements; Enter/Space selects. Selecting the
@@ -35,7 +38,7 @@
      is not a destination. -->
 <nav
   aria-label="Panels"
-  class="flex w-18 shrink-0 flex-col items-center border-r border-outline-variant
+  class="flex w-16 shrink-0 flex-col items-center border-r border-outline-variant
     bg-surface-container py-2"
 >
   <div

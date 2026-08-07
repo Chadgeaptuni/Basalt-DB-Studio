@@ -1,7 +1,10 @@
-// The M3 menu surface, declared once (DESIGN §6). `ContextMenu` and
-// `DropdownMenu` differ only in what anchors them — bits-ui already solves
-// anchoring, focus and dismissal per trigger — so what they share is the surface,
-// the row metrics and the row content, and that is all this module owns.
+// Every floating list of choices in the app, declared once (DESIGN §6):
+// `ContextMenu`, `DropdownMenu`, `Select`'s listbox and the connection popover.
+// They differ only in what anchors them and what a row means — bits-ui already
+// solves anchoring, focus and dismissal per trigger — so what they share is the
+// container, the row metrics and the row content, and that is all this module
+// owns. A popup that writes its own `rounded-md border … shadow-e2` is how one
+// app ends up with four dropdowns that don't match.
 
 import type { IconComponent } from "./icon";
 
@@ -17,17 +20,30 @@ export interface MenuItem {
   onselect: () => void;
 }
 
-export const MENU_SURFACE =
-  "z-50 min-w-44 rounded-md border border-outline-variant bg-surface-container-high " +
-  "py-2 shadow-e2 outline-none";
+/**
+ * The floating container itself — the one that says "this is over the layout,
+ * not part of it" (DESIGN §2: the only job a shadow has). Carries no size and no
+ * padding, because a menu, a listbox and a popover holding its own list and
+ * footer want different ones.
+ */
+export const POPOVER_SURFACE =
+  "z-50 rounded-md border border-outline-variant bg-surface-container-high " +
+  "shadow-e2 outline-none";
 
-/** 36px rows on the density tier; `data-highlighted` is bits-ui's hover/focus state. */
+/** The container as a menu: wide enough to be one, padded for a run of rows. */
+export const MENU_SURFACE = `${POPOVER_SURFACE} min-w-44 py-2`;
+
+/**
+ * A row in any of them: 36px on the density tier. `data-highlighted` is bits-ui's
+ * hover/keyboard state and `data-disabled` its disabled one, so the row reacts to
+ * pointer and keyboard through the same class with no second hover rule.
+ */
+export const MENU_ROW =
+  "flex h-9 cursor-default items-center gap-2 px-3 text-label-md outline-none " +
+  "transition-colors duration-200 ease-standard " +
+  "data-[highlighted]:bg-surface-container-highest " +
+  "data-[disabled]:pointer-events-none data-[disabled]:opacity-[0.38]";
+
 export function menuRowClass(item: Pick<MenuItem, "danger">): string {
-  return (
-    "flex h-9 cursor-default items-center gap-2 px-3 text-label-md outline-none " +
-    "transition-colors duration-200 ease-standard " +
-    "data-[highlighted]:bg-surface-container-highest " +
-    "data-[disabled]:pointer-events-none data-[disabled]:opacity-[0.38] " +
-    (item.danger ? "text-error" : "text-on-surface-variant")
-  );
+  return `${MENU_ROW} ${item.danger ? "text-error" : "text-on-surface-variant"}`;
 }

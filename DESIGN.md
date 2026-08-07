@@ -306,8 +306,8 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
 
   | Element | Height |
   |---|---|
-  | Dialog header/footer, nav rail item | 56px (`h-14`) |
-  | Title bar, toolbar, tab strip | 40px (`h-10`) |
+  | Dialog header/footer | 56px (`h-14`) |
+  | Title bar, toolbar, tab strip, nav rail item | 40px (`h-10`) |
   | List / tree / menu row | 36px (`h-9`) |
   | Control (button, icon button, field) | 32px (`h-8`) |
   | Dense control (in-toolbar icon button) | 28px (`h-7`) |
@@ -315,11 +315,22 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
   | Data grid header | 40px (`h-10`) |
   | **Data grid row** | **28px (`h-7`) — the one exemption** |
 
-  Nav rail is 72px wide with 56px items; panel default width ~280px.
-  Padding steps: `p-2` inside rows, `p-3` for panel sections, `p-4` for dialogs —
-  nothing larger.
+  Nav rail is **64px** wide, one 40px block per destination carrying a 48×32
+  indicator pill — narrower than M3's 80/56 because the labels are gone and the
+  rail only has to hold a 20px glyph and its state layer. Its width is mirrored
+  by the top bar's leading box, so the mark centres on the same axis as the
+  icons under it (`w-16` in both). Panel default width ~280px. Padding steps:
+  `p-2` inside rows, `p-3` for panel sections, `p-4` for dialogs — nothing larger.
 - Prefer tables and dense flex rows over cards. A card is for a genuinely
   self-contained object, not for visually grouping two fields.
+- **A settings pane is rows, not a grid of cards** (`SettingRow`): label and
+  consequence on the left, the control right-aligned in a fixed column, hairlines
+  between, one border around the group. Two cards side by side make each setting
+  look like a choice *between* the two, and the pair goes ragged the moment one
+  caption wraps. Down a column, every label starts at the same x and every control
+  ends at the same one, and a new setting is one more row rather than a relayout.
+  `SettingRow` hands its label text to the control snippet — the control is a
+  sibling of the label, not inside it, so it cannot inherit the accessible name.
 - **Forms** (connection editor, table designer): single column, `label above
   input` via the `Field` primitive — never a hand-written `<label><span
   class="text-label-sm …">` block. 12-col grid only when pairing short fields
@@ -356,8 +367,33 @@ the primitive**, don't fork it locally.
   1px `--outline-variant` resting → `--primary` 2px on focus, label
   `text-label-md` `--on-surface-variant`. Error: `--error` border +
   `text-body-sm` `--error` message below; never a toast for field validation.
-  `Select` is still a native `<select>` — it becomes a trigger + `Menu` in U4,
-  when `Menu` exists.
+  The box itself is `FIELD_BOX` in `ui/field.ts`, shared by all three — a class
+  string and not a wrapper component, because each puts focus on a different
+  element (the input on itself, the select trigger a button, the number field a
+  wrapper around an input plus its steppers). Border colour, padding and the focus
+  rule stay with the caller: two `border-*` or `px-*` utilities on one element
+  resolve by stylesheet order, not class order, so they are set once at the end.
+- **NumberField** — a field with stepper arrows of our own. **A number input's
+  native spin buttons are always suppressed** (`no-native-spinner`, app.css): the
+  engine draws them and exposes no styling hook, not colour and not size, so on
+  every theme but the platform default they are grey arrows on a themed field.
+  `Input` simply drops them; `NumberField` replaces them where stepping earns its
+  place. The steppers are `tabindex="-1"` — a number input already steps on
+  ArrowUp/ArrowDown, so they are a pointer affordance, not a second keyboard
+  path — and a value outside the range is never committed, with the field
+  resyncing to the live value on blur so it can't display a number that isn't in
+  force. Distinct from the status bar's zoom stepper, whose middle is a reading
+  that resets on click rather than a value you can type: same idiom, no shared
+  implementation.
+- **Select** — a trigger styled as that field plus a chevron that flips on
+  `data-[state=open]`, over a **bits-ui listbox on `POPOVER_SURFACE`**. Never a
+  native `<select>`: its popup is drawn by the OS in the OS's colours, so on any
+  theme but the platform default it opens as a white rectangle over a dark app —
+  the one control the browser refuses to let a design system reach. Rows are
+  `MENU_ROW` with the same fixed check slot as `MenuRow`, and the listbox takes
+  the trigger's width (`--bits-select-anchor-width`) with the menu minimum as a
+  floor. `label` is **required**: the trigger is a button whose text is the
+  selected *value*, and a wrapping `<label>` does not name a button.
 - **Badge** — the small static status marker: 20px, `rounded-full`, tonal fill,
   `text-label-sm` uppercase. `variant: 'neutral' | 'primary' | 'ok' | 'warn' | 'error'`.
   Used for tx state (`TX`), row-limit notices, read-only connections and engine
@@ -382,10 +418,20 @@ the primitive**, don't fork it locally.
   rule in a Svelte component buys nothing.
 - **Menu** — the M3 menu surface: `rounded-md`, `--surface-container-high`,
   `shadow-e2`, 36px rows, `Kbd` hints right-aligned, destructive items `--error`
-  text. It is `ui/menu.ts` (surface + row classes + `MenuItem`) plus `MenuRow`,
-  shared by `ContextMenu` and `DropdownMenu` — a module rather than a wrapper
+  text. It is `ui/menu.ts` plus `MenuRow`, a module rather than a wrapper
   component, because anchoring, focus and dismissal differ per trigger and
-  bits-ui already solves each. A new menu consumes these; it never restyles rows.
+  bits-ui already solves each. **Everything that floats a list of choices takes
+  its container from here** — `ContextMenu`, `DropdownMenu`, `Select`'s listbox,
+  the connection popover:
+  - `POPOVER_SURFACE` — the floating container alone (radius, outline, tonal
+    fill, `shadow-e2`). No size, no padding: a menu, a listbox and a popover
+    carrying its own list and footer each want different ones.
+  - `MENU_SURFACE` — that container as a menu (`min-w-44`, `py-2`).
+  - `MENU_ROW` / `menuRowClass()` — the 36px row, reacting to pointer and
+    keyboard through bits-ui's `data-highlighted`.
+
+  A popup that writes its own `rounded-md border … shadow-e2` is a review
+  failure — that is how one app ends up with four dropdowns that don't match.
 - **SegmentedButton** — M3 segmented button for 2–5 exclusive options that must
   stay visible (theme variant, grid view mode). Not a substitute for `Select`.
 - **Modal / ConfirmDialog** — M3 dialog: centered, `max-w-md`/`max-w-lg`,

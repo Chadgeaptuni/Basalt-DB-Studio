@@ -12,6 +12,7 @@
   import Badge from "$lib/components/ui/Badge.svelte";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import { stateLayer, focusRing } from "$lib/components/ui/stateLayer";
+  import { POPOVER_SURFACE } from "$lib/components/ui/menu";
   import { envLabel, envTone } from "$lib/utils/environment";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import ConnectionForm from "./ConnectionForm.svelte";
@@ -103,8 +104,7 @@
       side="top"
       align="start"
       sideOffset={4}
-      class="z-50 max-h-[min(28rem,calc(100dvh-4rem))] w-96 overflow-auto rounded-md border
-        border-outline-variant bg-surface-container-high shadow-e2 outline-none"
+      class="{POPOVER_SURFACE} max-h-[min(28rem,calc(100dvh-4rem))] w-96 overflow-auto"
     >
       {#if !connections.loaded}
         <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-muted"><Spinner size="sm" /> Loading…</div>

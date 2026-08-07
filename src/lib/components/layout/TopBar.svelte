@@ -35,7 +35,7 @@
     IS_MAC ? `padding-left:${MAC_TRAFFIC_LIGHT_INSET}px;padding-right:8px` : "padding:0 4px 0 0",
   );
   const leading = $derived(
-    IS_MAC ? "flex min-w-0 items-center" : "grid w-18 shrink-0 place-items-center",
+    IS_MAC ? "flex min-w-0 items-center" : "grid w-16 shrink-0 place-items-center",
   );
 </script>
 
