@@ -12,6 +12,8 @@
     disabled?: boolean;
     /** Set only for toggle buttons; omitted for ordinary actions. */
     active?: boolean;
+    /** `danger` reddens on hover — for an action that discards or closes. */
+    tone?: "default" | "danger";
     /** Shows a spinner in place of the icon and blocks clicks while pending. */
     loading?: boolean;
     onclick?: (e: MouseEvent) => void;
@@ -23,6 +25,7 @@
     size = "md",
     disabled = false,
     active,
+    tone = "default",
     loading = false,
     onclick,
   }: Props = $props();
@@ -31,6 +34,16 @@
   // the density −2 tier (DESIGN §5).
   const box = $derived(size === "sm" ? "h-7 w-7" : "h-8 w-8");
   const px = $derived(size === "sm" ? 16 : 18);
+
+  // `stateLayer` is `bg-current`, so reddening the *content* on hover reddens the
+  // layer with it — the danger tone costs one class and no second hover rule.
+  const toneClass = $derived(
+    active === true
+      ? "bg-secondary-container text-on-secondary-container"
+      : tone === "danger"
+        ? "text-on-surface-variant hover:text-error"
+        : "text-on-surface-variant",
+  );
 </script>
 
 <!-- No native `title`: it would duplicate the tooltip, and the two appear at
@@ -42,10 +55,7 @@
     aria-pressed={active}
     disabled={disabled || loading}
     {onclick}
-    class="grid place-items-center rounded-full {box} {stateLayer} {focusRing}
-      {active === true
-      ? 'bg-secondary-container text-on-secondary-container'
-      : 'text-on-surface-variant'}"
+    class="grid place-items-center rounded-full {box} {stateLayer} {focusRing} {toneClass}"
   >
     {#if loading}
       <Spinner size="sm" />

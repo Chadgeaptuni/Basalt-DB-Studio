@@ -17,6 +17,28 @@ pub use errors::{AppError, AppResult};
 use state::AppState;
 use tauri::Manager;
 
+/// The frontend draws the title bar (`layout/TopBar.svelte`), so the native one
+/// has to go on Windows and Linux.
+///
+/// This is done here rather than through `decorations: false` in the config
+/// because Tauri merges `tauri.<platform>.conf.json` with RFC 7386 semantics,
+/// under which an array patch *replaces* the array it patches — a platform file
+/// carrying only `decorations` would silently drop the window's size and title
+/// with it. macOS is untouched on purpose: it keeps its native traffic lights,
+/// floated over our bar by `titleBarStyle: "Overlay"`.
+fn drop_native_titlebar(app: &tauri::AppHandle) {
+    #[cfg(not(target_os = "macos"))]
+    if let Some(window) = app.get_webview_window("main") {
+        if let Err(e) = window.set_decorations(false) {
+            // Not fatal: the app is fully usable with both title bars, which is
+            // a far better failure than no window at all.
+            tracing::warn!("could not remove the native title bar: {e}");
+        }
+    }
+    #[cfg(target_os = "macos")]
+    let _ = app;
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -32,6 +54,7 @@ pub fn run() {
                 Err(e) => eprintln!("basalt: file logging unavailable: {e}"),
             }
             app.manage(AppState::new()?);
+            drop_native_titlebar(app.handle());
             tracing::info!("Basalt DB Studio starting");
             Ok(())
         })

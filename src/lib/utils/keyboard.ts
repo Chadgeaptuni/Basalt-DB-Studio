@@ -4,9 +4,10 @@
 // Specs use "mod" for the platform command key (⌘ on macOS, Ctrl elsewhere),
 // e.g. "mod+b", "mod+shift+enter". register() returns an unsubscribe fn.
 
+import { IS_MAC } from "./platform";
+
 export type ShortcutHandler = (e: KeyboardEvent) => void;
 
-const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform);
 const MOD = IS_MAC ? "meta" : "ctrl";
 const MOD_ORDER = ["alt", "ctrl", "meta", "shift"] as const;
 
