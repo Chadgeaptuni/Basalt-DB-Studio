@@ -32,8 +32,11 @@ Two claims a neighboring product could not truthfully copy:
    (`scripts/check-bundle-size.mjs`), while still feeling finished rather than
    stripped. The constraint can veto features and dependencies.
 2. **Git-sync as the team primitive.** The config directory *is* a plain-file git
-   repo. Connection profiles carry a `secret_ref` UUID and no password field —
-   secrets cannot leak into git by construction, not by convention.
+   repo, driven by a real source-control panel in the app — stage, commit,
+   branch, fetch/pull/push, and a commit graph — not a single sync button.
+   Connection profiles carry a `secret_ref` UUID and no password field, so
+   secrets cannot leak into git by construction, not by convention. Git
+   credentials stay with the system's own helper; the app stores none.
 
 ## Operating Context
 

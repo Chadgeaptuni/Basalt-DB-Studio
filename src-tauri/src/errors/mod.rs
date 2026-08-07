@@ -75,6 +75,23 @@ pub enum AppError {
     #[error("{0}")]
     GitDirty(String),
 
+    /// The remote refused the credentials, or git had none to offer. Distinct
+    /// from `authFailed`, which is a *database* login: the remedy is the system
+    /// credential helper, not a password prompt in this app.
+    #[error("{0}")]
+    GitAuthFailed(String),
+
+    /// A non-fast-forward push: the remote has commits this clone does not.
+    /// Recoverable without conflict resolution — pull, then push again — so it is
+    /// not `gitConflict`.
+    #[error("{0}")]
+    GitPushRejected(String),
+
+    /// An operation that needs a remote ran on a repo with none, or on a branch
+    /// with no upstream that could not be set.
+    #[error("{0}")]
+    GitNoRemote(String),
+
     /// `detail` carries `{ line }`.
     #[error("{message}")]
     ImportParse { message: String, line: usize },
@@ -106,6 +123,9 @@ impl AppError {
             AppError::GitNotInstalled(_) => "gitNotInstalled",
             AppError::GitConflict(_) => "gitConflict",
             AppError::GitDirty(_) => "gitDirty",
+            AppError::GitAuthFailed(_) => "gitAuthFailed",
+            AppError::GitPushRejected(_) => "gitPushRejected",
+            AppError::GitNoRemote(_) => "gitNoRemote",
             AppError::ImportParse { .. } => "importParse",
             AppError::Internal(_) => "internal",
         }

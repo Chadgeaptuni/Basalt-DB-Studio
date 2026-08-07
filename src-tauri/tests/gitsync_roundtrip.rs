@@ -107,7 +107,10 @@ fn two_machines_share_config_and_no_secret_leaks() {
 
     let st = gitsync::status(&a_dir).unwrap();
     assert!(st.installed && st.is_repo && st.has_remote);
-    assert!(st.dirty > 0, "new files should be uncommitted");
+    assert!(
+        !st.unstaged.is_empty(),
+        "new files should show as working-tree changes"
+    );
 
     let out_a = gitsync::sync(&a_dir, "add prod profile").unwrap();
     assert!(out_a.committed && out_a.pushed);
@@ -147,4 +150,114 @@ fn two_machines_share_config_and_no_secret_leaks() {
 
 fn cleanup(base: &PathBuf) {
     std::fs::remove_dir_all(base).ok();
+}
+
+/// The granular client, against real git: stage a subset, commit it, branch,
+/// read the history back, and diff a file. Everything below parses git's own
+/// output, so the unit tests can only prove the parsers — this proves the
+/// arguments produce output shaped the way the parsers expect.
+#[test]
+fn stages_commits_branches_and_reads_history_back() {
+    let base = std::env::temp_dir().join(format!("basalt-git-ops-{}", uuid::Uuid::new_v4()));
+    let repo = base.join("repo");
+    std::fs::create_dir_all(&repo).unwrap();
+
+    gitsync::init(&repo).unwrap();
+    git(&repo, &["config", "user.email", "test@basalt.local"]);
+    git(&repo, &["config", "user.name", "Basalt Test"]);
+
+    let paths = Paths::under(repo.clone());
+    saved_queries::save(&paths, "a", "select 1;").unwrap();
+    saved_queries::save(&paths, "b", "select 2;").unwrap();
+
+    // Both files are untracked, and neither is staged yet.
+    let st = gitsync::status(&repo).unwrap();
+    assert_eq!(st.unstaged.len(), 2, "two new files");
+    assert!(st.staged.is_empty());
+
+    // Stage one of the two — the point of a client over a Sync button.
+    let a = st.unstaged[0].path.clone();
+    gitsync::stage(&repo, std::slice::from_ref(&a)).unwrap();
+    let st = gitsync::status(&repo).unwrap();
+    assert_eq!(st.staged.len(), 1);
+    assert_eq!(st.unstaged.len(), 1);
+
+    // Unstaging puts it back without touching the file.
+    gitsync::unstage(&repo, std::slice::from_ref(&a)).unwrap();
+    assert!(gitsync::status(&repo).unwrap().staged.is_empty());
+
+    gitsync::stage(&repo, &[".".to_string()]).unwrap();
+    gitsync::commit(&repo, "add two queries").unwrap();
+
+    let st = gitsync::status(&repo).unwrap();
+    assert!(st.staged.is_empty() && st.unstaged.is_empty(), "tree is clean");
+    assert!(st.branch.is_some(), "a committed repo is on a branch");
+    assert!(st.upstream.is_none(), "no remote was ever added");
+
+    // History carries the commit, its author and no parent (it is the root).
+    let log = gitsync::history(&repo, 50).unwrap();
+    assert_eq!(log.len(), 1);
+    assert_eq!(log[0].subject, "add two queries");
+    assert_eq!(log[0].author, "Basalt Test");
+    assert!(log[0].parents.is_empty());
+    assert!(log[0].refs.iter().any(|r| r.contains("HEAD")));
+
+    // The commit's file list matches what was staged.
+    let files = gitsync::commit_files(&repo, &log[0].hash).unwrap();
+    assert_eq!(files.len(), 2, "both queries landed in one commit");
+
+    // A second commit gains the first as a parent.
+    saved_queries::save(&paths, "a", "select 3;").unwrap();
+    gitsync::stage(&repo, &[".".to_string()]).unwrap();
+    gitsync::commit(&repo, "edit a").unwrap();
+    let log = gitsync::history(&repo, 50).unwrap();
+    assert_eq!(log.len(), 2);
+    assert_eq!(log[0].parents, vec![log[1].hash.clone()]);
+
+    // Diffs come back as git's own unified text.
+    let diff = gitsync::diff_commit_file(&repo, &log[0].hash, &a).unwrap();
+    assert!(diff.contains("-select 1;"), "old line: {diff}");
+    assert!(diff.contains("+select 3;"), "new line: {diff}");
+
+    // Branching, and the listing that drives the switcher.
+    gitsync::create_branch(&repo, "feature").unwrap();
+    let branches = gitsync::branches(&repo).unwrap();
+    let feature = branches.iter().find(|b| b.name == "feature").unwrap();
+    assert!(feature.current && !feature.remote);
+
+    // Discarding an uncommitted edit restores the committed content.
+    saved_queries::save(&paths, "a", "select 999;").unwrap();
+    assert!(!gitsync::status(&repo).unwrap().unstaged.is_empty());
+    let dirty = gitsync::status(&repo).unwrap().unstaged[0].path.clone();
+    gitsync::discard(&repo, &[dirty]).unwrap();
+    assert!(gitsync::status(&repo).unwrap().unstaged.is_empty());
+    assert_eq!(saved_queries::read(&paths, "a").unwrap(), "select 3;");
+
+    cleanup(&base);
+}
+
+/// Every remote operation on a repo with no remote fails as `gitNoRemote`, not as
+/// a generic error carrying git's advice text.
+#[test]
+fn remote_operations_without_a_remote_say_so() {
+    let base = std::env::temp_dir().join(format!("basalt-git-noremote-{}", uuid::Uuid::new_v4()));
+    let repo = base.join("repo");
+    std::fs::create_dir_all(&repo).unwrap();
+
+    gitsync::init(&repo).unwrap();
+    git(&repo, &["config", "user.email", "test@basalt.local"]);
+    git(&repo, &["config", "user.name", "Basalt Test"]);
+    saved_queries::save(&Paths::under(repo.clone()), "a", "select 1;").unwrap();
+    gitsync::stage(&repo, &[".".to_string()]).unwrap();
+    gitsync::commit(&repo, "first").unwrap();
+
+    for err in [
+        gitsync::fetch(&repo).unwrap_err(),
+        gitsync::pull(&repo).unwrap_err(),
+        gitsync::push(&repo).unwrap_err(),
+    ] {
+        assert_eq!(err.kind(), "gitNoRemote");
+    }
+
+    cleanup(&base);
 }

@@ -293,6 +293,26 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
   `@container`, not a viewport breakpoint: `mod+b` alone changes this pane's
   width at a fixed window size. A binding the top bar already prints on its own
   control is not repeated here — the catalogue filters it (§7).
+- **The Git destination is a source-control panel over the config repo, and
+  only that repo.** Basalt is a database tool that syncs its own config through
+  git, not a git client that happens to live in one — there is no repo picker and
+  no arbitrary working directory. The panel carries branch, upstream distance,
+  staged/unstaged/conflicted file lists, per-file stage · unstage · discard, a
+  commit box, and fetch · pull · push. History is a modal (graph on the left,
+  the selected commit's files and diff on the right) rather than an editor tab:
+  it is consulted, not worked in, and a tab would mean teaching the workspace
+  model about a third kind of thing with no SQL and no table behind it.
+- **Basalt never holds git credentials.** The system's git does — Git Credential
+  Manager, an ssh agent, `gh`. There is no sign-in form anywhere in the git UI,
+  because the app has nowhere to store the answer (hard constraint 3, and the
+  secrets slice is unbuilt). What the app owes instead is a specific failure:
+  `gitAuthFailed` renders as guidance toward the credential helper,
+  `gitPushRejected` as "pull first", `gitNoRemote` as "add one". A raw git stderr
+  string in the UI is a review failure.
+- **Conflicts are listed and not actionable.** Resolving one is text editing,
+  which this app does not do. A stage button on a conflicted file promises a job
+  the panel cannot finish; `pull` aborts a conflicting rebase and says so rather
+  than leaving the user inside one.
 - **A rail destination needs a panel of its own.** Import and export are actions
   on the object in front of you — a table, a result — so they live at that object
   (`TableDataView`, `ResultsPane`), not behind a rail item with nothing to show.

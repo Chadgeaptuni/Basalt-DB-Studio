@@ -92,8 +92,20 @@ const PRESENTATION: Record<ErrorKind, ErrorPresentation> = {
     hint: "Resolve the conflicts in your git tool, then sync again.",
   },
   gitDirty: {
-    title: "Uncommitted changes in the config repo",
-    hint: "Commit or stash them in your git tool, then sync again.",
+    title: "A rebase or merge is half-finished",
+    hint: "Finish or abort it in your git tool — running more git on top of one is how a repo gets stuck.",
+  },
+  gitAuthFailed: {
+    title: "Git couldn't authenticate with the remote",
+    hint: "Basalt doesn't hold git credentials — your system does. Sign in with Git Credential Manager or gh, or check that your SSH key is loaded, then try again.",
+  },
+  gitPushRejected: {
+    title: "The remote has commits this copy doesn't",
+    hint: "Pull first — that rebases your work on top of theirs — then push again.",
+  },
+  gitNoRemote: {
+    title: "No remote configured",
+    hint: "Add one in the Git panel to share profiles and saved queries with a team. Everything still works locally without it.",
   },
   importParse: {
     title: "Can't parse the CSV",

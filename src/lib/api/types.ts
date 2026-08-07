@@ -29,6 +29,9 @@ export const ERROR_KINDS = [
   "gitNotInstalled",
   "gitConflict",
   "gitDirty",
+  "gitAuthFailed",
+  "gitPushRejected",
+  "gitNoRemote",
   "importParse",
   "internal",
 ] as const;
