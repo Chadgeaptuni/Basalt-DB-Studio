@@ -1,9 +1,10 @@
 <script lang="ts">
   import GitBranch from "@lucide/svelte/icons/git-branch";
   import RefreshCw from "@lucide/svelte/icons/refresh-cw";
-  import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
   import IconButton from "$lib/components/ui/IconButton.svelte";
+  import Button from "$lib/components/ui/Button.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
+  import ErrorState from "$lib/components/ui/ErrorState.svelte";
   import Panel from "$lib/components/layout/Panel.svelte";
   import { gitsync } from "$lib/stores/gitsync.svelte";
 
@@ -15,13 +16,6 @@
   const st = $derived(gitsync.status);
   const err = $derived(gitsync.error);
   const canSync = $derived(Boolean(st?.isRepo) && !gitsync.syncing);
-
-  // gitConflict / gitDirty / internal message shown inline; others fall through.
-  const errText = $derived(
-    err?.kind === "gitConflict" || err?.kind === "gitDirty" || err?.kind === "internal"
-      ? err.message
-      : null,
-  );
 </script>
 
 <Panel title="Git">
@@ -70,10 +64,15 @@
       </dl>
     {/if}
 
-    {#if errText}
-      <div class="mt-3 flex items-start gap-1.5 whitespace-pre-wrap text-error">
-        <TriangleAlert size={14} strokeWidth={2} class="mt-0.5 shrink-0" />
-        <span>{errText}</span>
+    {#if err}
+      <!-- -mx-3 lets the strip span the panel's own padding. Every kind renders,
+           including ones sync can't normally produce (DESIGN §8). -->
+      <div class="mt-3 -mx-3">
+        <ErrorState kind={err.kind} message={err.message} size="inline">
+          {#snippet action()}
+            <Button size="sm" disabled={!canSync} onclick={() => void gitsync.sync()}>Retry</Button>
+          {/snippet}
+        </ErrorState>
       </div>
     {/if}
   </div>

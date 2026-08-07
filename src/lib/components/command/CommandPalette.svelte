@@ -20,7 +20,6 @@
   import { theme } from "$lib/stores/theme.svelte";
   import { toast } from "$lib/stores/toasts.svelte";
   import { filterRank } from "$lib/utils/filter";
-  import type { ApiError } from "$lib/api/client";
 
   // The single global search surface (DESIGN §6/§7): tables, saved queries,
   // connections and actions in one ranked list.
@@ -100,7 +99,7 @@
           const sql = await savedQueries.read(q.path);
           editorTabs.openSaved(q.path, q.name, sql);
         } catch (e) {
-          toast.error((e as ApiError).message);
+          toast.fromError(e, "Couldn't open the query");
         }
       },
     })),

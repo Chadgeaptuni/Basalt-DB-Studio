@@ -7,6 +7,7 @@ import {
   customVariant,
   customSeed,
 } from "./themeData";
+import { AA_BODY, contrastRatio } from "$lib/utils/contrast";
 
 // Every token in the DESIGN.md §3 contract; themeTokens must emit all of them.
 const CONTRACT = [
@@ -90,7 +91,14 @@ describe("themeData", () => {
     const seed = customSeed("custom-x", "Mine", colors);
     const tokens = themeTokens(seed, customVariant(colors));
     expect(Object.keys(tokens).sort()).toEqual([...CONTRACT].sort());
-    expect(tokens["--primary"]).toBe("#4e8cd9");
+    // The authored surface and text reach the tokens verbatim. `--primary` may
+    // not: it is text-bearing, so it is lifted the minimum distance that clears
+    // AA on this surface (#4e8cd9 lands just under). See themeContrast.test.ts.
+    expect(tokens["--surface-container-high"]).toBe("#141820");
+    expect(tokens["--on-surface"]).toBe("#e6e9ef");
+    expect(contrastRatio(tokens["--primary"], tokens["--surface"])).toBeGreaterThanOrEqual(
+      AA_BODY,
+    );
   });
 
   it("classifies a custom theme from its authored surface", () => {

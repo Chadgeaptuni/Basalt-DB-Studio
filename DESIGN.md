@@ -199,6 +199,23 @@ user-defined seeds that render as authored at any variant (AMOLED still blackens
 them), classified Light or Dark by their authored surface. The theme editor only
 writes seed colors — zero component rework.
 
+**No palette may ship unreadable text.** Every foreground token passes through
+`readable()` in `themeData.ts`, which measures it against each surface it is
+actually drawn on and, only if it falls under WCAG AA (4.5:1), walks it the
+shortest distance toward black or white that clears the bar. A palette that was
+authored legibly is returned untouched, so themes keep their identity; the ones
+that were not — mostly the light variants of borrowed palettes, whose accents
+were authored for a dark background — get the minimum correction.
+`themeContrast.test.ts` asserts the whole matrix (22 palettes × 3 variants) and
+is the gate: a new seed that fails it does not land. `--outline` is the single
+deliberate exception, because it is a 1px hairline and not text — forcing 4.5:1
+onto it would turn every panel edge into a hard border and undo §2.
+
+The measuring itself is `utils/contrast.ts`, which resolves the two colour forms
+the contract emits (`#rrggbb` and nested `color-mix(in srgb, …)`) and computes
+WCAG ratios. The custom-theme editor reads it live, since a hand-picked palette
+is the one case the audit suite can never see in advance.
+
 ## 4. Typography
 
 Text contrast is the primary hierarchy tool. Two font stacks: UI sans and mono.
@@ -364,6 +381,20 @@ the primitive**, don't fork it locally.
   the tooltip is decoration and nothing depends on it. Never set both — two
   tooltips fire at different delays on top of each other.
 - **EmptyState** — icon (16px, `--on-surface-muted`) + one sentence + at most one action.
+- **ErrorState** — the one error rendering: warning icon, the kind's headline,
+  the next step, then the backend's own message in mono, plus an optional action
+  snippet. `size: 'block' | 'inline'` (pane vs. toolbar/list strip) and `filled`
+  for a failed row inside a list. It takes an `ErrorKind`, never an `ApiError` —
+  `ui/` may not know the api layer (§9) — and gets its words from
+  `utils/errorPresentation.ts`. Hand-writing an error block at a call site is a
+  review failure; that is exactly how the app ended up with three different
+  titles for one `kind`.
+- **ResizeHandle** — the WAI-ARIA window splitter: a focusable `role="separator"`
+  carrying `aria-valuenow`, driven by pointer *and* by arrows / Home / End. The
+  parent owns what the value means and supplies `toValue`; the handle owns
+  capture, the key map and the ARIA contract. `SplitPane` and `PanelHost` both
+  consume it — a second hand-rolled separator is how one of them ended up
+  mouse-only.
 - **Spinner** — 3 sizes; inline in buttons while pending (`Button` handles it via
   a `loading` prop).
 - **Kbd** — takes a shortcut spec (`"mod+shift+f"`), never pre-rendered key text,
@@ -444,8 +475,24 @@ Focus is **additionally** a 2px `--primary` ring via `:focus-visible` (app.css
   - `Ctrl+B` toggle panel · `Ctrl+K` command palette (tables, saved queries,
     connections, actions — the single global search entry point)
   - Grid: arrows/Tab navigate, `Enter` edit cell, `Escape` revert cell, `Ctrl+Enter` commit pending edits, `Ctrl+C` copy cell/selection (TSV), `Ctrl+Shift+C` advanced copy (headers/delimiter/quoting)
+  - Grid: `Space` toggles the cell inspector, `Escape` closes it — while a cell
+    editor is open the input keeps `Escape` for reverting, because it stops
+    propagation.
+  - Tree rows follow the ARIA tree pattern: `Enter`/`Space` activate,
+    `ArrowRight` expands and `ArrowLeft` collapses. The arrows are *directional*,
+    not a toggle — `→` on an open node leaves it open. A row that announces
+    `aria-expanded` owes the keys that go with it.
+  - Separators are operable: arrows nudge, `Home`/`End` jump to the bounds. This
+    is `ResizeHandle` (§6), so the split pane and the side panel behave alike.
+  - Actions that live in a context menu stay reachable: the row is focusable, so
+    the platform's own `Shift+F10` / Menu key opens it.
   - Shortcuts live in `src/lib/utils/keyboard.ts` (single registry — no scattered
     `onkeydown` listeners) and are shown in menus/tooltips via `Kbd`.
+- **Svelte transitions are JS-driven and the CSS `prefers-reduced-motion` block
+  does not reach them.** Every one goes through `utils/motion.ts`, which checks
+  the media query itself and collapses duration *and* delay to zero. A raw
+  `transition:fade` from `svelte/transition` at a call site silently opts out of
+  that; `motion.test.ts` scans the tree and fails on one.
 - **Frictionless settings:** flat lists with visible controls; no accordions
   hiding core options.
 - Destructive actions (`DROP`, `DELETE`/`UPDATE` without `WHERE`, `TRUNCATE`,
@@ -475,7 +522,15 @@ A blank pane is a bug.
   connections → "No connections yet" + [New connection]; empty result → "0 rows ·
   42 ms" in the results toolbar (not a giant pane message); empty table → grid
   header + "No rows" line + [Insert row].
-- **Error:** switch on `ApiError.kind` — each kind has a specific rendering:
+- **Error:** `utils/errorPresentation.ts` maps **every** `ErrorKind` to a
+  headline and the next step, and `ui/ErrorState.svelte` (§6) renders it. The map
+  is a full `Record`, not a `Partial`: a new variant in `errors/mod.rs` fails to
+  compile here until someone writes what the user should read and do, which is
+  what keeps "every kind has a specific rendering" true instead of aspirational.
+  A test also parses `errors/mod.rs` and fails if the Rust and TS kind sets
+  drift. Call sites choose the *shape* (`block`, `inline`, `filled`) and supply
+  the recovery action; they never write the words. Kind-specific behaviour on
+  top of that:
   - Connection kinds (`connectionRefused`, `authFailed`, `tlsError`,
     `tunnelError`) → inline state in the connection form / sidebar item with the
     engine message and a [Retry] / [Edit connection] action.
@@ -489,8 +544,13 @@ A blank pane is a bug.
     exact next step ("Resolve conflicts in your git tool, then retry").
   - `readOnlyViolation`, `noPrimaryKey`, `ambiguousRowIdentity` → inline grid/
     toolbar notices explaining *why* editing is blocked.
-  - Truly unexpected (`internal`) → error toast with the message and a "Copy
-    details" action. This is the **only** kind allowed to toast generically.
+  - Truly unexpected (`internal`) → error toast, sticky, with a "Copy details"
+    action. This is the **only** kind allowed to toast generically.
+  - Every error toast goes through `toast.fromError(e, context?)` — one entry
+    point, so a caught `ApiError` always reads as its kind's headline rather than
+    a raw backend string, and always carries "Copy details". A pane that already
+    renders the failure inline does **not** also toast it; saying it twice is
+    worse than saying it once.
 - **Optimistic UI with rollback:** local-only actions (theme switch, settings
   toggles, staging grid edits) update rune state instantly; if the backend write
   fails, roll the state back and surface the specific error — never leave UI and
@@ -566,7 +626,13 @@ Before presenting any UI code, self-check the diff for:
 9. Raw text sizes (`text-xs`, `text-sm`, `text-[11px]`) instead of a type role (§4)
 10. Hand-written hover states instead of `stateLayer` / `stateLayerPill` (§7)
 11. Off-tier heights — anything but 56 / 40 / 36 / 32 / 28 px, grid rows excepted (§5)
-12. A hand-rolled list row instead of `ListItem`, or a hand-rolled menu instead
-    of `Menu` (§6)
+12. A hand-rolled list row instead of `ListItem`, a hand-rolled menu instead of
+    `Menu`, a hand-rolled error block instead of `ErrorState`, or a hand-rolled
+    separator instead of `ResizeHandle` (§6)
+13. An error title or hint written at a call site instead of taken from
+    `errorPresentation.ts`, or a `Partial<Record<ErrorKind, …>>` anywhere (§8)
+14. `transition:` bound to anything but a `utils/motion.ts` helper (§7)
+15. A pointer handler (`onpointerdown`, `onmousedown`) with no keyboard path to
+    the same action (§7)
 
 Any hit → **rewrite before presenting**. These are also review-blocking in PRs.

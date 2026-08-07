@@ -2,9 +2,9 @@
   import Play from "@lucide/svelte/icons/play";
   import Download from "@lucide/svelte/icons/download";
   import CircleCheck from "@lucide/svelte/icons/circle-check";
-  import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
+  import ErrorState from "$lib/components/ui/ErrorState.svelte";
   import Badge from "$lib/components/ui/Badge.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import Tabs, { type TabItem } from "$lib/components/ui/Tabs.svelte";
@@ -13,7 +13,7 @@
   import { editorTabs } from "$lib/stores/tabs.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { ioApi } from "$lib/api/io";
-  import type { ErrorKind, StatementResult } from "$lib/api/types";
+  import type { StatementResult } from "$lib/api/types";
 
   // History used to live here behind a toggle; it is a rail destination now, so
   // this pane only ever shows results (DESIGN §5).
@@ -40,19 +40,6 @@
       tone: s.error ? "danger" : "default",
     })),
   );
-
-  const ERROR_TITLE: Partial<Record<ErrorKind, string>> = {
-    readOnlyViolation: "Connection is read-only",
-    queryError: "Query error",
-    queryCancelled: "Query cancelled",
-    noPrimaryKey: "No primary key",
-    ambiguousRowIdentity: "Ambiguous row identity",
-    connectionRefused: "Connection lost",
-    authFailed: "Authentication failed",
-    tlsError: "TLS error",
-    tunnelError: "Tunnel error",
-  };
-  const title = (kind: ErrorKind): string => ERROR_TITLE[kind] ?? "Error";
 
   // Export re-runs the SQL that produced the shown result (full result, not the
   // row-limited page) — never the live draft, which may have moved on since.
@@ -101,23 +88,11 @@
     {:else if tab.running}
       <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-muted"><Spinner size="sm" /> Running query…</div>
     {:else if tab.runError}
-      <div class="flex items-start gap-2 p-3 text-body-md">
-        <TriangleAlert size={16} strokeWidth={2} class="mt-0.5 shrink-0 text-error" />
-        <div class="min-w-0">
-          <div class="text-on-surface">{title(tab.runError.kind)}</div>
-          <div class="mt-0.5 text-data whitespace-pre-wrap text-on-surface-muted">{tab.runError.message}</div>
-        </div>
-      </div>
+      <ErrorState kind={tab.runError.kind} message={tab.runError.message} />
     {:else if !result}
       <EmptyState icon={Play} message="Run a query to see results." />
     {:else if current?.error}
-      <div class="flex items-start gap-2 p-3 text-body-md">
-        <TriangleAlert size={16} strokeWidth={2} class="mt-0.5 shrink-0 text-error" />
-        <div class="min-w-0">
-          <div class="text-on-surface">{title(current.error.kind)}</div>
-          <div class="mt-0.5 text-data whitespace-pre-wrap text-on-surface-muted">{current.error.message}</div>
-        </div>
-      </div>
+      <ErrorState kind={current.error.kind} message={current.error.message} />
     {:else if current && current.columns.length === 0}
       <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-variant">
         <CircleCheck size={16} strokeWidth={2} class="shrink-0 text-ok" />

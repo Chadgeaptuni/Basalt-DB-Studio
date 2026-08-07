@@ -109,7 +109,7 @@
       toast.success("Connection saved.");
       close();
     } catch (e) {
-      toast.error((e as ApiError).message);
+      toast.fromError(e, "Couldn't save the connection");
     } finally {
       saving = false;
     }

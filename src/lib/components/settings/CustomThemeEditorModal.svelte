@@ -3,8 +3,10 @@
   import Field from "$lib/components/ui/Field.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import Input from "$lib/components/ui/Input.svelte";
+  import Badge from "$lib/components/ui/Badge.svelte";
   import type { CustomTheme } from "$lib/stores/theme.svelte";
   import { DEFAULT_CUSTOM_COLORS } from "$lib/stores/themeData";
+  import { AA_BODY, contrastRatio } from "$lib/utils/contrast";
 
   interface Props {
     themeToEdit?: CustomTheme | null;
@@ -19,6 +21,18 @@
   let surface = $state("");
   let border = $state("");
   let text = $state("");
+
+  // Live WCAG readout on the two pairs the user controls directly. A built-in
+  // palette gets checked by the audit suite; a hand-picked one can only be
+  // checked here. It reports rather than blocks: themeTokens lifts an
+  // unreadable colour anyway, so the honest message is what will happen to it.
+  const checks = $derived(
+    [
+      { label: "Text on surface", ratio: contrastRatio(text, surface) },
+      { label: "Accent on surface", ratio: contrastRatio(primary, surface) },
+    ].map((c) => ({ ...c, ok: c.ratio !== null && c.ratio >= AA_BODY })),
+  );
+  const anyLow = $derived(checks.some((c) => !c.ok));
 
   $effect(() => {
     name = themeToEdit?.name ?? "Custom Theme";
@@ -102,6 +116,23 @@
           <span class="text-data text-on-surface-muted">{text}</span>
         </div>
       </label>
+    </div>
+
+    <div class="flex flex-col gap-2 rounded-md border border-outline-variant p-3">
+      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Readability</span>
+      {#each checks as c (c.label)}
+        <div class="flex items-center gap-2 text-body-sm text-on-surface-variant">
+          <Badge variant={c.ok ? "ok" : "warn"}>{c.ok ? "AA" : "low"}</Badge>
+          <span class="flex-1">{c.label}</span>
+          <span class="text-data">{c.ratio === null ? "—" : `${c.ratio.toFixed(1)}:1`}</span>
+        </div>
+      {/each}
+      {#if anyLow}
+        <p class="text-body-sm text-on-surface-muted">
+          WCAG AA wants {AA_BODY}:1 for body text. Basalt will lift the colours that fall short
+          just far enough to clear it, so pick a stronger contrast if you want your exact hues.
+        </p>
+      {/if}
     </div>
   </div>
 

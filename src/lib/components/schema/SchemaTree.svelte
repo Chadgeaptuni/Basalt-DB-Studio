@@ -7,6 +7,7 @@
   import TreeItem from "$lib/components/ui/TreeItem.svelte";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
+  import ErrorState from "$lib/components/ui/ErrorState.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import Panel from "$lib/components/layout/Panel.svelte";
@@ -133,12 +134,11 @@
     {:else if !view || view.loading}
       <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-muted"><Spinner size="sm" /> Introspecting…</div>
     {:else if view.error}
-      <div class="p-3 text-body-md text-error">
-        {view.error.message}
-        <div class="mt-2">
+      <ErrorState kind={view.error.kind} message={view.error.message}>
+        {#snippet action()}
           <Button size="sm" onclick={() => sessionId && schema.loadTree(sessionId)}>Retry</Button>
-        </div>
-      </div>
+        {/snippet}
+      </ErrorState>
     {:else if filtering && matchCount === 0}
       <EmptyState icon={Boxes} message={`Nothing matches “${filter}”.`} />
     {:else if view.tree && view.tree.namespaces.length > 0}

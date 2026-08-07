@@ -7,6 +7,7 @@
   import TreeItem from "$lib/components/ui/TreeItem.svelte";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
+  import ErrorState from "$lib/components/ui/ErrorState.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import Panel from "$lib/components/layout/Panel.svelte";
@@ -21,7 +22,6 @@
   import { toast } from "$lib/stores/toasts.svelte";
   import { keyboard } from "$lib/utils/keyboard";
   import type { SavedQuery } from "$lib/api/savedQueries";
-  import type { ApiError } from "$lib/api/client";
 
   $effect(() => void savedQueries.load());
 
@@ -50,7 +50,7 @@
       const sql = await savedQueries.read(q.path);
       editorTabs.openSaved(q.path, q.name, sql);
     } catch (e) {
-      toast.error((e as ApiError).message);
+      toast.fromError(e, "Couldn't open the query");
     }
   }
 
@@ -88,10 +88,11 @@
     {#if savedQueries.loading && savedQueries.items.length === 0}
       <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-muted"><Spinner size="sm" /> Loading…</div>
     {:else if savedQueries.error}
-      <div class="p-3 text-body-sm text-error">
-        <div class="font-mono whitespace-pre-wrap">{savedQueries.error.message}</div>
-        <div class="mt-2"><Button size="sm" onclick={() => void savedQueries.load()}>Retry</Button></div>
-      </div>
+      <ErrorState kind={savedQueries.error.kind} message={savedQueries.error.message}>
+        {#snippet action()}
+          <Button size="sm" onclick={() => void savedQueries.load()}>Retry</Button>
+        {/snippet}
+      </ErrorState>
     {:else if savedQueries.items.length === 0}
       <EmptyState icon={BookMarked} message={`No saved queries. Save one with ${keyboard.label("mod+s")}.`} />
     {:else if visible.length === 0}

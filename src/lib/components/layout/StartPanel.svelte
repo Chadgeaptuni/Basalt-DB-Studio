@@ -14,7 +14,7 @@
   import SearchIcon from "@lucide/svelte/icons/search";
   import { connections } from "$lib/stores/connections.svelte";
   import { palette } from "$lib/stores/palette.svelte";
-  import { connectErrorTitle } from "$lib/utils/connectionErrors";
+  import ErrorState from "$lib/components/ui/ErrorState.svelte";
   import { STARTUP_SHORTCUT_GROUPS } from "$lib/utils/shortcuts";
 
   let formOpen = $state(false);
@@ -53,16 +53,12 @@
         <Spinner size="sm" /> Loading…
       </div>
     {:else if connections.loadError}
-      <div class="rounded-md bg-error-container p-4 text-body-md text-on-error-container">
-        <div class="font-medium">Couldn't read your saved connections.</div>
-        <div class="mt-1 text-data break-words opacity-90">
-          {connections.loadError.message}
-        </div>
-        <!-- -ml-3 cancels the text button's own padding so its label sits on the
-             same optical left edge as the heading above it. -->
-        <div class="mt-4 -ml-3">
-          <Button variant="text-error" size="sm" onclick={() => connections.load()}>Retry</Button>
-        </div>
+      <div class="overflow-hidden rounded-md">
+        <ErrorState kind={connections.loadError.kind} message={connections.loadError.message} filled>
+          {#snippet action()}
+            <Button variant="text-error" size="sm" onclick={() => connections.load()}>Retry</Button>
+          {/snippet}
+        </ErrorState>
       </div>
     {:else if connections.profiles.length > 0}
       <section>
@@ -78,23 +74,16 @@
             <li>
               <ConnectionRow profile={p} onclick={() => void connections.activate(p.id)} />
               {#if st.status === "error" && st.error}
-                <div
-                  class="flex items-start gap-3 bg-error-container px-3 py-2 text-body-sm
-                    text-on-error-container"
-                >
-                  <div class="min-w-0 flex-1">
-                    <div class="font-medium">{connectErrorTitle(st.error.kind)}</div>
-                    <div class="mt-1 text-data break-words opacity-90">
-                      {st.error.message}
-                    </div>
-                  </div>
-                  <IconButton
-                    icon={RotateCw}
-                    title="Retry"
-                    size="sm"
-                    onclick={() => connections.connect(p.id)}
-                  />
-                </div>
+                <ErrorState kind={st.error.kind} message={st.error.message} size="inline" filled>
+                  {#snippet action()}
+                    <IconButton
+                      icon={RotateCw}
+                      title="Retry"
+                      size="sm"
+                      onclick={() => connections.connect(p.id)}
+                    />
+                  {/snippet}
+                </ErrorState>
               {/if}
             </li>
           {/each}

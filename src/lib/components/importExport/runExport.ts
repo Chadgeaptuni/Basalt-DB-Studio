@@ -1,6 +1,5 @@
 import { save } from "@tauri-apps/plugin-dialog";
 import type { ExportFormat } from "$lib/api/types";
-import type { ApiError } from "$lib/api/client";
 import { toast, toasts } from "$lib/stores/toasts.svelte";
 
 // Shared export flow: pick a save path (format = chosen extension), run the
@@ -27,6 +26,6 @@ export async function runExport(
     toast.success(`Exported ${rows} rows`);
   } catch (e) {
     toasts.dismiss(progressId);
-    toast.error(`Export failed: ${(e as ApiError).message}`);
+    toast.fromError(e, "Export failed");
   }
 }

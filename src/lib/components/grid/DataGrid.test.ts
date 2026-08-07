@@ -184,6 +184,18 @@ describe("DataGrid", () => {
     expect(sheet).toHaveTextContent("text");
   });
 
+  it("closes the inspector on Escape", async () => {
+    render(DataGrid, { columns, rows });
+    const grid = screen.getByRole("grid", { name: "Data grid" });
+
+    await fireEvent.focus(grid);
+    await fireEvent.keyDown(grid, { key: " " });
+    expect(await screen.findByRole("complementary", { name: "id" })).toBeInTheDocument();
+
+    await fireEvent.keyDown(grid, { key: "Escape" });
+    expect(screen.queryByRole("complementary", { name: "id" })).not.toBeInTheDocument();
+  });
+
   it("exposes table structure to assistive technology", () => {
     render(DataGrid, { columns, rows });
     const grid = screen.getByRole("grid", { name: "Data grid" });

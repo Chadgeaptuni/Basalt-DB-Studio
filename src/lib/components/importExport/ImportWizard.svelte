@@ -8,10 +8,11 @@
   import Checkbox from "$lib/components/ui/Checkbox.svelte";
   import Select from "$lib/components/ui/Select.svelte";
   import Stepper, { type Step } from "$lib/components/ui/Stepper.svelte";
+  import ErrorState from "$lib/components/ui/ErrorState.svelte";
   import { ioApi } from "$lib/api/io";
   import { connections } from "$lib/stores/connections.svelte";
   import { toast } from "$lib/stores/toasts.svelte";
-  import type { ConflictMode } from "$lib/api/types";
+  import type { ConflictMode, ErrorResponse } from "$lib/api/types";
   import type { ApiError } from "$lib/api/client";
 
   // CSV import wizard: pick a file, choose which target columns the CSV maps to (in
@@ -34,7 +35,7 @@
     untrack(() => Object.fromEntries(columns.map((c) => [c, true]))),
   );
   let running = $state(false);
-  let error = $state<string | null>(null);
+  let error = $state<ErrorResponse | null>(null);
 
   const chosen = $derived(columns.filter((c) => picked[c]));
   const conflictOptions = [
@@ -81,8 +82,10 @@
       onclose();
     } catch (e) {
       const err = e as ApiError;
-      const detail = err.detail as { line?: number } | undefined;
-      error = detail?.line ? `Line ${detail.line}: ${err.message}` : err.message;
+      // importParse carries the offending line; prefix it so the message names
+      // the row to go fix, which is the whole point of the detail payload.
+      const line = (err.detail as { line?: number } | undefined)?.line;
+      error = { kind: err.kind, message: line ? `Line ${line}: ${err.message}` : err.message };
     } finally {
       running = false;
     }
@@ -134,7 +137,10 @@
     {/if}
 
     {#if error}
-      <p class="text-data whitespace-pre-wrap text-error">{error}</p>
+      <!-- -mx-3 pulls the strip's own px-3 back to the modal's gutter. -->
+      <div class="-mx-3">
+        <ErrorState kind={error.kind} message={error.message} size="inline" />
+      </div>
     {/if}
   </div>
 

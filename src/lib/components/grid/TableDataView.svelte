@@ -9,6 +9,7 @@
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
+  import ErrorState from "$lib/components/ui/ErrorState.svelte";
   import Badge from "$lib/components/ui/Badge.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import IconButton from "$lib/components/ui/IconButton.svelte";
@@ -231,9 +232,8 @@
     </div>
   {/if}
   {#if view?.commitError}
-    <div class="flex items-start gap-2 border-b border-outline-variant px-3 py-1.5 text-body-sm">
-      <TriangleAlert size={13} strokeWidth={2} class="mt-0.5 shrink-0 text-error" />
-      <span class="font-mono whitespace-pre-wrap text-error">{view.commitError.message}</span>
+    <div class="border-b border-outline-variant">
+      <ErrorState kind={view.commitError.kind} message={view.commitError.message} size="inline" />
     </div>
   {/if}
 
@@ -243,10 +243,7 @@
     {:else if !view || view.loading}
       <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-muted"><Spinner size="sm" /> Loading rows…</div>
     {:else if view.error}
-      <div class="flex items-start gap-2 p-3 text-body-md">
-        <TriangleAlert size={16} strokeWidth={2} class="mt-0.5 shrink-0 text-error" />
-        <span class="text-data whitespace-pre-wrap text-on-surface-muted">{view.error.message}</span>
-      </div>
+      <ErrorState kind={view.error.kind} message={view.error.message} />
     {:else if gridRows.length === 0}
       <EmptyState message="No rows. Use Add row to insert one." />
     {:else}

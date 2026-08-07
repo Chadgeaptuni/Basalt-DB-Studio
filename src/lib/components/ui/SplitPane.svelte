@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import ResizeHandle from "./ResizeHandle.svelte";
 
   interface Props {
     direction?: "horizontal" | "vertical";
@@ -26,50 +27,31 @@
   let container = $state<HTMLElement>();
   // svelte-ignore state_referenced_locally
   let ratio = $state(initial);
-  let dragging = $state(false);
   const isH = $derived(direction === "horizontal");
 
-  function startDrag(e: PointerEvent): void {
-    e.preventDefault();
-    dragging = true;
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-  }
-  function onMove(e: PointerEvent): void {
-    if (!dragging || !container) return;
+  /** The container's extent along the split axis, 0 when it isn't laid out yet. */
+  function size(): number {
+    if (!container) return 0;
     const rect = container.getBoundingClientRect();
-    const size = isH ? rect.width : rect.height;
-    if (size <= 0) return;
-    const pos = isH ? e.clientX - rect.left : e.clientY - rect.top;
-    const clamped = Math.min(size - min, Math.max(min, pos));
-    ratio = clamped / size;
+    return isH ? rect.width : rect.height;
   }
 
-  function setRatio(next: number): void {
-    if (!container) return;
+  /** Percent, so the handle's ARIA value and its key steps share one unit. */
+  function toPercent(clientPos: number): number {
+    if (!container) return ratio * 100;
     const rect = container.getBoundingClientRect();
-    const size = isH ? rect.width : rect.height;
-    if (size <= 0) return;
-    const minimum = Math.min(0.5, min / size);
-    ratio = Math.min(1 - minimum, Math.max(minimum, next));
+    const extent = size();
+    if (extent <= 0) return ratio * 100;
+    return (((isH ? clientPos - rect.left : clientPos - rect.top) / extent) * 100);
   }
 
-  function onKeydown(e: KeyboardEvent): void {
-    const decrement = isH ? "ArrowLeft" : "ArrowUp";
-    const increment = isH ? "ArrowRight" : "ArrowDown";
-    if (e.key === decrement) setRatio(ratio - 0.02);
-    else if (e.key === increment) setRatio(ratio + 0.02);
-    else if (e.key === "Home") setRatio(0);
-    else if (e.key === "End") setRatio(1);
-    else return;
-    e.preventDefault();
-  }
-  function endDrag(e: PointerEvent): void {
-    dragging = false;
-    try {
-      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch {
-      /* pointer already released */
-    }
+  /** `min` is in px, so the usable percent range depends on the current size —
+   *  which is why Home/End clamp here rather than through the handle's bounds. */
+  function setPercent(pct: number): void {
+    const extent = size();
+    if (extent <= 0) return;
+    const floor = Math.min(50, (min / extent) * 100);
+    ratio = Math.min(100 - floor, Math.max(floor, pct)) / 100;
   }
 
   const firstStyle = $derived(isH ? `width:${ratio * 100}%` : `height:${ratio * 100}%`);
@@ -82,26 +64,21 @@
   <div class="overflow-hidden {isH ? 'h-full' : 'w-full'}" style={firstStyle}>
     {@render a()}
   </div>
-  <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions (The WAI-ARIA window-splitter pattern makes a value-bearing separator focusable.) -->
-  <div
-    role="separator"
-    tabindex="0"
-    aria-label={label}
-    aria-orientation={isH ? "vertical" : "horizontal"}
-    aria-valuemin={0}
-    aria-valuemax={100}
-    aria-valuenow={Math.round(ratio * 100)}
-    onpointerdown={startDrag}
-    onpointermove={onMove}
-    onpointerup={endDrag}
-    onpointercancel={endDrag}
-    onkeydown={onKeydown}
-    class="relative shrink-0 bg-outline-variant transition-colors hover:bg-primary
-      {isH ? 'w-px cursor-col-resize' : 'h-px cursor-row-resize'}"
-  >
-    <!-- Invisible ±4px grab zone so a 1px line stays easy to hit. -->
-    <div class="absolute {isH ? 'inset-y-0 -left-1 -right-1' : 'inset-x-0 -top-1 -bottom-1'}"></div>
-  </div>
+  <!-- A 1px line, so `grab` widens the hit area to ±4px. The handle signals with
+       `--primary` directly — a translucent state layer over a hairline is a no-op
+       (DESIGN §7 carve-out). -->
+  <ResizeHandle
+    orientation={isH ? "vertical" : "horizontal"}
+    value={ratio * 100}
+    min={0}
+    max={100}
+    step={2}
+    {label}
+    toValue={toPercent}
+    onchange={setPercent}
+    grab
+    class="relative shrink-0 bg-outline-variant hover:bg-primary {isH ? 'w-px' : 'h-px'}"
+  />
   <div class="flex-1 overflow-hidden {isH ? 'h-full' : 'w-full'}">
     {@render b()}
   </div>

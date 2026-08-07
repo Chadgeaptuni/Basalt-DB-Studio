@@ -14,10 +14,13 @@ describe("theme store (DOM application)", () => {
     theme.setVariant("dark");
   });
 
+  // Identity is asserted on the pass-through tokens (surface, on-surface).
+  // Accents are text-bearing, so themeTokens may lift them for AA — what they
+  // land on is themeContrast.test.ts's business, not this file's.
   it("writes the selected palette's tokens onto <html>", () => {
     theme.set("dracula");
-    expect(tok("--primary")).toBe("#bd93f9");
-    expect(tok("--error")).toBe("#ff5555");
+    expect(tok("--surface")).toBe("#21222c");
+    expect(tok("--on-surface")).toBe("#f8f8f2");
     expect(root.getAttribute("data-theme")).toBe("dracula");
     expect(root.getAttribute("data-variant")).toBe("dark");
     expect(root.style.colorScheme).toBe("dark");
@@ -37,7 +40,8 @@ describe("theme store (DOM application)", () => {
   it("uses a true-black base on the AMOLED variant", () => {
     theme.setVariant("amoled");
     expect(tok("--surface")).toBe("#000000");
-    expect(tok("--primary")).toBe("#4e8cd9"); // Basalt dark accent retained
+    expect(tok("--surface-container-high")).toBe("#151515"); // near-black raised
+    expect(tok("--on-surface")).toBe("#e6e9ef"); // Basalt dark text retained
     expect(root.style.colorScheme).toBe("dark");
   });
 
@@ -161,6 +165,6 @@ describe("theme store (DOM application)", () => {
     theme.set("custom-2");
     theme.deleteCustomTheme("custom-2");
     expect(theme.current).toBe("basalt-dark");
-    expect(tok("--primary")).toBe("#4e8cd9"); // Basalt dark primary
+    expect(tok("--surface")).toBe("#0e1116"); // Basalt dark background
   });
 });

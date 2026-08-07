@@ -18,7 +18,7 @@
   import ConnectionRow from "./ConnectionRow.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { confirm } from "$lib/stores/dialogs.svelte";
-  import { connectErrorTitle } from "$lib/utils/connectionErrors";
+  import ErrorState from "$lib/components/ui/ErrorState.svelte";
   import type { ConnectionProfile, Engine } from "$lib/api/types";
 
   // The app's one connection surface (DESIGN §5): the trigger states which
@@ -125,15 +125,11 @@
                 {/snippet}
               </ConnectionRow>
               {#if st.status === "error" && st.error}
-                <div class="flex items-start gap-2 bg-error-container px-3 py-1.5 text-body-sm text-error">
-                  <div class="min-w-0 flex-1">
-                    <div class="font-medium">{connectErrorTitle(st.error.kind)}</div>
-                    <div class="mt-0.5 text-data break-words opacity-90">
-                      {st.error.message}
-                    </div>
-                  </div>
-                  <IconButton icon={RotateCw} title="Retry" size="sm" onclick={() => connections.connect(p.id)} />
-                </div>
+                <ErrorState kind={st.error.kind} message={st.error.message} size="inline" filled>
+                  {#snippet action()}
+                    <IconButton icon={RotateCw} title="Retry" size="sm" onclick={() => connections.connect(p.id)} />
+                  {/snippet}
+                </ErrorState>
               {/if}
             </li>
           {/each}

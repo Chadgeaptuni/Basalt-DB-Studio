@@ -1,7 +1,6 @@
 import { settingsApi } from "$lib/api/settings";
 import type { AppSettings, DatetimeDisplay } from "$lib/api/types";
 import { toast } from "./toasts.svelte";
-import type { ApiError } from "$lib/api/client";
 
 // App settings (persisted to settings.toml). `datetimeDisplay` drives cell
 // rendering; `defaultRowLimit` is the fetch cap the editor passes per run. Loaded
@@ -15,7 +14,7 @@ async function persist(): Promise<void> {
   try {
     await settingsApi.save($state.snapshot(current));
   } catch (e) {
-    toast.error(`Could not save settings: ${(e as ApiError).message}`);
+    toast.fromError(e, "Couldn't save settings");
   }
 }
 

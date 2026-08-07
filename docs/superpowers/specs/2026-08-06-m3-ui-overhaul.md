@@ -215,6 +215,10 @@ over-engineering). Revised ownership:
 | `Menu` | shared surface once column headers are its second consumer | U4 |
 | `Chip` | assist / filter / input — first consumed by grid filter chips | U4 |
 | `SideSheet` | right-edge sheet, cell inspector | U4 |
+| `Stepper` | gated multi-step flow — the import wizard | U5 |
+| `Field` | label + supporting text around a control | U5 |
+| `ErrorState` | the one error rendering, over `errorPresentation` | U6 |
+| `ResizeHandle` | focusable ARIA splitter, shared by `SplitPane` and `PanelHost` | U6 |
 
 **`Divider` was dropped.** A 1px rule is `border-outline-variant` /
 `divide-outline-variant` — the token already centralises the colour, so a
@@ -490,22 +494,84 @@ and each gate blocks an unanswered one. `Field` was extracted after finding the
 same `<label><span class="text-label-sm tracking-wider …">` block written out at
 seventeen call sites.
 
-**`Stepper` and `Field` were not in the plan.** The import wizard was one
-scrolling form where you could reach Import having never looked at the column
-mapping — the three steps exist because the decisions are genuinely sequential
-and each gate blocks an unanswered one. `Field` was extracted after finding the
-same `<label><span class="text-label-sm tracking-wider …">` block written out at
-seventeen call sites.
-
 The theme picker's 22 preset cards became list rows: a card grid of 22 is a wall,
 and the only thing distinguishing them is the swatch, which a row carries just as
 well.
 
-**U6 — Audit.** Loading / empty / error for every `ErrorKind`; contrast check
-across 22 palettes × 3 variants; keyboard sweep; reduced-motion sweep.
-*Gate: every `ErrorKind` in `errors/mod.rs` has a specific rendering; all
-palette × variant combinations pass WCAG AA for body text; every action
-reachable without a mouse.*
+**U6 — Audit. ✅ done 2026-08-07.** `errorPresentation` + `ErrorState` over all
+twenty kinds, `contrast.ts` and a contrast-aware token derivation, `ResizeHandle`
+shared by both separators, the panel fade-through, and a reduced-motion sweep.
+*Gate: every `ErrorKind` in `errors/mod.rs` has a specific rendering ✅ (enforced
+by a total `Record`, not by inspection); all 66 palette × variant combinations
+pass WCAG AA for body text ✅; every action reachable without a mouse ✅;
+`svelte-check` 0 errors / 0 warnings, 245/245 vitest, 65/65 cargo, clippy
+clean ✅.*
+
+**The error audit found duplication, not gaps — which is why eight kinds had no
+copy.** There were three separate title maps (`connectionErrors.ts`,
+`ResultsPane`'s own, an inline conditional in the git panel), all `Partial`, so
+`configIo`, `importParse`, `gitNotInstalled` and five others fell through to a
+bare "Error" or a raw backend string with no next step. The fix is one total
+`Record<ErrorKind, {title, hint}>`: a new variant in `errors/mod.rs` now fails
+to compile until someone writes what the user should read and do. `ERROR_KINDS`
+became an array so the set exists at runtime, and a test parses `errors/mod.rs`
+to check the Rust↔TS lockstep that `types.ts` had only claimed.
+
+**Contrast was the milestone's real finding: 493 of 1,650 measured pairs failed
+AA.** Not marginally — the worst were under 2:1 (`--syntax-str` at 1.60 on
+Dracula light, `--on-surface-muted` at 1.85 on Everforest light). The cause is
+systematic: the borrowed palettes author one set of accents for their dark
+background and the light variant reuses them, so the light variants carried
+nearly all of it.
+
+Fixing it in the *derivation* rather than in the 22 seeds was the decision that
+mattered. Hand-editing palettes would have meant re-authoring Dracula and
+Gruvbox until they passed, which is precisely the identity people pick them for.
+`readable()` instead measures each foreground against every surface it is drawn
+on and moves it the shortest distance toward black or white that clears 4.5:1 —
+a pair that already passes is returned byte-identical. It walks rather than
+bisects because contrast against a mid-tone background is V-shaped, not
+monotonic: white on Everforest's olive primary *worsens* before it improves, so
+"first step that passes" is the only correct probe.
+
+Two bugs surfaced in that derivation and are worth recording. `--on-primary` was
+being checked against the *authored* primary while the screen shows the adjusted
+one, so five combinations still shipped at 3.56:1 — an `on-*` pair has to be
+guarded against the value that actually renders. And `readable()` tested an
+unrounded blend before emitting `toHex()`, letting a candidate that measured
+4.501 round back under; it now snaps to 8-bit before testing.
+
+`--outline` is the one foreground left below the text ratio, deliberately: it is
+a 1px hairline, and forcing 4.5:1 onto it would turn every panel edge into a
+hard border and undo the tonal depth model. A test pins the exemption so it
+stays a decision.
+
+**The keyboard sweep found one real gap, and it was again duplication.**
+`PanelHost` hand-rolled a second resize separator that `SplitPane` had already
+solved — and the copy had no key handling, so the side panel could only be
+resized with a mouse. Both now consume `ui/ResizeHandle`, which owns pointer
+capture, the arrow/Home/End map and the ARIA contract while the parent keeps
+ownership of what the value means. Measuring from the panel's own left edge
+instead of a drag origin also deleted the `startX`/`startW` state.
+
+Everything else was already reachable: column header menus are real buttons,
+context menus open from the platform's `Shift+F10` because the rows are
+focusable, and the palette reaches tables. Two mismatches were corrected on the
+way — `TreeItem` announced `aria-expanded` without honouring the arrow keys that
+go with it, and `Escape` did not close the cell inspector that `Space` opens.
+
+**Reduced motion was already right, and the sweep's value was proving it.**
+`motion.ts` had checked the media query since U0; the gap was that nothing
+stopped a call site from importing `svelte/transition` directly and silently
+opting out. `motion.test.ts` now scans every `.svelte` file for a raw
+`transition:fade|slide|scale|fly` and fails on one, and asserts all five helpers
+collapse **delay as well as duration** — which the new fade-through needs, since
+its incoming half is delayed by construction.
+
+The fade-through DESIGN §7 promised since U1 was never actually built; it is now
+a `{#key}` on the rail destination with both halves absolutely positioned, so
+the outgoing and incoming panels overlap for 90 ms rather than stacking and
+halving each other's height.
 
 ---
 

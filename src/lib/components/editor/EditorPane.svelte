@@ -103,7 +103,7 @@
         }
       } else {
         tab.runError = err;
-        if (err.kind === "internal") toast.error(err.message);
+        // ResultsPane renders every kind inline (DESIGN §8) — no toast on top.
       }
     } finally {
       tab.running = false;

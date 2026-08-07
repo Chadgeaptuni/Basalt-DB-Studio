@@ -51,9 +51,18 @@
     }
   }}
   onkeydown={(e) => {
+    // The ARIA tree pattern: arrows expand and collapse, and they are directional
+    // rather than a toggle — pressing → on an open node must not close it. The row
+    // announces `aria-expanded`, so it owes the keys that go with it.
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       onclick?.();
+    } else if (expandable && e.key === "ArrowRight" && !expanded) {
+      e.preventDefault();
+      ontoggle?.();
+    } else if (expandable && e.key === "ArrowLeft" && expanded) {
+      e.preventDefault();
+      ontoggle?.();
     }
   }}
 >

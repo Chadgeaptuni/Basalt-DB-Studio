@@ -2,7 +2,17 @@
 //
 // A *seed* holds both authored palettes of one colour family; the variant picked
 // in Settings decides which one renders. Theme and variant are two independent
-// choices — 21 palettes × 3 variants, not 63 entries in a list.
+// choices — 22 palettes × 3 variants, not 66 entries in a list.
+
+import {
+  AA_BODY,
+  contrastOf,
+  mixRgb,
+  poleFor,
+  resolveColor,
+  toHex,
+  type Rgb,
+} from "$lib/utils/contrast";
 
 export const THEME_VARIANTS = ["light", "dark", "amoled"] as const;
 export type ThemeVariant = (typeof THEME_VARIANTS)[number];
@@ -248,11 +258,55 @@ const AMOLED = { surface: "#000000", container: "#0b0b0b", containerHigh: "#1515
 const mix = (color: string, pct: number, into: string): string =>
   `color-mix(in srgb, ${color} ${pct}%, ${into})`;
 
+// How finely `readable` walks a colour toward its pole. 60 steps ≈ 1.7% per
+// step, which is finer than the eye resolves on a single hue.
+const READABLE_STEPS = 60;
+
+/**
+ * Return `fg` unchanged if it already clears `target` against every surface it
+ * is drawn on; otherwise the nearest colour along fg → black/white that does.
+ *
+ * The palettes are authored by hand and by borrowing (Dracula, Nord, Gruvbox…),
+ * and several of them put text under 2:1 on their own background — the light
+ * variants worst, because their accents were authored for a dark one. Guarding
+ * the *derivation* rather than editing 22 palettes keeps each theme's identity:
+ * a pair that already passes is untouched, and one that fails moves the least
+ * distance that fixes it.
+ *
+ * The walk is a scan, not a bisection: contrast against a mid-tone background is
+ * V-shaped (it falls to 1:1 as the foreground crosses the background's
+ * luminance, then climbs), so "first t that passes" is the only correct probe.
+ */
+function readable(fg: string, backgrounds: string[], target = AA_BODY): string {
+  const start = resolveColor(fg);
+  const bgs = backgrounds.map(resolveColor).filter((c): c is Rgb => c !== null);
+  if (!start || bgs.length === 0) return fg;
+
+  const clears = (c: Rgb): boolean => bgs.every((b) => contrastOf(c, b) >= target);
+  if (clears(start)) return fg;
+
+  // One pole for all of them — a token's surfaces are all the same variant.
+  const pole = poleFor(bgs[0]);
+  for (let i = 1; i <= READABLE_STEPS; i++) {
+    // Snap to 8-bit before testing: the emitted token is a hex string, and
+    // rounding a candidate that measured 4.501 can land it back under AA.
+    const hex = toHex(mixRgb(start, pole, i / READABLE_STEPS));
+    const candidate = resolveColor(hex);
+    if (candidate && clears(candidate)) return hex;
+  }
+  return toHex(pole);
+}
+
 /**
  * Map a seed + variant to the full Basalt token contract (DESIGN.md §3). The one
  * derivation point: surfaces build a 5-level tonal ladder, borders/grid/danger are
  * mixed from the palette, and accent/syntax hues are nudged toward the text colour
  * on the light variant so they retain contrast on a light background.
+ *
+ * Every foreground then passes through `readable()` against the surfaces it is
+ * actually drawn on, so no palette can ship text below WCAG AA. The backgrounds
+ * are computed first for exactly that reason — a foreground can only be checked
+ * once the thing behind it is known.
  */
 export function themeTokens(seed: ThemeSeed, variant: ThemeVariant): Record<string, string> {
   const light = variant === "light";
@@ -270,51 +324,93 @@ export function themeTokens(seed: ThemeSeed, variant: ThemeVariant): Record<stri
   const forLight = (c: string): string => (nudge ? mix(c, 78, base.onSurface) : c);
   const s = accents.syntax;
 
+  // ── Backgrounds ────────────────────────────────────────────────────────────
+  const containerLow = mix(panel, 50, background);
+  const containerHigh = surface;
+  const containerHighest = mix(base.onSurface, light ? 7 : 9, surface);
+
+  const primaryContainer = mix(base.primary, light ? 14 : 22, surface);
+  const secondaryContainer = mix(base.primary, light ? 7 : 10, surface);
+  const errorContainer = mix(base.error, 15, background);
+
+  const gridHeaderBg = mix(surface, 22, background);
+  const gridRowAlt = mix(surface, 12, background);
+  const gridSel = mix(base.primary, light ? 16 : 22, surface);
+  const gridEdited = mix(forLight(accents.warn), 20, background);
+
+  // The surfaces text sits on, hardest case included. Data cells and prose share
+  // most of them; the grid adds its own row tints and the editor its active line.
+  const textSurfaces = [background, containerLow, panel, containerHigh, containerHighest];
+  const cellSurfaces = [background, gridRowAlt, gridEdited, gridHeaderBg, gridSel];
+
+  // `primary` and `error` are themselves adjusted, and they are what the `on-*`
+  // pairs actually render against — guarding those against the *authored* hue
+  // would check a colour that never reaches the screen.
+  const primary = readable(base.primary, textSurfaces);
+  const error = readable(base.error, textSurfaces);
+
   return {
     "--surface": background,
-    "--surface-container-low": mix(panel, 50, background),
+    "--surface-container-low": containerLow,
     "--surface-container": panel,
-    "--surface-container-high": surface,
-    "--surface-container-highest": mix(base.onSurface, light ? 7 : 9, surface),
+    "--surface-container-high": containerHigh,
+    "--surface-container-highest": containerHighest,
 
-    "--on-surface": base.onSurface,
-    "--on-surface-variant": base.onSurfaceVariant,
-    "--on-surface-muted": mix(base.onSurfaceVariant, 60, surface),
+    "--on-surface": readable(base.onSurface, [...textSurfaces, ...cellSurfaces]),
+    "--on-surface-variant": readable(base.onSurfaceVariant, textSurfaces),
+    "--on-surface-muted": readable(mix(base.onSurfaceVariant, 60, surface), textSurfaces),
 
+    // Hairlines and separators, not text: WCAG's text ratios don't apply, and
+    // forcing one onto a 1px rule would turn every panel edge into a hard border
+    // and undo the tonal depth model (DESIGN §2).
     "--outline-variant": mix(base.outline, 58, surface),
     "--outline": base.outline,
 
-    "--primary": base.primary,
-    "--on-primary": base.onPrimary,
+    // Held to the body ratio, not the large-text one: `--primary` is the colour
+    // of text buttons and menu accents at 14px/500, which WCAG counts as normal
+    // text (large starts at 18.66px bold / 24px regular).
+    "--primary": primary,
+    "--on-primary": readable(base.onPrimary, [primary]),
     // Tonal (filled-tonal buttons, chips, selected rows): a low-chroma wash of
     // primary over the panel. On a dark palette `primary` is already light
     // enough to read on that wash; on a light one it must be pulled darker.
-    "--primary-container": mix(base.primary, light ? 14 : 22, surface),
-    "--on-primary-container": light ? mix(base.primary, 82, base.onSurface) : base.primary,
+    "--primary-container": primaryContainer,
+    "--on-primary-container": readable(
+      light ? mix(base.primary, 82, base.onSurface) : base.primary,
+      [primaryContainer],
+    ),
 
-    "--secondary-container": mix(base.primary, light ? 7 : 10, surface),
-    "--on-secondary-container": base.onSurface,
+    "--secondary-container": secondaryContainer,
+    "--on-secondary-container": readable(base.onSurface, [secondaryContainer]),
 
-    "--error": base.error,
-    "--on-error": light ? "#ffffff" : background,
-    "--error-container": mix(base.error, 15, background),
-    "--on-error-container": light ? mix(base.error, 82, base.onSurface) : base.error,
+    "--error": error,
+    "--on-error": readable(light ? "#ffffff" : background, [error]),
+    "--error-container": errorContainer,
+    "--on-error-container": readable(
+      light ? mix(base.error, 82, base.onSurface) : base.error,
+      [errorContainer],
+    ),
 
-    "--ok": forLight(accents.ok),
-    "--warn": forLight(accents.warn),
+    "--ok": readable(forLight(accents.ok), textSurfaces),
+    "--warn": readable(forLight(accents.warn), textSurfaces),
 
-    "--grid-header-bg": mix(surface, 22, background),
-    "--grid-row-alt": mix(surface, 12, background),
-    "--grid-sel": mix(base.primary, light ? 16 : 22, surface),
-    "--grid-null": mix(base.onSurfaceVariant, 55, background),
-    "--grid-edited": mix(forLight(accents.warn), 20, background),
+    "--grid-header-bg": gridHeaderBg,
+    "--grid-row-alt": gridRowAlt,
+    "--grid-sel": gridSel,
+    "--grid-null": readable(mix(base.onSurfaceVariant, 55, background), cellSurfaces),
+    "--grid-edited": gridEdited,
 
-    "--syntax-kw": forLight(s.kw),
-    "--syntax-str": forLight(s.str),
-    "--syntax-num": forLight(s.num),
-    "--syntax-comment": nudge ? mix(s.comment, 72, base.onSurface) : s.comment,
-    "--syntax-fn": forLight(s.fn),
-    "--syntax-ident": base.onSurface,
+    // The editor paints on `--surface` and tints the active line with
+    // `--surface-container-low`; a token has to clear both.
+    "--syntax-kw": readable(forLight(s.kw), [background, containerLow]),
+    "--syntax-str": readable(forLight(s.str), [background, containerLow]),
+    "--syntax-num": readable(forLight(s.num), [background, containerLow]),
+    "--syntax-comment": readable(
+      nudge ? mix(s.comment, 72, base.onSurface) : s.comment,
+      [background, containerLow],
+    ),
+    "--syntax-fn": readable(forLight(s.fn), [background, containerLow]),
+    "--syntax-ident": readable(base.onSurface, [background, containerLow]),
   };
 }
 
@@ -326,13 +422,12 @@ export function themeSwatch(seed: ThemeSeed): [string, string, string] {
   return [b.background, b.primary, b.outline];
 }
 
-/** Perceptual lightness of a #rrggbb colour, 0 (black) → 1 (white). */
-function luminance(hex: string): number {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return 0;
-  const n = Number.parseInt(m[1], 16);
-  return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
-}
+/** Whether black reads better than white on `color` — the one light/dark test,
+ *  measured rather than thresholded (see `poleFor`). */
+const isLight = (color: string): boolean => {
+  const c = resolveColor(color);
+  return c ? poleFor(c).r === 0 : false;
+};
 
 /** The four colours a user picks for a custom theme. */
 export interface CustomColors {
@@ -346,7 +441,7 @@ export interface CustomColors {
  *  authored surface decides. Read the raw hex the user picked, never the expanded
  *  palette (whose derived fields are `color-mix()` strings `luminance` can't parse). */
 export function customVariant(c: CustomColors): Exclude<ThemeVariant, "amoled"> {
-  return luminance(c.surface) > 0.5 ? "light" : "dark";
+  return isLight(c.surface) ? "light" : "dark";
 }
 
 /**
@@ -359,7 +454,7 @@ export function customSeed(id: string, name: string, c: CustomColors): ThemeSeed
   const light = customVariant(c) === "light";
   const palette: BasePalette = {
     primary: c.primary,
-    onPrimary: luminance(c.primary) > 0.6 ? "#111111" : "#ffffff",
+    onPrimary: isLight(c.primary) ? "#111111" : "#ffffff",
     background: mix(c.surface, light ? 40 : 82, light ? "#ffffff" : "#000000"),
     surface: c.surface,
     onSurface: c.text,

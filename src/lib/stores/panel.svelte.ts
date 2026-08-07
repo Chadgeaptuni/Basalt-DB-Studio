@@ -15,11 +15,12 @@ const isPanelId = (id: unknown): id is PanelId => PANELS.includes(id as PanelId)
 const ACTIVE_KEY = "basalt.panel.active";
 const WIDTH_KEY = "basalt.sidebar.width"; // kept: the width the user already set
 const COLLAPSED_KEY = "basalt.panel.collapsed";
-const MIN_W = 180;
-const MAX_W = 600;
+export const PANEL_MIN_W = 180;
+export const PANEL_MAX_W = 600;
 const DEFAULT_W = 280;
 
-const clampW = (w: number): number => Math.min(MAX_W, Math.max(MIN_W, Math.round(w)));
+const clampW = (w: number): number =>
+  Math.min(PANEL_MAX_W, Math.max(PANEL_MIN_W, Math.round(w)));
 
 function loadActive(): PanelId {
   const saved = localStorage.getItem(ACTIVE_KEY);
@@ -28,7 +29,7 @@ function loadActive(): PanelId {
 
 function loadWidth(): number {
   const n = Number(localStorage.getItem(WIDTH_KEY));
-  return n >= MIN_W && n <= MAX_W ? n : DEFAULT_W;
+  return n >= PANEL_MIN_W && n <= PANEL_MAX_W ? n : DEFAULT_W;
 }
 
 let active = $state<PanelId>(loadActive());

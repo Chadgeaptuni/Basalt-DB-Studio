@@ -29,3 +29,26 @@ export function uiScale(node: Element, params: ScaleParams = {}) {
 export function uiSlide(node: Element, params: SlideParams = {}) {
   return slide(node, { duration: reduced() ? 0 : 130, ...params });
 }
+
+// M3 fade-through, for a surface whose *content* is replaced rather than moved —
+// the nav rail swapping panels. Asymmetric on purpose: the outgoing panel leaves
+// quickly so the two never overlap for long, and the incoming one takes its time.
+// No slide; a panel that flies in from the side reads as navigation, and the rail
+// has not navigated anywhere.
+const FADE_THROUGH_OUT = 90;
+const FADE_THROUGH_IN = 210;
+
+/** The incoming half. Waits out the outgoing half so the call site only has to
+ *  name the two ends, not sequence them. */
+export function fadeThroughIn(node: Element, params: FadeParams = {}) {
+  const off = reduced();
+  return fade(node, {
+    duration: off ? 0 : FADE_THROUGH_IN,
+    delay: off ? 0 : FADE_THROUGH_OUT,
+    ...params,
+  });
+}
+
+export function fadeThroughOut(node: Element, params: FadeParams = {}) {
+  return fade(node, { duration: reduced() ? 0 : FADE_THROUGH_OUT, ...params });
+}

@@ -50,7 +50,7 @@ export const gitsync = {
       await Promise.all([connections.load(), savedQueries.load()]);
     } catch (e) {
       error = e as ApiError;
-      if ((e as ApiError).kind === "internal") toast.error((e as ApiError).message);
+      // The panel renders every kind inline; a toast on top would say it twice.
     } finally {
       syncing = false;
       await refresh();

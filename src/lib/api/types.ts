@@ -2,28 +2,38 @@
 // error envelope (src-tauri/src/errors/mod.rs). Kept in lockstep by hand — a new
 // backend variant is a new member here, never a stringly-typed fallback.
 
-/** Every user-facing failure mode. Matches AppError's serde tag exactly. */
-export type ErrorKind =
-  | "connectionRefused"
-  | "authFailed"
-  | "tlsError"
-  | "tunnelError"
-  | "queryError"
-  | "queryCancelled"
-  | "readOnlyViolation"
-  | "noPrimaryKey"
-  | "ambiguousRowIdentity"
-  | "confirmationRequired"
-  | "secretNotFound"
-  | "keychainUnavailable"
-  | "vaultLocked"
-  | "configIo"
-  | "configParse"
-  | "gitNotInstalled"
-  | "gitConflict"
-  | "gitDirty"
-  | "importParse"
-  | "internal";
+/**
+ * Every user-facing failure mode. Matches AppError::kind() exactly — a test
+ * parses the Rust file and fails if the two sets drift.
+ *
+ * This is an array rather than a bare union so the set exists at runtime: it is
+ * what lets `errorPresentation.ts` be checked for exhaustiveness by a test as
+ * well as by the compiler.
+ */
+export const ERROR_KINDS = [
+  "connectionRefused",
+  "authFailed",
+  "tlsError",
+  "tunnelError",
+  "queryError",
+  "queryCancelled",
+  "readOnlyViolation",
+  "noPrimaryKey",
+  "ambiguousRowIdentity",
+  "confirmationRequired",
+  "secretNotFound",
+  "keychainUnavailable",
+  "vaultLocked",
+  "configIo",
+  "configParse",
+  "gitNotInstalled",
+  "gitConflict",
+  "gitDirty",
+  "importParse",
+  "internal",
+] as const;
+
+export type ErrorKind = (typeof ERROR_KINDS)[number];
 
 /** Serialized shape of every command error (ErrorResponse in Rust). */
 export interface ErrorResponse {

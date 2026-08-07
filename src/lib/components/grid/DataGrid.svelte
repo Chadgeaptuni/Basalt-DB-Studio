@@ -201,6 +201,11 @@
     } else if (e.key === " ") {
       e.preventDefault();
       inspecting = !inspecting;
+    } else if (e.key === "Escape" && inspecting) {
+      // Escape closes the open overlay (DESIGN §7). The cell editor's own input
+      // stops propagation, so reverting an edit still wins while editing.
+      e.preventDefault();
+      inspecting = false;
     } else if (e.key === "ArrowRight") {
       e.preventDefault();
       select(r, Math.min(visibleCols.length - 1, c + 1));
