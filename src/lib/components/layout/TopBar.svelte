@@ -26,8 +26,16 @@
   //
   // Three fixed columns, not flex-grow: the search stays centred in the window no
   // matter how wide the leading mark or the trailing actions get.
+  //
+  // The mark sits in a rail-width box against the leading edge, so it centres on
+  // the same axis as the rail icons directly beneath it. macOS is the exception
+  // and cannot be otherwise: the traffic lights own that corner, so the mark
+  // starts after them and lines up with nothing.
   const padding = $derived(
-    IS_MAC ? `padding-left:${MAC_TRAFFIC_LIGHT_INSET}px;padding-right:8px` : "padding:0 4px 0 8px",
+    IS_MAC ? `padding-left:${MAC_TRAFFIC_LIGHT_INSET}px;padding-right:8px` : "padding:0 4px 0 0",
+  );
+  const leading = $derived(
+    IS_MAC ? "flex min-w-0 items-center" : "grid w-18 shrink-0 place-items-center",
   );
 </script>
 
@@ -40,8 +48,8 @@
   class="grid h-10 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3 border-b
     border-outline-variant bg-surface-container"
 >
-  <div class="flex min-w-0 items-center">
-    <BrandMark size={18} />
+  <div class={leading}>
+    <BrandMark size={22} />
   </div>
 
   <!-- The palette's visible affordance. A button, not a real field: focus goes to

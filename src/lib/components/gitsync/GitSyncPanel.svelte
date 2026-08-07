@@ -1,5 +1,4 @@
 <script lang="ts">
-  import GitBranch from "@lucide/svelte/icons/git-branch";
   import RefreshCw from "@lucide/svelte/icons/refresh-cw";
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import Button from "$lib/components/ui/Button.svelte";
@@ -33,13 +32,13 @@
   <div class="flex-1 overflow-auto p-3 text-data text-on-surface-muted">
     {#if !st || !st.installed}
       <EmptyState
-        icon={GitBranch}
-        message="Git isn't installed, so profiles and saved queries can't sync."
+        message="Git isn't installed."
+        hint="Profiles and saved queries sync through the system git — install it and restart Basalt."
       />
     {:else if !st.isRepo}
       <EmptyState
-        icon={GitBranch}
-        message="The config dir isn't a git repo. Init one and add a remote to sync."
+        message="The config dir isn't a git repo."
+        hint="Run git init there and add a remote to start syncing."
       />
     {:else}
       <dl class="flex flex-col gap-2">

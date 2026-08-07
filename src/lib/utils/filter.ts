@@ -38,6 +38,14 @@ export function matchScore(text: string, query: string): number | null {
   return score - t.length * 0.01;
 }
 
+/**
+ * What every panel says when its filter matches nothing. Declared beside the
+ * matcher because it is the matcher's result being described — three panels each
+ * writing their own version is how "Nothing matches" and "No matches for" end up
+ * in the same app.
+ */
+export const noMatches = (query: string): string => `Nothing matches “${query}”.`;
+
 /** Filter and rank `items` by `key`, preserving input order when the query is empty. */
 export function filterRank<T>(items: T[], query: string, key: (item: T) => string): T[] {
   if (!query.trim()) return items;

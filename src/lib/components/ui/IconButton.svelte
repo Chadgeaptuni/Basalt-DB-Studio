@@ -47,20 +47,25 @@
 </script>
 
 <!-- No native `title`: it would duplicate the tooltip, and the two appear at
-     different delays on top of each other. `aria-label` still carries the name. -->
+     different delays on top of each other. `aria-label` still carries the name.
+     The tooltip's props land on this button rather than on a wrapper of its own,
+     so there is one element and one tab stop. -->
 <Tooltip label={title}>
-  <button
-    type="button"
-    aria-label={title}
-    aria-pressed={active}
-    disabled={disabled || loading}
-    {onclick}
-    class="grid place-items-center rounded-full {box} {stateLayer} {focusRing} {toneClass}"
-  >
-    {#if loading}
-      <Spinner size="sm" />
-    {:else}
-      <Icon size={px} strokeWidth={2} />
-    {/if}
-  </button>
+  {#snippet children(tooltipProps)}
+    <button
+      {...tooltipProps}
+      type="button"
+      aria-label={title}
+      aria-pressed={active}
+      disabled={disabled || loading}
+      {onclick}
+      class="grid place-items-center rounded-full {box} {stateLayer} {focusRing} {toneClass}"
+    >
+      {#if loading}
+        <Spinner size="sm" />
+      {:else}
+        <Icon size={px} strokeWidth={2} />
+      {/if}
+    </button>
+  {/snippet}
 </Tooltip>

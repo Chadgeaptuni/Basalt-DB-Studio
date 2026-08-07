@@ -15,7 +15,7 @@
   import SegmentedButton, { type Segment } from "$lib/components/ui/SegmentedButton.svelte";
   import ContextMenu from "$lib/components/ui/ContextMenu.svelte";
   import type { MenuItem } from "$lib/components/ui/menu";
-  import { filterRank } from "$lib/utils/filter";
+  import { filterRank, noMatches } from "$lib/utils/filter";
   import { connections } from "$lib/stores/connections.svelte";
   import { schema } from "$lib/stores/schema.svelte";
   import { editorTabs } from "$lib/stores/tabs.svelte";
@@ -130,7 +130,10 @@
 
   <div class="flex-1 overflow-auto py-1">
     {#if !sessionId}
-      <EmptyState icon={Boxes} message="Connect to browse the schema." />
+      <EmptyState
+        message="Not connected."
+        hint="Pick a connection from the status bar to browse its tables and views."
+      />
     {:else if !view || view.loading}
       <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-muted"><Spinner size="sm" /> Introspecting…</div>
     {:else if view.error}
@@ -140,7 +143,7 @@
         {/snippet}
       </ErrorState>
     {:else if filtering && matchCount === 0}
-      <EmptyState icon={Boxes} message={`Nothing matches “${filter}”.`} />
+      <EmptyState message={noMatches(filter)} hint="Try a shorter or different term." />
     {:else if view.tree && view.tree.namespaces.length > 0}
       <div role="tree">
         {#each namespaces as ns (ns.name)}
@@ -202,7 +205,10 @@
         {/each}
       </div>
     {:else}
-      <EmptyState icon={Boxes} message="No tables or views." />
+      <EmptyState
+        message="This database is empty."
+        hint="No tables or views yet — create one from a namespace's menu."
+      />
     {/if}
   </div>
 </Panel>

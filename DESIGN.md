@@ -370,14 +370,16 @@ the primitive**, don't fork it locally.
 - **SideSheet** — right-edge M3 sheet, `rounded-md` on the leading corners,
   `shadow-e2`. Used for cell inspection; it overlays the workspace and never
   displaces the grid.
-- **NavRail / NavRailItem** — 72px rail, 56px items, icon over
-  `text-label-sm` label, active item marked by the M3 pill indicator
-  (`--secondary-container`), never by colour alone. `NavRailItem` passes all ARIA
-  through and takes no view on what it is: a destination arrives carrying
-  `role="tab"` and roving `tabindex`, a trailing action (Settings) arrives as a
-  plain button. Actions stay **outside** the tablist — inside it, `End` would
-  land on something that is not a destination and assistive tech would count it
-  as one.
+- **NavRail / NavRailItem** — 72px rail, 40px items each holding a 56×32 pill
+  with a 20px icon. Active item marked by the M3 pill indicator
+  (`--secondary-container`), never by colour alone. **Icon only**: the name lives
+  on `aria-label` and shows on hover through `Tooltip` (`side="right"`), because a
+  permanent word under every icon spends a lot of column on names learned in a
+  day. `NavRailItem` passes all ARIA through and takes no view on what it is: a
+  destination arrives carrying `role="tab"` and roving `tabindex`, a trailing
+  action (Settings) arrives as a plain button. Actions stay **outside** the
+  tablist — inside it, `End` would land on something that is not a destination
+  and assistive tech would count it as one.
 - **SearchField** — M3 docked search field: 32px pill on
   `--surface-container-low`, leading search icon, trailing clear. It owns text
   only; filtering is the caller's job, and no consumer debounces or fetches —
@@ -397,8 +399,21 @@ the primitive**, don't fork it locally.
   `--surface-container-highest`, `rounded-xs`, no arrow. It replaces the native
   `title` on icon-only controls; the accessible name stays on `aria-label`, so
   the tooltip is decoration and nothing depends on it. Never set both — two
-  tooltips fire at different delays on top of each other.
-- **EmptyState** — icon (16px, `--on-surface-muted`) + one sentence + at most one action.
+  tooltips fire at different delays on top of each other. It renders **no element
+  of its own**: its `children` snippet receives the trigger props and the control
+  spreads them onto its own element. Wrapping instead nests that control inside
+  bits-ui's `<button tabindex="0">` — invalid markup, a second tab stop on every
+  icon button, and fatal to anything with a role of its own, since a `role="tab"`
+  inside a button is not a tab.
+- **EmptyState** — one sentence in `--on-surface-variant`, an optional `hint`
+  naming the next step in `--on-surface-muted`, at most one action. Same two-line
+  shape as `ErrorState`, so loading, empty and error speak with one voice. The
+  icon is **off by default**: inside a rail panel it restates the rail icon two
+  inches away, which is decoration pretending to be information. Pass one only
+  where the surface has no icon of its own.
+- **"Nothing matches …"** comes from `noMatches()` in `utils/filter.ts`, beside
+  the matcher whose result it describes. Four panels each writing their own is
+  how one app ends up saying "Nothing matches" and "No matches for".
 - **ErrorState** — the one error rendering: warning icon, the kind's headline,
   the next step, then the backend's own message in mono, plus an optional action
   snippet. `size: 'block' | 'inline'` (pane vs. toolbar/list strip) and `filled`
@@ -418,6 +433,12 @@ the primitive**, don't fork it locally.
 - **Kbd** — takes a shortcut spec (`"mod+shift+f"`), never pre-rendered key text,
   and emits one 16px `<kbd>` per key inside a grouping `<kbd>` — so a chord reads
   as separate caps and platform labels come from the one catalogue (§7).
+  Modifiers render as the macOS glyph set (`⌘ ⇧ ⌥`) on **every** platform:
+  "Ctrl+Shift+F" reads as a sentence where "⌘+⇧+F" reads as three keys. It is a
+  deliberate look, not a claim about the hardware. Two rules follow from it —
+  chords join with `+` off macOS (only macOS runs its modifiers together), and a
+  literal `ctrl` binding renders as `⌘` off macOS too, because there it is the
+  same physical key as `mod` and one key may not appear under two symbols.
 - **Tabs** — M3 primary tabs: 40px strip, label + optional icon, active marked by
   a **3px `--primary` indicator** under the label. No vertical dividers between
   tabs, no background-swap-only active state.

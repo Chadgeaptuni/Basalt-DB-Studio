@@ -17,7 +17,11 @@ describe("SavedQueriesPanel", () => {
 
     render(SavedQueriesPanel);
 
-    expect(await screen.findByText("No saved queries. Save one with ⌘S.")).toBeInTheDocument();
+    // The shortcut is rendered through `keyboard.label`, never written out, so
+    // the hint picks up the platform's separator without this copy knowing.
+    expect(
+      await screen.findByText("Write one in the editor and press ⌘S to save it here."),
+    ).toBeInTheDocument();
     expect(keyboardMock.label).toHaveBeenCalledWith("mod+s");
   });
 

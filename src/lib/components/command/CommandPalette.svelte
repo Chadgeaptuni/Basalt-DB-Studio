@@ -5,7 +5,6 @@
   import Database from "@lucide/svelte/icons/database";
   import Sun from "@lucide/svelte/icons/sun";
   import Moon from "@lucide/svelte/icons/moon";
-  import CornerDownLeft from "@lucide/svelte/icons/corner-down-left";
   import type { IconComponent } from "$lib/components/ui/icon";
   import Modal from "$lib/components/ui/Modal.svelte";
   import SearchField from "$lib/components/ui/SearchField.svelte";
@@ -19,7 +18,7 @@
   import { panel } from "$lib/stores/panel.svelte";
   import { theme } from "$lib/stores/theme.svelte";
   import { toast } from "$lib/stores/toasts.svelte";
-  import { filterRank } from "$lib/utils/filter";
+  import { filterRank, noMatches } from "$lib/utils/filter";
 
   // The single global search surface (DESIGN §6/§7): tables, saved queries,
   // connections and actions in one ranked list.
@@ -164,12 +163,14 @@
     </div>
 
     {#if results.length === 0}
-      <EmptyState
-        icon={CornerDownLeft}
-        message={query
-          ? `Nothing matches “${query}”.`
-          : "Connect to a database to search its tables."}
-      />
+      {#if query}
+        <EmptyState message={noMatches(query)} hint="Matching is by subsequence, so try fewer letters." />
+      {:else}
+        <EmptyState
+          message="Nothing to search yet."
+          hint="Connect to a database and its tables show up here."
+        />
+      {/if}
     {:else}
       <div class="min-h-0 flex-1 overflow-auto py-1" role="listbox" aria-label="Results">
         {#each results as item, i (item.id)}

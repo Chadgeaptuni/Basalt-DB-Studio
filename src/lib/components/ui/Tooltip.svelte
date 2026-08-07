@@ -10,21 +10,31 @@
   // label still reaches assistive tech through the trigger's own `aria-label`, so
   // this is decoration: a screen reader never depends on it.
   //
+  // The trigger renders through bits-ui's `child` snippet, so this component adds
+  // no element of its own: it hands its props to the control and the control
+  // spreads them. Wrapping instead would nest that control inside bits-ui's own
+  // `<button tabindex="0">` — invalid markup, a second tab stop on every icon
+  // button, and impossible to use on anything with a role of its own (a rail
+  // destination is a `role="tab"`, and a tab inside a button is not a tab).
+  //
   // `Tooltip.Provider` lives here rather than at the app root because bits-ui
   // scopes "only one open at a time" to the provider, and each of these wraps a
   // single control.
   interface Props {
     label: string;
     side?: "top" | "bottom" | "left" | "right";
-    children: Snippet;
+    /** Receives the props the control must spread onto its own element. */
+    children: Snippet<[Record<string, unknown>]>;
   }
   let { label, side = "bottom", children }: Props = $props();
 </script>
 
 <Tooltip.Provider delayDuration={400}>
   <Tooltip.Root>
-    <Tooltip.Trigger class="contents">
-      {@render children()}
+    <Tooltip.Trigger>
+      {#snippet child({ props })}
+        {@render children(props)}
+      {/snippet}
     </Tooltip.Trigger>
     <Tooltip.Portal>
       <Tooltip.Content {side} sideOffset={6} forceMount>

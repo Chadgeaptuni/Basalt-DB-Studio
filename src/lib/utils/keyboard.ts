@@ -32,6 +32,26 @@ function fromEvent(e: KeyboardEvent): string {
   return [...mods, e.key.toLowerCase()].join("+");
 }
 
+// Modifier glyphs, for display only — the registry above still matches on real
+// key names, so nothing about *binding* changes here.
+//
+// The macOS symbol set is used on every platform: "Ctrl+Shift+F" reads as a
+// sentence where "⌘+⇧+F" reads as three keys, and a chord in a menu row or a
+// tooltip should scan at a glance. This is a deliberate look, not a claim about
+// the hardware — a Windows keyboard has no ⌘. Revert by restoring the
+// `IS_MAC ? … : "Ctrl"` forms.
+const MODIFIER_GLYPHS: Record<string, string> = {
+  mod: "⌘",
+  shift: "⇧",
+  alt: "⌥",
+  // Off macOS, a literal `ctrl` binding is the same physical key as `mod`
+  // (Ctrl+PgUp and Ctrl+B are one key), so it has to render the same glyph —
+  // otherwise one key appears in the shortcut list under two different symbols.
+  ctrl: IS_MAC ? "⌃" : "⌘",
+  // The Windows key is genuinely its own key, so it keeps its own name.
+  meta: IS_MAC ? "⌘" : "Win",
+};
+
 // Named keys whose Title-Case form reads badly ("Pageup") or has a conventional
 // glyph. Anything absent falls through to Title Case.
 const KEY_LABELS: Record<string, string> = {
@@ -71,7 +91,7 @@ export const keyboard = {
     };
   },
 
-  /** One display label per key: "mod+shift+f" → ["⌘","⇧","F"] / ["Ctrl","Shift","F"].
+  /** One display label per key: "mod+shift+f" → ["⌘","⇧","F"].
    *  `Kbd` renders one element per entry; `label()` joins them for plain text. */
   keys(spec: string): string[] {
     return spec
@@ -79,16 +99,16 @@ export const keyboard = {
       .split("+")
       .map((raw) => {
         const p = raw.trim();
-        if (p === "mod") return IS_MAC ? "⌘" : "Ctrl";
-        if (p === "shift") return IS_MAC ? "⇧" : "Shift";
-        if (p === "alt") return IS_MAC ? "⌥" : "Alt";
-        if (p === "ctrl") return IS_MAC ? "⌃" : "Ctrl";
-        if (p === "meta") return IS_MAC ? "⌘" : "Win";
-        return KEY_LABELS[p] ?? (p.length === 1 ? p.toUpperCase() : p.charAt(0).toUpperCase() + p.slice(1));
+        return (
+          MODIFIER_GLYPHS[p] ??
+          KEY_LABELS[p] ??
+          (p.length === 1 ? p.toUpperCase() : p.charAt(0).toUpperCase() + p.slice(1))
+        );
       });
   },
 
-  /** Flat form for tooltips and titles: "⌘⇧F" or "Ctrl+Shift+F". */
+  /** Flat form for tooltips and titles: "⌘⇧F" on macOS, "⌘+⇧+F" elsewhere —
+   *  macOS chords are conventionally unseparated, everywhere else they are not. */
   label(spec: string): string {
     return this.keys(spec).join(IS_MAC ? "" : "+");
   },

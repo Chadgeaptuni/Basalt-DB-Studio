@@ -1,5 +1,4 @@
 <script lang="ts">
-  import BookMarked from "@lucide/svelte/icons/bookmark";
   import FileCode from "@lucide/svelte/icons/file-code";
   import Folder from "@lucide/svelte/icons/folder";
   import Save from "@lucide/svelte/icons/save";
@@ -14,7 +13,7 @@
   import SearchField from "$lib/components/ui/SearchField.svelte";
   import ContextMenu from "$lib/components/ui/ContextMenu.svelte";
   import type { MenuItem } from "$lib/components/ui/menu";
-  import { filterRank } from "$lib/utils/filter";
+  import { filterRank, noMatches } from "$lib/utils/filter";
   import { savedQueries } from "$lib/stores/savedQueries.svelte";
   import { saveQuery } from "$lib/stores/saveQuery.svelte";
   import { editorTabs } from "$lib/stores/tabs.svelte";
@@ -94,9 +93,12 @@
         {/snippet}
       </ErrorState>
     {:else if savedQueries.items.length === 0}
-      <EmptyState icon={BookMarked} message={`No saved queries. Save one with ${keyboard.label("mod+s")}.`} />
+      <EmptyState
+        message="No saved queries yet."
+        hint={`Write one in the editor and press ${keyboard.label("mod+s")} to save it here.`}
+      />
     {:else if visible.length === 0}
-      <EmptyState icon={BookMarked} message={`Nothing matches “${filter}”.`} />
+      <EmptyState message={noMatches(filter)} hint="Filtering matches the folder path too." />
     {:else}
       <div role="tree">
         {#each groups as g (g.folder)}

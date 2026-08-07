@@ -80,6 +80,19 @@ describe("NavRail", () => {
     expect(document.activeElement).toBe(screen.getByRole("tab", { name: last }));
   });
 
+  // The visible label is gone, so `aria-label` is the only name a screen reader
+  // has — and the tooltip must not add a wrapper of its own, or each destination
+  // becomes a button inside a button and stops being a tab.
+  it("names each destination without rendering a visible label", () => {
+    render(NavRail);
+    const schema = screen.getByRole("tab", { name: "Schema" });
+
+    expect(schema).toHaveAttribute("aria-label", "Schema");
+    expect(schema).toHaveTextContent("");
+    expect(schema.querySelector("button")).toBeNull();
+    expect(schema.closest("button")).toBe(schema);
+  });
+
   it("opens settings on General", async () => {
     render(NavRail);
     expect(settingsDialog.tab).toBeNull();

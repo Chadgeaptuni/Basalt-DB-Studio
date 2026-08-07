@@ -1,5 +1,4 @@
 <script lang="ts">
-  import HistoryIcon from "@lucide/svelte/icons/history";
   import CircleCheck from "@lucide/svelte/icons/circle-check";
   import CircleX from "@lucide/svelte/icons/circle-x";
   import Trash2 from "@lucide/svelte/icons/trash-2";
@@ -9,7 +8,7 @@
   import Panel from "$lib/components/layout/Panel.svelte";
   import SearchField from "$lib/components/ui/SearchField.svelte";
   import { stateLayerPill, focusRing } from "$lib/components/ui/stateLayer";
-  import { filterRank } from "$lib/utils/filter";
+  import { filterRank, noMatches } from "$lib/utils/filter";
   import { history } from "$lib/stores/history.svelte";
   import { editorTabs } from "$lib/stores/tabs.svelte";
 
@@ -43,9 +42,12 @@
   {/if}
 
   {#if items.length === 0}
-    <EmptyState icon={HistoryIcon} message="No queries run this session yet." />
+    <EmptyState
+      message="Nothing run yet this session."
+      hint="History is kept in memory only and clears when Basalt closes."
+    />
   {:else if visible.length === 0}
-    <EmptyState icon={HistoryIcon} message={`Nothing matches “${filter}”.`} />
+    <EmptyState message={noMatches(filter)} hint="Filtering searches the full statement text." />
   {:else}
     <VirtualList items={visible} rowHeight={36} class="flex-1">
       {#snippet row(e)}
