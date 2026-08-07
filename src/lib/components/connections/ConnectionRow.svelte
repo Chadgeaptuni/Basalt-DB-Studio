@@ -55,7 +55,16 @@
     <span class="min-w-0 flex-1 truncate text-data text-on-surface-muted">{target}</span>
   </button>
   {#if actions}
-    <div class="flex shrink-0 items-center opacity-0 group-hover:opacity-100">{@render actions()}</div>
+    <!-- Fades rather than appearing: at 0→1 with no transition the buttons pop
+         into existence under the cursor, which reads as a glitch on a row you
+         were only passing over. `focus-within` keeps them reachable by keyboard,
+         where there is no hover to trigger on. -->
+    <div
+      class="flex shrink-0 items-center opacity-0 transition-opacity duration-200 ease-standard
+        group-hover:opacity-100 focus-within:opacity-100"
+    >
+      {@render actions()}
+    </div>
   {/if}
   {#if status === "connecting"}<Spinner size="sm" />{/if}
 </div>

@@ -12,6 +12,7 @@
   import { FIELD_BOX } from "./field";
   import { MENU_ROW, POPOVER_SURFACE } from "./menu";
   import { stateLayer, focusRing } from "./stateLayer";
+  import { popIn, popOut } from "$lib/utils/motion";
 
   // The app's one dropdown. It was a native `<select>`, which is the one control
   // the browser refuses to theme: the popup came from the OS in the OS's colours,
@@ -92,29 +93,42 @@
          that is half the width of the control it belongs to reads as a different
          object. `max-h` keeps a long list inside the window instead of running
          off the bottom edge. -->
-    <Select.Content
-      sideOffset={4}
-      align="start"
-      class="{POPOVER_SURFACE} max-h-64 w-[var(--bits-select-anchor-width)] min-w-44 py-2"
-    >
-      <Select.Viewport>
-        {#each options as opt (opt.value)}
-          <Select.Item
-            value={opt.value}
-            label={opt.label}
-            class="{MENU_ROW} text-on-surface-variant data-[selected]:text-on-surface"
-          >
-            {#snippet children({ selected: isSelected })}
-              <!-- Fixed slot whether or not this row is the current value, so the
-                   labels align — same shape as `MenuRow`'s check. -->
-              <span class="grid w-4 shrink-0 place-items-center">
-                {#if isSelected}<Check size={14} strokeWidth={2} class="text-primary" />{/if}
-              </span>
-              <span class="min-w-0 flex-1 truncate">{opt.label}</span>
-            {/snippet}
-          </Select.Item>
-        {/each}
-      </Select.Viewport>
+    <Select.Content sideOffset={4} align="start" forceMount>
+      <!-- `forceMount` + `child` so the listbox has an exit to animate; see
+           `ContextMenu` for the full reasoning. -->
+      {#snippet child({ wrapperProps, props, open })}
+        {#if open}
+          <div {...wrapperProps}>
+            <div
+              {...props}
+              class="{POPOVER_SURFACE} max-h-64 w-[var(--bits-select-anchor-width)] min-w-44 py-2"
+              in:popIn
+              out:popOut
+            >
+              <Select.Viewport>
+                {#each options as opt (opt.value)}
+                  <Select.Item
+                    value={opt.value}
+                    label={opt.label}
+                    class="{MENU_ROW} text-on-surface-variant data-[selected]:text-on-surface"
+                  >
+                    {#snippet children({ selected: isSelected })}
+                      <!-- Fixed slot whether or not this row is the current value,
+                           so labels align — same shape as `MenuRow`'s check. -->
+                      <span class="grid w-4 shrink-0 place-items-center">
+                        {#if isSelected}
+                          <Check size={14} strokeWidth={2} class="text-primary" />
+                        {/if}
+                      </span>
+                      <span class="min-w-0 flex-1 truncate">{opt.label}</span>
+                    {/snippet}
+                  </Select.Item>
+                {/each}
+              </Select.Viewport>
+            </div>
+          </div>
+        {/if}
+      {/snippet}
     </Select.Content>
   </Select.Portal>
 </Select.Root>

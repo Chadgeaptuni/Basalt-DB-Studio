@@ -13,6 +13,7 @@
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import { stateLayer, focusRing } from "$lib/components/ui/stateLayer";
   import { POPOVER_SURFACE } from "$lib/components/ui/menu";
+  import { popIn, popOut } from "$lib/utils/motion";
   import { envLabel, envTone } from "$lib/utils/environment";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import ConnectionForm from "./ConnectionForm.svelte";
@@ -99,14 +100,30 @@
 
   <Popover.Portal>
     <!-- Opens upward and aligned to its leading edge: the trigger sits on the
-         bottom edge of the window, so there is nowhere below to put it. -->
-    <Popover.Content
-      side="top"
-      align="start"
-      sideOffset={4}
-      class="{POPOVER_SURFACE} max-h-[min(28rem,calc(100dvh-4rem))] w-96 overflow-auto"
-    >
-      {#if !connections.loaded}
+         bottom edge of the window, so there is nowhere below to put it.
+         `forceMount` + `child` gives the popover an exit to animate; the body is
+         a snippet so the wrapper stays readable. -->
+    <Popover.Content side="top" align="start" sideOffset={4} forceMount>
+      {#snippet child({ wrapperProps, props, open })}
+        {#if open}
+          <div {...wrapperProps}>
+            <div
+              {...props}
+              class="{POPOVER_SURFACE} max-h-[min(28rem,calc(100dvh-4rem))] w-96 overflow-auto"
+              in:popIn
+              out:popOut
+            >
+              {@render body()}
+            </div>
+          </div>
+        {/if}
+      {/snippet}
+    </Popover.Content>
+  </Popover.Portal>
+</Popover.Root>
+
+{#snippet body()}
+  {#if !connections.loaded}
         <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-muted"><Spinner size="sm" /> Loading…</div>
       {:else if connections.loadError}
         <ErrorState kind={connections.loadError.kind} message={connections.loadError.message}>
@@ -149,12 +166,10 @@
         </ul>
       {/if}
 
-      <div class="flex justify-end p-2">
-        <Button size="sm" onclick={() => (form = { profile: null })}>New connection</Button>
-      </div>
-    </Popover.Content>
-  </Popover.Portal>
-</Popover.Root>
+  <div class="flex justify-end p-2">
+    <Button size="sm" onclick={() => (form = { profile: null })}>New connection</Button>
+  </div>
+{/snippet}
 
 {#if form}
   <ConnectionForm profile={form.profile} onclose={() => (form = null)} />

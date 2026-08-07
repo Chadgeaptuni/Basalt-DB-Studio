@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
   import X from "@lucide/svelte/icons/x";
   import IconButton from "./IconButton.svelte";
-  import { uiSlide } from "$lib/utils/motion";
+  import { sheetIn, sheetOut } from "$lib/utils/motion";
 
   // M3 side sheet (DESIGN §6): a floating panel on the trailing edge of its
   // container, over the content rather than beside it.
@@ -23,7 +23,8 @@
 
 <aside
   aria-label={title}
-  transition:uiSlide={{ axis: "x" }}
+  in:sheetIn
+  out:sheetOut
   style="width:min({width}px, 100%)"
   class="absolute inset-y-0 right-0 z-20 flex flex-col rounded-l-md border-l border-outline-variant
     bg-surface-container-high shadow-e2"

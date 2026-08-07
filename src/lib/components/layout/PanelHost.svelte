@@ -4,7 +4,7 @@
   import HistoryPanel from "$lib/components/history/HistoryPanel.svelte";
   import GitSyncPanel from "$lib/components/gitsync/GitSyncPanel.svelte";
   import ResizeHandle from "$lib/components/ui/ResizeHandle.svelte";
-  import { fadeThroughIn, fadeThroughOut } from "$lib/utils/motion";
+  import { fadeThroughIn, fadeThroughOut, panelIn, panelOut } from "$lib/utils/motion";
   import { panel, PANEL_MAX_W, PANEL_MIN_W } from "$lib/stores/panel.svelte";
   import { zoom } from "$lib/stores/zoom.svelte";
 
@@ -23,29 +23,48 @@
   }
 </script>
 
+<!-- Three boxes, and each one is load-bearing while the panel opens or closes:
+     the outer animates its width (the main area has to give up the space, so
+     there is no avoiding a layout animation here), the middle clips, and the
+     inner is pinned to the panel's resting width so its subtree is laid out once
+     instead of reflowing on every frame. A schema tree of several hundred rows
+     is what that pin is for. The resize handle stays outside the clip — it
+     straddles the border and would lose its outer half to `overflow-hidden`. -->
 <aside
   bind:this={aside}
-  class="relative flex h-full shrink-0 flex-col border-r border-outline-variant bg-surface-container"
+  class="relative h-full shrink-0"
   style="width:{panel.width}px"
+  in:panelIn
+  out:panelOut
 >
-  <!-- Keyed on the destination so swapping panels runs the fade-through (DESIGN
-       §7). Both halves are absolutely positioned inside this box: for the ~90 ms
-       the old and new panels coexist they must overlap, not stack and halve each
-       other's height. -->
-  <div class="relative min-h-0 flex-1">
-    {#key panel.active}
-      <div class="absolute inset-0 flex flex-col" in:fadeThroughIn|local out:fadeThroughOut|local>
-        {#if panel.active === "schema"}
-          <SchemaTree />
-        {:else if panel.active === "queries"}
-          <SavedQueriesPanel />
-        {:else if panel.active === "history"}
-          <HistoryPanel />
-        {:else}
-          <GitSyncPanel />
-        {/if}
+  <div
+    class="h-full overflow-hidden border-r border-outline-variant bg-surface-container"
+  >
+    <div class="flex h-full flex-col" style="width:{panel.width}px">
+      <!-- Keyed on the destination so swapping panels runs the fade-through
+           (DESIGN §7). Both halves are absolutely positioned inside this box: for
+           the ~90 ms the old and new panels coexist they must overlap, not stack
+           and halve each other's height. -->
+      <div class="relative min-h-0 flex-1">
+        {#key panel.active}
+          <div
+            class="absolute inset-0 flex flex-col"
+            in:fadeThroughIn|local
+            out:fadeThroughOut|local
+          >
+            {#if panel.active === "schema"}
+              <SchemaTree />
+            {:else if panel.active === "queries"}
+              <SavedQueriesPanel />
+            {:else if panel.active === "history"}
+              <HistoryPanel />
+            {:else}
+              <GitSyncPanel />
+            {/if}
+          </div>
+        {/key}
       </div>
-    {/key}
+    </div>
   </div>
 
   <!-- Right-edge resize handle: 8px grab zone straddling the 1px border, so it

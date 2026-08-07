@@ -575,9 +575,39 @@ Focus is **additionally** a 2px `--primary` ring via `:focus-visible` (app.css
 ### Motion
 
 - Default: `transition-* duration-200 ease-standard` — matches Flow Desktop's
-  `transition-colors duration-200 ease-out` idiom and M3's standard easing.
+  `transition-colors duration-200 ease-out` idiom and M3's standard easing. A
+  hover or reveal with **no** transition is as much a failure as one with the
+  wrong curve: `opacity-0 group-hover:opacity-100` alone pops.
 - Entrances (dialog, menu, snackbar, side sheet): `ease-emphasized`, ≤300 ms,
   fade + a small scale or slide. No spring, no bounce, no stagger, no parallax.
+- **Every transition lives in `utils/motion.ts`.** It carries the two curves
+  app.css uses, evaluated in JS by `cubicBezier` — Svelte transitions take an
+  easing *function*, and without it they run on svelte/easing's defaults, where
+  `fade` is **linear**. An overlay easing differently from the state layer of the
+  control that opened it is what reads as stiff. A test parses app.css and fails
+  if the JS and CSS curves drift.
+- **Exits are shorter than entrances.** An entrance is the app answering; an exit
+  is it getting out of the way, and one that takes as long as the entrance reads
+  as lag. Svelte's `transition:` directive reuses one config for both directions,
+  so asymmetric surfaces use `in:`/`out:` pairs — `popIn`/`popOut`,
+  `dialogIn`/`dialogOut`, `sheetIn`/`sheetOut`, `panelIn`/`panelOut`,
+  `toastIn`/`toastOut`. Only genuinely symmetric micro-fades use `transition:`.
+- **Popups animate at all**, which needs bits-ui's `forceMount` + `child`
+  snippet: without it the content unmounts the instant it closes and there is no
+  exit to run. The class and transition go on the inner element — `wrapperProps`
+  carries the positioning transform and a scale there fights it. They scale from
+  `--bits-floating-transform-origin`, so a menu grows out of its trigger rather
+  than out of its own middle.
+- **Describe motion with `css`, never `tick`.** `css` compiles to a real
+  `@keyframes` the compositor can run; `tick` writes inline styles from a rAF
+  loop on the main thread. Prefer `transform`/`opacity`: the side sheet
+  translates rather than animating its width, which would reflow its header and
+  body every frame.
+- **When a size animation is unavoidable, contain it.** The side panel must
+  animate width — the main area has to give up the space — so it clips, and its
+  contents are pinned to the panel's resting width. The subtree is laid out once
+  and only the outer box changes per frame; without the pin a schema tree of
+  several hundred rows reflows on every one.
 - **Fade-through** when the nav rail swaps panels: 90 ms out, 210 ms in, no slide.
 - A tab strip animates tabs **opening and closing** (`uiSlide`), never the
   *content* behind a tab switch. Sliding a virtualized grid or a full editor on

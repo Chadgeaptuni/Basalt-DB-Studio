@@ -59,7 +59,8 @@
       aria-pressed={active}
       disabled={disabled || loading}
       {onclick}
-      class="grid place-items-center rounded-full {box} {stateLayer} {focusRing} {toneClass}"
+      class="grid place-items-center rounded-full transition-colors duration-200 ease-standard
+        {box} {stateLayer} {focusRing} {toneClass}"
     >
       {#if loading}
         <Spinner size="sm" />

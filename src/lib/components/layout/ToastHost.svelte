@@ -3,12 +3,12 @@
   // in App.svelte (DESIGN §9).
   import { toasts } from "$lib/stores/toasts.svelte";
   import Toast from "$lib/components/ui/Toast.svelte";
-  import { uiFade } from "$lib/utils/motion";
+  import { toastIn, toastOut } from "$lib/utils/motion";
 </script>
 
 <div class="pointer-events-none fixed right-3 bottom-3 z-[60] flex flex-col gap-2">
   {#each toasts.items as t (t.id)}
-    <div class="pointer-events-auto" transition:uiFade>
+    <div class="pointer-events-auto" in:toastIn out:toastOut>
       <Toast
         kind={t.kind}
         message={t.message}

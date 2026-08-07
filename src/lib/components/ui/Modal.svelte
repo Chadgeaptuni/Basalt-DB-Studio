@@ -3,7 +3,7 @@
   import { Dialog } from "bits-ui";
   import X from "@lucide/svelte/icons/x";
   import IconButton from "./IconButton.svelte";
-  import { uiFade, uiScale } from "$lib/utils/motion";
+  import { dialogIn, dialogOut, uiFade } from "$lib/utils/motion";
 
   interface Props {
     open?: boolean;
@@ -77,7 +77,8 @@
             <div
               class="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-xl border
                 border-outline-variant bg-surface-container-high shadow-e3"
-              transition:uiScale
+              in:dialogIn
+              out:dialogOut
             >
               {#if !headerHidden}
                 <header
