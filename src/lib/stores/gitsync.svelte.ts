@@ -1,4 +1,4 @@
-import { gitsyncApi, type Branch, type GitStatus } from "$lib/api/gitsync";
+import { gitsyncApi, type Branch, type GithubStatus, type GitStatus } from "$lib/api/gitsync";
 import type { ApiError } from "$lib/api/client";
 import { toast } from "./toasts.svelte";
 import { connections } from "./connections.svelte";
@@ -19,6 +19,7 @@ import { savedQueries } from "./savedQueries.svelte";
 
 let status = $state<GitStatus | null>(null);
 let branches = $state<Branch[]>([]);
+let github = $state<GithubStatus | null>(null);
 let error = $state<ApiError | null>(null);
 /** Name of the operation in flight, so each control disables only itself. */
 let busy = $state<string | null>(null);
@@ -27,6 +28,9 @@ async function refresh(): Promise<void> {
   try {
     status = await gitsyncApi.status();
     if (status.isRepo) branches = await gitsyncApi.branches();
+    // Probed once: the panel offers "Create on GitHub" only when gh can actually
+    // do it, so the button is absent rather than failing when pressed.
+    if (github === null) github = await gitsyncApi.githubStatus();
   } catch (e) {
     error = e as ApiError;
   }
@@ -79,6 +83,9 @@ export const gitsync = {
   get branches() {
     return branches;
   },
+  get github() {
+    return github;
+  },
   get error() {
     return error;
   },
@@ -111,6 +118,8 @@ export const gitsync = {
     act("createBranch", () => gitsyncApi.createBranch(name), { reload: true }),
 
   init: () => act("init", () => gitsyncApi.init()),
+  publish: (name: string) =>
+    act("publish", () => gitsyncApi.githubPublish(name), { done: `Published to GitHub as ${name}` }),
   setRemote: (url: string) => act("setRemote", () => gitsyncApi.setRemote(url)),
 
   async sync(): Promise<boolean> {

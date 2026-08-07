@@ -62,6 +62,15 @@ export interface Commit {
   refs: string[];
 }
 
+/** Whether the GitHub CLI can create a repo on the user's behalf. */
+export interface GithubStatus {
+  installed: boolean;
+  /** `gh auth status` succeeded — gh holds a usable token of its own. */
+  authenticated: boolean;
+  /** The account gh is signed in as, so the panel can name it before creating. */
+  login?: string;
+}
+
 export const gitsyncApi = {
   status: () => invoke<GitStatus>("git_status"),
   /** The one-button flow: stage all → commit → pull --rebase → push. */
@@ -88,4 +97,10 @@ export const gitsyncApi = {
 
   init: () => invoke<void>("git_init"),
   setRemote: (url: string) => invoke<void>("git_set_remote", { url }),
+
+  // Creating the repo needs a GitHub *account*, which git has none of. `gh` has
+  // one, in its own keychain entry — so this borrows gh's sign-in the same way
+  // push borrows the credential helper's, and Basalt still stores no token.
+  githubStatus: () => invoke<GithubStatus>("github_status"),
+  githubPublish: (name: string) => invoke<void>("github_publish", { name }),
 };

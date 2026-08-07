@@ -17,6 +17,7 @@ const INFO: AppInfo = {
   arch: "x86_64",
   family: "windows",
   debug: false,
+  configDir: "/home/ada/.config/basalt",
 };
 
 const write = vi.fn<(text: string) => Promise<void>>();

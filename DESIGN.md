@@ -309,6 +309,30 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
   `gitAuthFailed` renders as guidance toward the credential helper,
   `gitPushRejected` as "pull first", `gitNoRemote` as "add one". A raw git stderr
   string in the UI is a review failure.
+- **Every subprocess goes through `gitsync/process.rs`**, which owns four things
+  no caller should have to remember. `CREATE_NO_WINDOW` on Windows — a GUI
+  process has no console, so without it every git call flashes a black window and
+  a panel that polls status strobes (invisible in `tauri dev`, which inherits a
+  terminal). A **deadline** with a killed child — 20s local, 120s remote — so an
+  unreachable host or an unnoticed credential window cannot wedge the panel.
+  **`GIT_OPTIONAL_LOCKS=0`**, so status polling never takes `index.lock` out from
+  under the user's own git in a terminal. And a **2 MB output cap**, drained on
+  threads so the child never blocks on a full pipe, with the diff viewer told when
+  its content was cut.
+- **git 2.23 is the floor**, checked once and reported as `gitNotInstalled`.
+  `restore` is what `unstage` and `discard` are built on and it landed there;
+  below it they fail with git's "unknown subcommand", which reads as a bug here.
+- **`git init` creates `main`**, not whatever `init.defaultBranch` says — which is
+  unset on most machines and lands on `master`, while every remote this repo will
+  be pushed to defaults to `main`.
+- **Publishing borrows `gh`'s account, and only when it has one.** `git init`
+  makes a repo here; `git push` needs one *there*, and creating it needs a GitHub
+  account that git does not have. The GitHub CLI does, in its own keychain entry,
+  so the panel shells out to `gh repo create` — Basalt still stores no token and
+  still has no sign-in. The button is gated on `github_status` rather than
+  offered and failed: `gh auth login` is interactive and cannot be run from here.
+  New repos are **private, not as a default but as the only option** — this one
+  maps someone's database hosts, ports and usernames.
 - **Conflicts are listed and not actionable.** Resolving one is text editing,
   which this app does not do. A stage button on a conflicted file promises a job
   the panel cannot finish; `pull` aborts a conflicting rebase and says so rather

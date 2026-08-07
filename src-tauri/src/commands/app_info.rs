@@ -16,7 +16,9 @@
 //! person's name.
 
 use serde::Serialize;
-use tauri::AppHandle;
+use tauri::{AppHandle, State};
+
+use crate::state::AppState;
 use tauri_plugin_os::Version;
 
 #[derive(Serialize)]
@@ -44,6 +46,10 @@ pub struct AppInfo {
     /// True for `tauri dev` builds. Worth stating: a debug build's timings and
     /// bundle size are nothing like the release the user would otherwise assume.
     pub debug: bool,
+    /// Where profiles, saved queries and settings live — and the directory the
+    /// Git panel is a client for. The whole git feature is about a folder the
+    /// user otherwise has no way to find.
+    pub config_dir: String,
 }
 
 /// Falls back to the OS *type* where there is no edition — os_info reports one
@@ -56,7 +62,7 @@ fn os_name() -> String {
 }
 
 #[tauri::command]
-pub fn app_info(app: AppHandle) -> AppInfo {
+pub fn app_info(app: AppHandle, state: State<AppState>) -> AppInfo {
     let package = app.package_info();
     AppInfo {
         name: package.name.clone(),
@@ -75,5 +81,6 @@ pub fn app_info(app: AppHandle) -> AppInfo {
         arch: std::env::consts::ARCH,
         family: std::env::consts::FAMILY,
         debug: cfg!(debug_assertions),
+        config_dir: state.paths.config_dir.to_string_lossy().into_owned(),
     }
 }

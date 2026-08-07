@@ -94,6 +94,8 @@ pub fn run() {
             commands::gitsync::git_file_diff,
             commands::gitsync::git_init,
             commands::gitsync::git_set_remote,
+            commands::gitsync::github_status,
+            commands::gitsync::github_publish,
             commands::saved_queries::list_saved_queries,
             commands::saved_queries::read_saved_query,
             commands::saved_queries::save_query,

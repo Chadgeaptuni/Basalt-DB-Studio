@@ -32,6 +32,8 @@ export const ERROR_KINDS = [
   "gitAuthFailed",
   "gitPushRejected",
   "gitNoRemote",
+  "githubCliUnavailable",
+  "githubRepoExists",
   "importParse",
   "internal",
 ] as const;
@@ -308,4 +310,6 @@ export interface AppInfo {
   family: string;
   /** True for `tauri dev` builds. */
   debug: boolean;
+  /** Where profiles, saved queries and settings live — the Git panel's repo. */
+  configDir: string;
 }

@@ -84,8 +84,8 @@ const PRESENTATION: Record<ErrorKind, ErrorPresentation> = {
     hint: "Fix the TOML by hand, or move the file aside to start from a clean config.",
   },
   gitNotInstalled: {
-    title: "Git isn't installed",
-    hint: "Install git and restart Basalt — profiles and saved queries sync through the system git.",
+    title: "Git is missing or too old",
+    hint: "Install git 2.23 or newer and restart Basalt — profiles and saved queries sync through the system git.",
   },
   gitConflict: {
     title: "Git conflict",
@@ -102,6 +102,14 @@ const PRESENTATION: Record<ErrorKind, ErrorPresentation> = {
   gitPushRejected: {
     title: "The remote has commits this copy doesn't",
     hint: "Pull first — that rebases your work on top of theirs — then push again.",
+  },
+  githubCliUnavailable: {
+    title: "The GitHub CLI isn't ready",
+    hint: "Basalt creates the repository through gh, which keeps its own GitHub sign-in. Install the GitHub CLI and run `gh auth login`, or create the repository on github.com and paste its URL instead.",
+  },
+  githubRepoExists: {
+    title: "That name is taken",
+    hint: "The account already has a repository with this name. Pick a different one, or add the existing repository as a remote instead.",
   },
   gitNoRemote: {
     title: "No remote configured",

@@ -10,7 +10,8 @@ use std::path::Path;
 use serde::Serialize;
 
 use super::{
-    git, rebase_or_merge_in_progress, remote_error, require_repo, status, stderr, stdout,
+    git, git_remote, rebase_or_merge_in_progress, remote_error, require_repo, status, stderr,
+    stdout,
 };
 use crate::{AppError, AppResult};
 
@@ -57,7 +58,7 @@ fn with_paths<'a>(head: &[&'a str], paths: &'a [String]) -> Vec<&'a str> {
 
 fn run(dir: &Path, args: &[&str], op: &str) -> AppResult<()> {
     let out = git(dir, args)?;
-    if out.status.success() {
+    if out.success() {
         return Ok(());
     }
     Err(AppError::internal(format!(
@@ -76,7 +77,6 @@ pub fn stage(dir: &Path, paths: &[String]) -> AppResult<()> {
 /// half of git's verbs refuse to work in.
 fn has_head(dir: &Path) -> AppResult<bool> {
     Ok(git(dir, &["rev-parse", "--verify", "--quiet", "HEAD"])?
-        .status
         .success())
 }
 
@@ -140,11 +140,11 @@ pub fn fetch(dir: &Path) -> AppResult<()> {
     require_settled(dir)?;
     require_remote(dir)?;
 
-    let out = git(dir, &["fetch", "--prune"])?;
-    if out.status.success() {
+    let out = git_remote(dir, &["fetch", "--prune"])?;
+    if out.success() {
         return Ok(());
     }
-    Err(remote_error("fetch", &stderr(&out)))
+    Err(remote_error("fetch", &out))
 }
 
 /// `pull --rebase`: the config repo is a shared file store, and a merge commit
@@ -158,8 +158,8 @@ pub fn pull(dir: &Path) -> AppResult<()> {
     require_settled(dir)?;
     require_remote(dir)?;
 
-    let out = git(dir, &["pull", "--rebase"])?;
-    if out.status.success() {
+    let out = git_remote(dir, &["pull", "--rebase"])?;
+    if out.success() {
         return Ok(());
     }
     if rebase_or_merge_in_progress(dir) {
@@ -168,7 +168,7 @@ pub fn pull(dir: &Path) -> AppResult<()> {
             "pull hit a merge conflict — resolve it in your git tool, then try again".into(),
         ));
     }
-    Err(remote_error("pull", &stderr(&out)))
+    Err(remote_error("pull", &out))
 }
 
 /// Sets the upstream on first push, rather than failing with git's advice text.
@@ -180,8 +180,8 @@ pub fn push(dir: &Path) -> AppResult<()> {
 
     let st = status(dir)?;
     let out = match (&st.upstream, &st.branch) {
-        (Some(_), _) => git(dir, &["push"])?,
-        (None, Some(branch)) => git(dir, &["push", "--set-upstream", "origin", branch])?,
+        (Some(_), _) => git_remote(dir, &["push"])?,
+        (None, Some(branch)) => git_remote(dir, &["push", "--set-upstream", "origin", branch])?,
         (None, None) => {
             return Err(AppError::GitNoRemote(
                 "HEAD is detached — check out a branch before pushing".into(),
@@ -189,10 +189,10 @@ pub fn push(dir: &Path) -> AppResult<()> {
         }
     };
 
-    if out.status.success() {
+    if out.success() {
         return Ok(());
     }
-    Err(remote_error("push", &stderr(&out)))
+    Err(remote_error("push", &out))
 }
 
 fn require_remote(dir: &Path) -> AppResult<()> {
@@ -250,13 +250,16 @@ pub fn create_branch(dir: &Path, name: &str) -> AppResult<()> {
 
 /// Make the config dir a repo. Safe to call on one that already is — `git init`
 /// is idempotent — but the panel only offers it when there is none.
+///
+/// `-b main` rather than whatever `init.defaultBranch` says, which is unset on
+/// most machines and so lands on `master`. Every remote this repo will ever be
+/// pushed to defaults to `main`, and a first push that silently creates a second
+/// branch there is a confusing way to start.
 pub fn init(dir: &Path) -> AppResult<()> {
     if !super::available() {
-        return Err(AppError::GitNotInstalled(
-            "git is not installed or not on PATH".into(),
-        ));
+        return Err(super::process::availability_error());
     }
-    run(dir, &["init"], "init")
+    run(dir, &["init", "-b", "main"], "init")
 }
 
 /// Point `origin` at a URL, adding it if it is not there yet.

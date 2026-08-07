@@ -5,6 +5,7 @@
   import ArrowDown from "@lucide/svelte/icons/arrow-down";
   import ArrowUp from "@lucide/svelte/icons/arrow-up";
   import Download from "@lucide/svelte/icons/download";
+  import CloudUpload from "@lucide/svelte/icons/cloud-upload";
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
   import Panel from "$lib/components/layout/Panel.svelte";
   import Button from "$lib/components/ui/Button.svelte";
@@ -36,11 +37,17 @@
 
   let message = $state("");
   let showHistory = $state(false);
-  let prompt = $state<"branch" | "remote" | null>(null);
+  let prompt = $state<"branch" | "remote" | "publish" | null>(null);
   let diffing = $state<{ path: string; staged: boolean } | null>(null);
 
   const st = $derived(gitsync.status);
   const busy = $derived(gitsync.working);
+  // `git init` makes a repo here; `git push` needs one to exist *there*. gh is
+  // the only piece of the chain that has a GitHub account, so it is the only one
+  // that can close that gap — and only when it is installed and signed in.
+  const canPublish = $derived(
+    Boolean(gitsync.github?.installed && gitsync.github.authenticated),
+  );
   const canCommit = $derived(
     Boolean(st?.staged.length) && message.trim().length > 0 && !busy,
   );
@@ -186,6 +193,25 @@
           disabled={busy}
           onclick={() => void gitsync.push()}
         />
+      {:else if canPublish}
+        <!-- gh is installed and signed in, so the repo can be created from here.
+             Anything else and the button would fail on press, which is why it is
+             gated on `github` rather than always offered. -->
+        <IconButton
+          icon={CloudUpload}
+          title={`Create on GitHub as ${gitsync.github?.login ?? "your account"}`}
+          size="sm"
+          loading={gitsync.busy === "publish"}
+          disabled={busy}
+          onclick={() => (prompt = "publish")}
+        />
+        <IconButton
+          icon={Download}
+          title="Add an existing remote"
+          size="sm"
+          disabled={busy}
+          onclick={() => (prompt = "remote")}
+        />
       {:else}
         <IconButton
           icon={Download}
@@ -292,10 +318,20 @@
   <PromptDialog
     title="Add a remote"
     label="Origin URL"
-    hint="An SSH or HTTPS URL. Basalt never stores credentials for it — your system git does."
+    hint="An SSH or HTTPS URL for a repository that already exists. Basalt never stores credentials for it — your system git does."
     placeholder="git@github.com:you/basalt-config.git"
     confirmLabel="Add"
     onsubmit={(url) => void gitsync.setRemote(url)}
+    onclose={() => (prompt = null)}
+  />
+{:else if prompt === "publish"}
+  <PromptDialog
+    title="Create on GitHub"
+    label="Repository name"
+    hint={`Created private under ${gitsync.github?.login ?? "your account"} through the GitHub CLI, then wired up as origin and pushed. Private is not a choice: this repo maps your database hosts, ports and usernames.`}
+    initial="basalt-config"
+    confirmLabel="Create and push"
+    onsubmit={(name) => void gitsync.publish(name)}
     onclose={() => (prompt = null)}
   />
 {/if}

@@ -92,6 +92,16 @@ pub enum AppError {
     #[error("{0}")]
     GitNoRemote(String),
 
+    /// Publishing needs a GitHub account, which git has none of. `gh` holds one
+    /// — when it is missing or signed out, this says which.
+    #[error("{0}")]
+    GithubCliUnavailable(String),
+
+    /// The name is taken on that account. Fixed by typing a different one, which
+    /// is why it is not folded into the above.
+    #[error("{0}")]
+    GithubRepoExists(String),
+
     /// `detail` carries `{ line }`.
     #[error("{message}")]
     ImportParse { message: String, line: usize },
@@ -126,6 +136,8 @@ impl AppError {
             AppError::GitAuthFailed(_) => "gitAuthFailed",
             AppError::GitPushRejected(_) => "gitPushRejected",
             AppError::GitNoRemote(_) => "gitNoRemote",
+            AppError::GithubCliUnavailable(_) => "githubCliUnavailable",
+            AppError::GithubRepoExists(_) => "githubRepoExists",
             AppError::ImportParse { .. } => "importParse",
             AppError::Internal(_) => "internal",
         }

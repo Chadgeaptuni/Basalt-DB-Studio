@@ -109,6 +109,9 @@
       {@render fact("Identifier", info.identifier)}
       {@render fact("Tauri", info.tauriVersion)}
       {@render fact("Webview", info.webviewVersion ?? "unreported")}
+      <!-- The folder the Git panel is a client for. Nothing else in the app
+           says where it is, which makes git-sync hard to reason about. -->
+      {@render fact("Config directory", info.configDir)}
     </SettingsGroup>
 
     <SettingsGroup title="Device">

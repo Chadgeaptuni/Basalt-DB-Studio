@@ -68,7 +68,7 @@ pub fn status(dir: &Path) -> AppResult<GitStatus> {
             dir,
             &["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"],
         )?;
-        out.status.success().then(|| stdout(&out))
+        out.success().then(|| stdout(&out))
     };
     let (ahead, behind) = ahead_behind(dir)?;
     let (staged, unstaged, conflicted) = changes(dir)?;
@@ -94,7 +94,7 @@ pub(super) fn ahead_behind(dir: &Path) -> AppResult<(u32, u32)> {
         dir,
         &["rev-list", "--left-right", "--count", "HEAD...@{upstream}"],
     )?;
-    if !out.status.success() {
+    if !out.success() {
         return Ok((0, 0));
     }
     let s = stdout(&out);

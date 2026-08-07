@@ -22,6 +22,7 @@ export function formatDiagnostics(app: AppInfo, device: DeviceInfo): string {
     // number is what they can match against a vendor changelog.
     ["OS", app.osVersion ? `${app.osName} (${app.osVersion})` : app.osName],
     ["Target", `${app.os}-${app.arch}`],
+    ["Config", app.configDir],
     ["Locale", device.locale],
     ["Display", device.display],
   ]);

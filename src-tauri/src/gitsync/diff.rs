@@ -7,7 +7,7 @@
 
 use std::path::Path;
 
-use super::{git, require_repo, stdout};
+use super::{git, require_repo, stdout, GitOutput};
 use crate::gitsync::status::{FileEntry, FileState};
 use crate::AppResult;
 
@@ -30,7 +30,7 @@ pub fn diff_worktree_file(dir: &Path, path: &str, staged: bool) -> AppResult<Str
     args.push(path);
 
     let out = git(dir, &args)?;
-    let text = String::from_utf8_lossy(&out.stdout).to_string();
+    let text = with_truncation_notice(&out, String::from_utf8_lossy(&out.stdout).to_string());
 
     // An untracked file has nothing to diff against, so `git diff` says nothing.
     // Showing it as an addition is more use than showing an empty pane.
@@ -72,7 +72,7 @@ pub fn commit_files(dir: &Path, hash: &str) -> AppResult<Vec<FileEntry>> {
             hash,
         ],
     )?;
-    if !out.status.success() {
+    if !out.success() {
         return Ok(Vec::new());
     }
 
@@ -114,5 +114,18 @@ pub fn diff_commit_file(dir: &Path, hash: &str, path: &str) -> AppResult<String>
     args.push("--");
     args.push(path);
 
-    Ok(stdout(&git(dir, &args)?))
+    let out = git(dir, &args)?;
+    Ok(with_truncation_notice(&out, stdout(&out)))
+}
+
+/// A diff past the output cap arrives with its tail missing. Saying so beats
+/// rendering the first two megabytes as though they were the whole change.
+fn with_truncation_notice(out: &GitOutput, text: String) -> String {
+    if out.truncated {
+        // A leading `\` is git's own marker for a note *about* the diff rather
+        // than a line of it, so the viewer already renders this as `meta`.
+        format!("{text}\n\\ Diff truncated — it is too large to display in full.")
+    } else {
+        text
+    }
 }

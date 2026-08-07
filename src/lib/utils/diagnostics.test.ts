@@ -15,6 +15,7 @@ const app: AppInfo = {
   arch: "x86_64",
   family: "windows",
   debug: false,
+  configDir: "/home/ada/.config/basalt",
 };
 
 const device: DeviceInfo = { locale: "en-US", display: "2560 × 1440 @ 1.5x" };
@@ -37,6 +38,8 @@ describe("formatDiagnostics", () => {
     expect(found.get("Webview")).toBe("141.0.3537.57");
     expect(found.get("OS")).toBe("Windows 11 (10.0.26200)");
     expect(found.get("Target")).toBe("windows-x86_64");
+    // The Git panel is a client for this folder and nothing else names it.
+    expect(found.get("Config")).toBe("/home/ada/.config/basalt");
     expect(found.get("Locale")).toBe("en-US");
     expect(found.get("Display")).toBe("2560 × 1440 @ 1.5x");
   });

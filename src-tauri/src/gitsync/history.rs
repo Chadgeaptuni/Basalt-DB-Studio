@@ -51,7 +51,7 @@ pub fn history(dir: &Path, limit: u32) -> AppResult<Vec<Commit>> {
 
     // An empty repo has no HEAD, so `git log` fails rather than returning nothing.
     // That is not an error here — it is a repo you have not committed to yet.
-    if !out.status.success() {
+    if !out.success() {
         return Ok(Vec::new());
     }
 

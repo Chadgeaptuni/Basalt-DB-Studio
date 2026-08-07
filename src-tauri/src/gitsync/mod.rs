@@ -11,8 +11,10 @@
 //! what `remote_error` below is for.
 
 mod diff;
+mod github;
 mod history;
 mod ops;
+pub(crate) mod process;
 mod status;
 
 pub use diff::{commit_files, diff_commit_file, diff_worktree_file};
@@ -21,67 +23,39 @@ pub use ops::{
     branches, checkout, commit, create_branch, discard, fetch, init, pull, push, set_remote, stage,
     sync, unstage, Branch, SyncOutcome,
 };
+pub use github::{github_publish, github_status, GithubStatus};
 pub use status::{status, FileEntry, FileState, GitStatus};
 
 use std::path::Path;
-use std::process::{Command, Output, Stdio};
+
+pub(crate) use process::{available, GitOutput, LOCAL_TIMEOUT, REMOTE_TIMEOUT};
 
 use crate::{AppError, AppResult};
 
-/// Every git invocation in the app goes through here.
-///
-/// `GIT_TERMINAL_PROMPT=0` is the load-bearing part. Launched from a GUI there is
-/// no terminal to answer on, so a remote that wants a username would otherwise
-/// leave git blocked on a read that can never complete — the app would hang
-/// rather than fail, with no way back. With prompts off git returns a failure we
-/// can classify. GUI helpers are untouched and still answer: this disables the
-/// *terminal* prompt, not `GIT_ASKPASS` or the credential helper.
-///
-/// `LC_ALL=C` because `remote_error` reads git's own English wording; without it
-/// a localized git would defeat every match and every failure would collapse to
-/// `internal`.
-pub(crate) fn git(dir: &Path, args: &[&str]) -> AppResult<Output> {
-    Command::new("git")
-        .arg("-C")
-        .arg(dir)
-        .args(args)
-        .env("GIT_TERMINAL_PROMPT", "0")
-        .env("LC_ALL", "C")
-        .stdin(Stdio::null())
-        .output()
-        .map_err(|e| {
-            if e.kind() == std::io::ErrorKind::NotFound {
-                AppError::GitNotInstalled("git is not installed or not on PATH".into())
-            } else {
-                AppError::internal(e)
-            }
-        })
+/// Local git: filesystem work, on the short deadline.
+pub(crate) fn git(dir: &Path, args: &[&str]) -> AppResult<GitOutput> {
+    process::run(dir, args, LOCAL_TIMEOUT)
 }
 
-pub(crate) fn stdout(o: &Output) -> String {
+/// Git that talks to a remote, on the long one. Separated because the two want
+/// genuinely different budgets and a single number would be wrong for both.
+pub(crate) fn git_remote(dir: &Path, args: &[&str]) -> AppResult<GitOutput> {
+    process::run(dir, args, REMOTE_TIMEOUT)
+}
+
+pub(crate) fn stdout(o: &GitOutput) -> String {
     String::from_utf8_lossy(&o.stdout).trim().to_string()
 }
 
-pub(crate) fn stderr(o: &Output) -> String {
+pub(crate) fn stderr(o: &GitOutput) -> String {
     String::from_utf8_lossy(&o.stderr).trim().to_string()
-}
-
-pub(crate) fn available() -> bool {
-    Command::new("git")
-        .arg("--version")
-        .stdin(Stdio::null())
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false)
 }
 
 /// Guard for anything that touches a repo. Separated from the callers so the two
 /// preconditions are stated once and worded once.
 pub(crate) fn require_repo(dir: &Path) -> AppResult<()> {
     if !available() {
-        return Err(AppError::GitNotInstalled(
-            "git is not installed or not on PATH".into(),
-        ));
+        return Err(process::availability_error());
     }
     if !dir.exists() || !is_repo(dir)? {
         return Err(AppError::internal(
@@ -131,7 +105,25 @@ const REJECTED_MARKERS: &[&str] = &[
 /// Map a failed remote operation onto the kind whose remedy actually applies.
 /// Anything unrecognised stays `internal` carrying git's own words — a wrong
 /// specific diagnosis is worse than an honest generic one.
-pub(crate) fn remote_error(op: &str, raw: &str) -> AppError {
+pub(crate) fn remote_error(op: &str, out: &GitOutput) -> AppError {
+    if out.timed_out {
+        return timeout_error(op);
+    }
+    classify(op, &stderr(out))
+}
+
+/// A git that never answered is not a git that refused, and the two want
+/// different things from the user: one is "fix your credentials", the other is
+/// "check the network — or look for a credential window behind this one".
+fn timeout_error(op: &str) -> AppError {
+    AppError::internal(format!(
+        "git {op} was still running after {}s and was stopped. The remote may be unreachable, \
+         or a credential prompt may be waiting off screen.",
+        REMOTE_TIMEOUT.as_secs()
+    ))
+}
+
+fn classify(op: &str, raw: &str) -> AppError {
     let lower = raw.to_lowercase();
 
     if AUTH_MARKERS.iter().any(|m| lower.contains(m)) {
@@ -168,14 +160,14 @@ mod tests {
 
     #[test]
     fn classifies_missing_credentials_as_auth() {
-        let e = remote_error("push", "fatal: Authentication failed for 'https://…'");
+        let e = classify("push", "fatal: Authentication failed for 'https://…'");
         assert_eq!(e.kind(), "gitAuthFailed");
     }
 
     // The case that actually bites a GUI: no terminal to prompt on.
     #[test]
     fn classifies_a_blocked_prompt_as_auth() {
-        let e = remote_error(
+        let e = classify(
             "pull",
             "fatal: could not read Username for 'https://github.com': terminal prompts disabled",
         );
@@ -184,31 +176,40 @@ mod tests {
 
     #[test]
     fn classifies_an_ssh_key_refusal_as_auth() {
-        let e = remote_error("push", "git@github.com: Permission denied (publickey).");
+        let e = classify("push", "git@github.com: Permission denied (publickey).");
         assert_eq!(e.kind(), "gitAuthFailed");
     }
 
     // GitHub 404s a private repo you cannot see, so this has to say "or".
     #[test]
     fn admits_that_repository_not_found_is_ambiguous() {
-        let e = remote_error("push", "remote: Repository not found.");
+        let e = classify("push", "remote: Repository not found.");
         assert_eq!(e.kind(), "gitAuthFailed");
         assert!(e.to_string().contains("do not have access"));
     }
 
     #[test]
     fn classifies_a_stale_push_as_rejected_not_conflict() {
-        let e = remote_error(
+        let e = classify(
             "push",
             "! [rejected] main -> main (non-fast-forward)\nUpdates were rejected",
         );
         assert_eq!(e.kind(), "gitPushRejected");
     }
 
+    // A deadline is not a refusal, and must not be reported as one.
+    #[test]
+    fn reports_a_deadline_as_its_own_thing() {
+        let e = timeout_error("push");
+        assert_eq!(e.kind(), "internal");
+        assert!(e.to_string().contains("still running"));
+        assert!(e.to_string().contains("credential prompt"));
+    }
+
     // An unrecognised failure keeps git's own words rather than guessing.
     #[test]
     fn leaves_an_unknown_failure_generic() {
-        let e = remote_error("fetch", "fatal: unable to access: SSL certificate problem");
+        let e = classify("fetch", "fatal: unable to access: SSL certificate problem");
         assert_eq!(e.kind(), "internal");
         assert!(e.to_string().contains("SSL certificate problem"));
     }

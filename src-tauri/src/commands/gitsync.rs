@@ -4,7 +4,7 @@
 
 use tauri::State;
 
-use crate::gitsync::{self, Branch, Commit, FileEntry, GitStatus, SyncOutcome};
+use crate::gitsync::{self, Branch, Commit, FileEntry, GithubStatus, GitStatus, SyncOutcome};
 use crate::state::AppState;
 use crate::{AppError, AppResult};
 
@@ -119,4 +119,17 @@ pub async fn git_init(state: State<'_, AppState>) -> AppResult<()> {
 #[tauri::command]
 pub async fn git_set_remote(state: State<'_, AppState>, url: String) -> AppResult<()> {
     blocking!(state, |dir| gitsync::set_remote(&dir, &url))
+}
+
+/// Whether the GitHub CLI can create a repo for us — checked before the panel
+/// offers to, so the button is absent rather than failing when clicked.
+#[tauri::command]
+pub async fn github_status(state: State<'_, AppState>) -> AppResult<GithubStatus> {
+    blocking!(state, |dir| gitsync::github_status(&dir))
+}
+
+/// Create the repo on GitHub, wire up `origin`, and push.
+#[tauri::command]
+pub async fn github_publish(state: State<'_, AppState>, name: String) -> AppResult<()> {
+    blocking!(state, |dir| gitsync::github_publish(&dir, &name))
 }
