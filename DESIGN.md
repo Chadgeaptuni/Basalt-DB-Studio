@@ -404,7 +404,12 @@ the primitive**, don't fork it locally.
   spreads them onto its own element. Wrapping instead nests that control inside
   bits-ui's `<button tabindex="0">` — invalid markup, a second tab stop on every
   icon button, and fatal to anything with a role of its own, since a `role="tab"`
-  inside a button is not a tab.
+  inside a button is not a tab. It never opens from **non-keyboard focus**: a
+  mouse click leaves focus on the control, and without that rule the tooltip
+  flashes straight back up over whatever the click just did. `suppressed` turns
+  it off for a label that has stopped being news — the rail's open destination
+  names itself in the panel header beside it. Suppress; never unwrap
+  conditionally, which recreates the control's DOM node and drops keyboard focus.
 - **EmptyState** — one sentence in `--on-surface-variant`, an optional `hint`
   naming the next step in `--on-surface-muted`, at most one action. Same two-line
   shape as `ErrorState`, so loading, empty and error speak with one voice. The

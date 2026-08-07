@@ -23,14 +23,28 @@
   interface Props {
     label: string;
     side?: "top" | "bottom" | "left" | "right";
+    /**
+     * Stop the tooltip opening at all, without unmounting the control. For a
+     * label that has stopped being news — the rail's open destination already
+     * names itself in the panel header beside it.
+     *
+     * Suppressed rather than conditionally wrapped: swapping the control in and
+     * out of `Tooltip` recreates its DOM node, so activating a rail destination
+     * from the keyboard would drop focus and the arrow keys would stop working.
+     */
+    suppressed?: boolean;
     /** Receives the props the control must spread onto its own element. */
     children: Snippet<[Record<string, unknown>]>;
   }
-  let { label, side = "bottom", children }: Props = $props();
+  let { label, side = "bottom", suppressed = false, children }: Props = $props();
 </script>
 
 <Tooltip.Provider delayDuration={400}>
-  <Tooltip.Root>
+  <!-- `ignoreNonKeyboardFocus`: a mouse click leaves focus on the control, and
+       without this the tooltip re-opens from that focus the instant it closes —
+       so it flashes back up over whatever the click just did. Tabbing to the
+       control still shows it, which is the case that needs it. -->
+  <Tooltip.Root disabled={suppressed} ignoreNonKeyboardFocus>
     <Tooltip.Trigger>
       {#snippet child({ props })}
         {@render children(props)}

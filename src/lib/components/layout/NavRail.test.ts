@@ -93,6 +93,35 @@ describe("NavRail", () => {
     expect(schema.closest("button")).toBe(schema);
   });
 
+  // The open destination's panel sits right beside the icon with the same word in
+  // its header, so a tooltip there labels something already labelled — and covers
+  // the panel the click just opened. Suppressing rather than unwrapping keeps the
+  // button's DOM node alive, so keyboard focus survives activating a destination.
+  it("shows no hover label on the destination that is already open", async () => {
+    render(NavRail);
+    const schema = screen.getByRole("tab", { name: "Schema" });
+    const queries = screen.getByRole("tab", { name: "Queries" });
+
+    await fireEvent.pointerEnter(schema);
+    await fireEvent.focus(schema);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+
+    // Both stay real trigger elements — the open one is suppressed, not unwrapped.
+    expect(schema).toHaveAttribute("data-tooltip-trigger");
+    expect(queries).toHaveAttribute("data-tooltip-trigger");
+  });
+
+  it("keeps focus on a destination activated from the keyboard", async () => {
+    render(NavRail);
+    const queries = screen.getByRole("tab", { name: "Queries" });
+    queries.focus();
+
+    await fireEvent.click(queries);
+
+    expect(panel.active).toBe("queries");
+    expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Queries" }));
+  });
+
   it("opens settings on General", async () => {
     render(NavRail);
     expect(settingsDialog.tab).toBeNull();

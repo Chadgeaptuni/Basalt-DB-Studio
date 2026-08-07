@@ -12,6 +12,10 @@
   // The name is not lost when the text goes: it moves to `aria-label`, which is
   // what assistive tech reads either way. The tooltip is decoration on top of it.
   //
+  // The *active* destination shows no tooltip. Its panel is open right beside the
+  // icon with the same word in its header, so the tooltip is a label for
+  // something already labelled — and it lands on top of the panel it just opened.
+  //
   // Extracted so the rail's destinations and the actions below them are the same
   // object. Everything ARIA is passed through: a destination arrives carrying
   // `role="tab"`, `aria-selected` and roving `tabindex`; an action arrives as a
@@ -26,7 +30,7 @@
   let { icon: Icon, label, active = false, ...rest }: Props = $props();
 </script>
 
-<Tooltip {label} side="right">
+<Tooltip {label} side="right" suppressed={active}>
   {#snippet children(tooltipProps)}
     <button
       {...tooltipProps}
