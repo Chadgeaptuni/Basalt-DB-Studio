@@ -639,6 +639,36 @@ the value is right: the point is that there is exactly one place to change it.
 Focus is **additionally** a 2px `--primary` ring via `:focus-visible` (app.css
 `@layer base`). State layer and focus ring coexist; neither replaces the other.
 
+### Cursor affordance
+
+The state layer says a control is *reacting*; the cursor says it is *operable*.
+A control that lights up under a mouse whose arrow never changes reads as
+decoration, so the cursor is declared **once**, in `app.css`'s `@layer base`,
+keyed on what an element is — `button`, `a[href]`, `summary`, a
+checkbox/radio/colour input and the `<label>` that wraps one, and the ARIA roles
+bits-ui puts on rows that are not buttons (`menuitem`, `option`, `tab`,
+`treeitem`, `switch`).
+
+| Surface | Cursor |
+|---|---|
+| Anything clickable — buttons, icon buttons, list/tree/menu/listbox rows, tabs, chips, segments, select triggers, rail items | `pointer` |
+| Anything disabled — `:disabled`, `aria-disabled`, bits-ui's `data-disabled` | `not-allowed` |
+| Text field, number field, editor | the engine's own caret, untouched |
+| Data grid cell | the arrow — a cell is selected, not followed (the carve-out §2 makes for grid shape and the state layer above makes for grid rows) |
+| Window splitter, resize grip | `col-resize` / `row-resize`, from `ResizeHandle` |
+
+**A `cursor-*` utility or a raw `cursor:` declaration in a component is a review failure** unless the surface
+genuinely means something other than "click me". Either form outranks `@layer base`,
+so a single local `cursor-default` silently opts a control out of the rule —
+which is how the app once had a pointer on tree rows, an arrow on menu rows, and
+an arrow on every button in between. `ResizeHandle` is the one file that carries
+one, and `ui/cursor.test.ts` enforces both halves.
+
+Disabled controls have to stay hit-testable for the second row of that table to
+render at all: `pointer-events: none` hands the cursor to whatever sits
+underneath, so the state layer suppresses its own hover overlay on `:disabled`
+instead of removing the control from hit testing.
+
 ### Motion
 
 - Default: `transition-* duration-200 ease-standard` — matches Flow Desktop's
@@ -863,5 +893,7 @@ Before presenting any UI code, self-check the diff for:
 14. `transition:` bound to anything but a `utils/motion.ts` helper (§7)
 15. A pointer handler (`onpointerdown`, `onmousedown`) with no keyboard path to
     the same action (§7)
+16. A `cursor-*` utility or raw `cursor:` declaration in a component, or a clickable control left with the
+    default arrow — the affordance rule is global (§7)
 
 Any hit → **rewrite before presenting**. These are also review-blocking in PRs.
