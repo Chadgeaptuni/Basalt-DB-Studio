@@ -13,6 +13,10 @@ describe("Modal", () => {
     const dialog = await screen.findByRole("dialog", { name: "Connection details" });
     expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(dialog).toHaveClass("fixed");
+    // Portalled onto <body>, so it is outside the zoomed #app and has to carry the
+    // zoom itself — without this the dialog stayed at 100% at every zoom level.
+    expect(dialog.closest("#app")).toBeNull();
+    expect(dialog).toHaveClass("app-zoom");
     await waitFor(() => expect(dialog).toContainElement(document.activeElement as HTMLElement));
 
     await fireEvent.keyDown(document, { key: "Escape" });

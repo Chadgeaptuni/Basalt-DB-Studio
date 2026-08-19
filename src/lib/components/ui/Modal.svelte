@@ -37,9 +37,14 @@
     if (!next) onclose?.();
   }
 
+  // Widths are percentages of the frame's own containing block — the viewport,
+  // since it is `fixed` — never `vw`/`dvh`. A viewport unit is resolved against
+  // the unzoomed window and only then scaled by `app-zoom`, so at 120% a `94vw`
+  // dialog is 113% of the window wide; a percentage is resolved inside the zoomed
+  // space and stays 94%.
   const maxw = $derived(
     size === "4xl"
-      ? "max-w-6xl w-[94vw]"
+      ? "max-w-6xl w-[94%]"
       : size === "3xl"
         ? "max-w-5xl w-full"
         : size === "2xl"
@@ -59,17 +64,22 @@
         {#if overlayOpen}
           <!-- Scrim: dimmed --surface, no blur (DESIGN §6). Timed to the frame,
                not to itself — see `scrimIn` for what that was costing. -->
+          <!-- No `app-zoom`: a full-viewport flat colour is the one overlay the
+               zoom cannot change, and `inset-0` already resolves to the whole
+               window inside the zoomed space. -->
           <div {...props} class="fixed inset-0 z-50 bg-surface/60" in:scrimIn out:scrimOut></div>
         {/if}
       {/snippet}
     </Dialog.Overlay>
 
-    <!-- The dvh cap keeps the frame inside the window (width is already viewport-
-         relative); header/footer stay fixed and the body is the only scroller. -->
+    <!-- The height cap keeps the frame inside the window (width is already
+         viewport-relative); header/footer stay fixed and the body is the only
+         scroller. `app-zoom` because the frame is portalled onto <body>, outside
+         the zoomed #app — without it the app scales and the dialog does not. -->
     <Dialog.Content
       forceMount
       restoreScrollDelay={120}
-      class="fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)]
+      class="app-zoom fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100%-2rem)]
         w-[calc(100%-2rem)] {maxw} flex-col -translate-x-1/2 -translate-y-1/2 outline-none"
     >
       {#snippet child({ props, open: contentOpen })}

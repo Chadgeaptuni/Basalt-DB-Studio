@@ -25,9 +25,14 @@ export interface MenuItem {
  * not part of it" (DESIGN §2: the only job a shadow has). Carries no size and no
  * padding, because a menu, a listbox and a popover holding its own list and
  * footer want different ones.
+ *
+ * `app-zoom` because all four of these are portalled onto `<body>`, outside the
+ * zoomed `#app`. It belongs on this element and not on bits-ui's positioning
+ * wrapper — see the utility in app.css for what zooming the wrapper does to
+ * floating-ui's offsets.
  */
 export const POPOVER_SURFACE =
-  "z-50 rounded-md border border-outline-variant bg-surface-container-high " +
+  "app-zoom z-50 rounded-md border border-outline-variant bg-surface-container-high " +
   "shadow-e2 outline-none";
 
 /** The container as a menu: wide enough to be one, padded for a run of rows. */

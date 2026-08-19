@@ -120,6 +120,21 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The app's own zoom (stores/zoom.svelte.ts), for the roots that are not #app.
+   Every portalled overlay is mounted on <body> beside #app, so each one has to
+   opt in or it renders at 100% while the app scales around it.
+
+   On an *anchored* popup this goes on the content, never on the positioning
+   wrapper: floating-ui measures the trigger with `getBoundingClientRect` and
+   writes the result into that wrapper as a px `translate`. Those px are already
+   in device space, so zooming the wrapper multiplies the offset a second time
+   and the popup lands `zoom`× too far down and to the right. Zooming only the
+   content leaves the offset alone, and the wrapper still takes its size from the
+   scaled content, so collision flipping stays correct. */
+@utility app-zoom {
+  zoom: var(--ui-zoom, 1);
+}
+
 /* A number input's spin buttons, off. The engine draws them itself and exposes
    no styling hook — not colour, not size — so on every theme but the platform
    default they sit on a themed field as grey arrows that ignore it. `NumberField`
@@ -147,6 +162,10 @@
   body,
   #app {
     height: 100%;
+  }
+
+  #app {
+    zoom: var(--ui-zoom, 1);
   }
 
   body {

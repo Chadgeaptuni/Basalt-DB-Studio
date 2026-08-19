@@ -92,7 +92,11 @@
     <!-- Matched to the trigger's width but never narrower than a menu: a listbox
          that is half the width of the control it belongs to reads as a different
          object. `max-h` keeps a long list inside the window instead of running
-         off the bottom edge. -->
+         off the bottom edge.
+
+         bits-ui measures the anchor width in device px, and the surface it is
+         used on is zoomed (`app-zoom`), so it has to be divided back down or the
+         listbox comes out `zoom`× wider than the control it belongs to. -->
     <Select.Content sideOffset={4} align="start" forceMount>
       <!-- `forceMount` + `child` so the listbox has an exit to animate; see
            `ContextMenu` for the full reasoning. -->
@@ -101,7 +105,8 @@
           <div {...wrapperProps}>
             <div
               {...props}
-              class="{POPOVER_SURFACE} max-h-64 w-[var(--bits-select-anchor-width)] min-w-44 py-2"
+              class="{POPOVER_SURFACE} max-h-64 min-w-44 py-2
+                w-[calc(var(--bits-select-anchor-width)/var(--ui-zoom,1))]"
               in:popIn
               out:popOut
             >

@@ -109,7 +109,8 @@
           <div {...wrapperProps}>
             <div
               {...props}
-              class="{POPOVER_SURFACE} max-h-[min(28rem,calc(100dvh-4rem))] w-96 overflow-auto"
+              class="{POPOVER_SURFACE} w-96 overflow-auto
+                max-h-[min(28rem,calc((100dvh-4rem)/var(--ui-zoom,1)))]"
               in:popIn
               out:popOut
             >

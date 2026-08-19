@@ -1,6 +1,13 @@
-// App zoom (VSCode-style Cmd/Ctrl + = / - / 0). CSS `zoom` on #app re-rasterizes
-// crisply — unlike transform:scale it scales the whole UI including px-based layout
-// and never blurs text. Persisted per-machine (localStorage, like the theme store).
+// App zoom (VSCode-style Cmd/Ctrl + = / - / 0). CSS `zoom` re-rasterizes crisply —
+// unlike transform:scale it scales the whole UI including px-based layout and never
+// blurs text. Persisted per-machine (localStorage, like the theme store).
+//
+// The level is published as one custom property on <html> rather than written onto
+// #app directly, because #app is not the only root that has to scale: every
+// portalled overlay (dialogs, menus, tooltips, the select listbox) is mounted on
+// <body> as a *sibling* of #app, so a zoom set on #app leaves all of them at 100%.
+// app.css applies `var(--ui-zoom)` to #app; the overlays apply it through the
+// `app-zoom` utility.
 
 const STORAGE_KEY = "basalt.zoom";
 const MIN = 0.5;
@@ -18,8 +25,7 @@ function load(): number {
 let level = $state(load());
 
 function apply(): void {
-  // `zoom` isn't in the typed CSSOM surface — set it via the property API.
-  document.getElementById("app")?.style.setProperty("zoom", String(level));
+  document.documentElement.style.setProperty("--ui-zoom", String(level));
 }
 
 function set(z: number): void {
@@ -43,7 +49,7 @@ export const zoom = {
   get canOut() {
     return level > MIN;
   },
-  /** Write persisted zoom to #app before first paint (main.ts). */
+  /** Publish the persisted level before first paint (main.ts). */
   apply,
   in: () => set(level + STEP),
   out: () => set(level - STEP),

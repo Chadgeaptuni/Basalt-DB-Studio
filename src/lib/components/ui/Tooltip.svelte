@@ -58,8 +58,8 @@
               <div
                 {...props}
                 transition:uiFade
-                class="z-50 rounded-xs bg-surface-container-highest px-2 py-1 text-body-sm
-                  text-on-surface-variant shadow-e1"
+                class="app-zoom z-50 rounded-xs bg-surface-container-highest px-2 py-1
+                  text-body-sm text-on-surface-variant shadow-e1"
               >
                 {label}
               </div>

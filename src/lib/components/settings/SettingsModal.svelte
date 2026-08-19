@@ -73,7 +73,12 @@
 </script>
 
 <Modal open title="Settings" size="4xl" headerHidden padding={false} {onclose}>
-  <div class="flex h-[680px] max-h-[88vh] w-full overflow-hidden bg-surface-container-high">
+  <!-- `88vh` is divided by the zoom because this sits inside the zoomed dialog
+       frame, where a viewport unit is scaled a second time (see Modal). -->
+  <div
+    class="flex h-[680px] max-h-[calc(88vh/var(--ui-zoom,1))] w-full overflow-hidden
+      bg-surface-container-high"
+  >
     <!-- Left Navigation Sidebar -->
     <nav
       class="flex w-56 shrink-0 flex-col border-r border-outline-variant bg-surface-container py-2"
