@@ -12,7 +12,7 @@
 
 <label
   class="inline-flex h-8 items-center gap-2 text-body-md text-on-surface-variant select-none
-    {disabled ? 'opacity-[0.38]' : 'cursor-pointer'}"
+    {disabled ? 'opacity-[0.38]' : ''}"
 >
   <input
     {id}

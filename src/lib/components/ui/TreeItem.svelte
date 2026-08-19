@@ -39,7 +39,7 @@
   aria-expanded={expandable ? expanded : undefined}
   aria-selected={selected}
   {title}
-  class="flex h-9 cursor-pointer items-center gap-1.5 pr-3 text-data {stateLayerPill} {focusRing}
+  class="flex h-9 items-center gap-1.5 pr-3 text-data {stateLayerPill} {focusRing}
     {selected ? 'text-on-surface' : 'text-on-surface-variant'}"
   style="padding-left:{depth * 12 + 8}px"
   onclick={() => onclick?.()}
