@@ -41,8 +41,8 @@ trait objects, no state-management library.
 
 ```
 Basalt-DB-Studio/
-├── src/            ← frontend: Svelte 5 + TypeScript + Tailwind v4   (~7,500 lines)
-├── src-tauri/      ← backend:  Rust + sqlx + Tauri 2                 (~6,100 lines)
+├── src/            ← frontend: Svelte 5 + TypeScript + Tailwind v4  (~11,400 lines)
+├── src-tauri/      ← backend:  Rust + sqlx + Tauri 2                 (~7,800 lines)
 └── docs/           ← specs
 ```
 
@@ -75,6 +75,7 @@ could lift `sqlgen/` out and use it in a CLI tomorrow.
 | `drivers/types.rs` | The wire types, mirrored field-for-field in `src/lib/api/types.ts`. |
 | `sqlgen/` | Pure SQL text utilities: statement splitting, classification, identifier quoting. No DB, no Tauri. Heavily tested. |
 | `config/` | TOML profiles and saved queries on disk. |
+| `gitsync/` | Shells out to the system `git` (and `gh`) to version the config dir. |
 | `errors/` | The one `AppError` enum. |
 
 ## The frontend, folder by folder
@@ -85,7 +86,7 @@ could lift `sqlgen/` out and use it in a CLI tomorrow.
 | `lib/stores/*.svelte.ts` | Global reactive state. No Redux, no Pinia — just runes in a module. |
 | `lib/components/ui/` | Dumb reusable primitives. Button, Modal, VirtualList. **No business logic allowed.** |
 | `lib/components/[domain]/` | Smart containers that wire stores + api + ui together. |
-| `lib/utils/` | Keyboard registry, cell formatting, debounce, clipboard. |
+| `lib/utils/` | Keyboard registry, cell formatting, error copy, motion curves, contrast, diffing, filtering, clipboard. |
 
 The `ui/` vs `[domain]/` split is enforced by convention and code review, not by
 tooling. It holds so far.
@@ -105,19 +106,23 @@ cd src-tauri && cargo clippy --all-targets -- -D warnings
 # → clean, zero warnings
 
 pnpm check                    # svelte-check + vitest
-# → clean, 66 tests / 21 files pass
+# → clean, 338 tests / 48 files pass
 ```
 
 `-D warnings` means "treat every lint as an error." Clippy is Rust's linter and it
 is *opinionated* — it complains about things ESLint wouldn't dream of, like
 "you wrote a manual loop where `.iter().map()` reads better." Passing it clean at
-6,000 lines is a real signal.
+7,800 lines is a real signal.
 
 ## Size distribution
 
-Largest Rust file: 404 lines. Largest frontend file: 357. Median well under 150.
-The repo rule is "split as a file approaches 300 lines," and it's actually being
-followed. There are no god objects and no grab-bag `utils.ts`.
+Largest Rust file: 440 lines (`services/grid_service.rs`). Largest frontend file:
+483 (`stores/themeData.ts`). Median well under 150. The repo rule is "split as a
+file approaches 300 lines," and nine files now sit above it — the theme token
+tables, `DataGrid`, `GitSyncPanel`, the wire types on both sides, three services,
+and `gitsync/ops.rs`. It's a rule with named exceptions rather than one held
+absolutely. There are still no god objects and no grab-bag `utils.ts`: each of
+those files has one subject, it's just a large one.
 
 ## Verdict: clean, unusually so
 
@@ -125,7 +130,7 @@ Four things stand out as genuinely above-average:
 
 **1. Errors are typed all the way across the IPC boundary.**
 
-`src-tauri/src/errors/mod.rs` holds one enum with 20 variants. Each maps to a
+`src-tauri/src/errors/mod.rs` holds one enum with 25 variants. Each maps to a
 stable string:
 
 ```rust
@@ -133,23 +138,25 @@ pub fn kind(&self) -> &'static str {
     match self {
         AppError::ConnectionRefused(_)       => "connectionRefused",
         AppError::AmbiguousRowIdentity { .. } => "ambiguousRowIdentity",
-        // ...18 more
+        // ...23 more
     }
 }
 ```
-`errors/mod.rs:89`
+`errors/mod.rs:116`
 
 The frontend switches on `kind`, never on `message`:
 
 ```ts
 if (err.kind === "confirmationRequired") { ... }
 ```
-`EditorPane.svelte:78`
+`EditorPane.svelte:96`
 
 Most apps degrade into `catch (e) { toast("Something went wrong") }` by month
 three. Here a new failure mode is *required* to be a new enum variant plus a new
-member of the `ErrorKind` union in `types.ts`. The compiler enforces half of it;
-the discipline covers the rest.
+member of `ERROR_KINDS` in `types.ts` — and because `utils/errorPresentation.ts`
+maps that union with a full `Record<ErrorKind, …>` rather than a `Partial`, the
+frontend stops compiling until someone writes what the user should read and do.
+The copy is the compiler's problem, not a reviewer's.
 
 **2. The injection surface is one file, 52 lines.**
 
@@ -211,7 +218,7 @@ examples, so they recur later in this doc.
 ```ts
 const registry = new Map<string, ShortcutHandler>();
 ```
-`utils/keyboard.ts:49`
+`utils/keyboard.ts:70`
 
 A `Map` keyed by combo means registering `mod+s` twice silently evicts the first
 handler — and the first never comes back when the second unmounts. No collisions
@@ -229,21 +236,21 @@ function onKeydown(e: KeyboardEvent): void {
   }
 }
 ```
-`utils/keyboard.ts:52`
+`utils/keyboard.ts:73`
 
 If anyone ever registers a bare key — `enter`, `delete` — typing into every input
-in the app breaks at once. `DataGrid.svelte:89` sidesteps the registry entirely
+in the app breaks at once. `DataGrid.svelte:188` sidesteps the registry entirely
 for arrows/Enter/Delete, using a local handler on the `role="grid"` container.
-That's the correct workaround, but it means `shortcuts.ts:3`'s claim to be "the one
+That's the correct workaround, but it means `shortcuts.ts:1`'s claim to be "the one
 catalogue" overstates: its DATA GRID group lists combos that are not in the
 registry at all.
 
 **c) Deprecated platform detection.**
 
 ```ts
-const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform);
+export const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform);
 ```
-`utils/keyboard.ts:9`
+`utils/platform.ts:11`
 
 `navigator.platform` is deprecated. Fine in today's Tauri webview; will rot.
 
@@ -254,7 +261,7 @@ $effect(() => {
   void connections.load();
 });
 ```
-`StartPanel.svelte:21`
+`StartPanel.svelte:28`
 
 This is safe *here*, for a subtle reason covered in Part 3: `load()` writes
 `profiles`/`loaded` only after an `await`, so those writes aren't tracked as
@@ -271,8 +278,8 @@ const secrets = new Map<string, string>();
 ```
 `stores/connections.svelte.ts:20`
 
-The OS-keychain backend isn't built yet (`Cargo.toml:56` says as much). This is a
-documented interim, not a lie — and note the deliberate choice *not* to use
+The OS-keychain backend isn't built yet (`src-tauri/Cargo.toml:63` says as much).
+This is a documented interim, not a lie — and note the deliberate choice *not* to use
 `$state`, so secrets can never end up in a devtools reactive-state dump. Good
 instinct.
 
@@ -360,14 +367,14 @@ struct ErrorResponse<'a> {
     detail: Option<Value>,
 }
 ```
-`errors/mod.rs:134`
+`errors/mod.rs:166`
 
 `'a` is a **lifetime parameter**: "this struct holds a borrowed string, and the
 struct may not outlive whatever it borrowed from." It's the compiler asking you to
 name the relationship so it can check it. You mostly won't write these — the
 compiler infers them — until you store a reference inside a struct, as here.
 
-`&'static str` (seen at `errors/mod.rs:89`) means "borrowed for the entire program
+`&'static str` (seen at `errors/mod.rs:116`) means "borrowed for the entire program
 lifetime" — in practice, a string literal baked into the binary.
 
 ## 2.2 No null — `Option<T>`
@@ -375,7 +382,7 @@ lifetime" — in practice, a string literal baked into the binary.
 ```rust
 pub secret_ref: Option<String>,
 ```
-`config/connections.rs:38`
+`config/connections.rs:54`
 
 `Option<T>` is either `Some(value)` or `None`. Same *shape* as TS's
 `string | undefined`, with one enormous difference: **the compiler forces you to
@@ -571,7 +578,7 @@ contract:
 | `self` | **consumes** the value; caller can't use it after | a builder's terminal `.build()` |
 
 ```rust
-pub fn kind(&self) -> &'static str      // errors/mod.rs:89  — reads
+pub fn kind(&self) -> &'static str      // errors/mod.rs:116  — reads
 pub async fn close(&self)               // drivers/mod.rs:173 — reads (pool close is interior-mutable)
 ```
 
@@ -607,7 +614,7 @@ impl Serialize for AppError {
     }
 }
 ```
-`errors/mod.rs:141`
+`errors/mod.rs:173`
 
 That's a hand-written impl because the wire shape differs from the enum shape.
 Usually you don't write these — you derive them.
@@ -647,7 +654,7 @@ That single attribute is why Rust's `snake_case` fields line up with TypeScript'
 #[serde(skip_serializing_if = "Option::is_none")]
 pub detail: Option<Value>,
 ```
-`errors/mod.rs:137`
+`errors/mod.rs:169`
 
 `None` is omitted from the JSON entirely, so TypeScript's optional `detail?:`
 matches exactly.
@@ -773,7 +780,7 @@ pub use classify::{confirmation_reason, is_read_only, returns_rows, tx_effect, T
 pub use quote::{quote_ident, quote_qualified};
 pub use split::{split, statement_at, Statement};
 ```
-`sqlgen/mod.rs:17`
+`sqlgen/mod.rs:16`
 
 Callers write `sqlgen::split(...)` and never learn that `split.rs` exists.
 
@@ -888,7 +895,7 @@ let sel = $state<{ r: number; c: number } | null>(null);
 let editing = $state<{ r: number; c: number } | null>(null);
 let draft = $state("");
 ```
-`components/grid/DataGrid.svelte:58`
+`components/grid/DataGrid.svelte:134`
 
 Compare React's `const [sel, setSel] = useState(null)`. Here there is **no setter**
 — you reassign the variable and the compiler wires up the notification:
@@ -904,12 +911,12 @@ sel = { r, c };
 ```ts
 tabs.push(base(id, `Query ${seq}`, "sql", null, sql));
 ```
-`stores/tabs.svelte.ts:63`
+`stores/tabs.svelte.ts:67`
 
 ```ts
 tabs.splice(i, 1);
 ```
-`stores/tabs.svelte.ts:112`
+`stores/tabs.svelte.ts:116`
 
 ```ts
 delete statuses[id];
@@ -918,7 +925,7 @@ delete statuses[id];
 
 No `setTabs([...tabs, newTab])`. No immutability discipline. No `useReducer`. The
 proxy notices the mutation and only the affected DOM updates. Nested properties
-are reactive too, which is why `EditorPane.svelte:55` can write
+are reactive too, which is why `EditorPane.svelte:68` can write
 `tab.result = result` and the results pane in a different component re-renders.
 
 ### `$derived` — computed value
@@ -929,7 +936,7 @@ const start = $derived(Math.max(0, Math.floor(scrollTop / rowHeight) - overscan)
 const end   = $derived(Math.min(items.length, start + visibleCount));
 const slice = $derived(items.slice(start, end));
 ```
-`components/ui/VirtualList.svelte:36`
+`components/ui/VirtualList.svelte:38`
 
 React's `useMemo`, minus the dependency array — **and therefore minus the entire
 category of bugs caused by getting the dependency array wrong.** Svelte tracks
@@ -977,7 +984,7 @@ $effect(() => {
   return () => ro.disconnect();      // ← cleanup
 });
 ```
-`components/ui/VirtualList.svelte:47`
+`components/ui/VirtualList.svelte:49`
 
 React's `useEffect` with three differences:
 1. **No dependency array.** It tracks whatever reactive values you read inside.
@@ -989,9 +996,9 @@ The prettiest use of it in this repo:
 ```svelte
 $effect(() => keyboard.register("mod+t", () => editorTabs.open()));
 ```
-`components/workspace/Workspace.svelte:26`
+`components/workspace/Workspace.svelte:24`
 
-`keyboard.register` returns its own unsubscribe function (`keyboard.ts:68`). The
+`keyboard.register` returns its own unsubscribe function (`keyboard.ts:89`). The
 arrow function returns it implicitly. So the effect's return value *is* the
 cleanup. One line, registered on mount, unregistered on unmount, no leak.
 
@@ -1002,7 +1009,7 @@ $effect(() => {
   void connections.load();
 });
 ```
-`components/layout/StartPanel.svelte:21`
+`components/layout/StartPanel.svelte:28`
 
 Used as a mount hook. Why doesn't it loop forever, given `load()` writes
 `profiles` and `loaded`, which are `$state`?
@@ -1061,7 +1068,8 @@ export const connections = {
   get profiles() { return profiles; },
   get loaded()   { return loaded; },
   get loadError(){ return loadError; },
-  statusFor, load, save, remove, setSecret, connect, disconnect, setActive,
+  get active()   { return active; },
+  statusFor, load, save, remove, setSecret, connect, disconnect, setActive, activate,
 };
 ```
 `stores/connections.svelte.ts` (abridged)
@@ -1071,7 +1079,7 @@ that moment*, inside the tracking window, and the dependency registers. That's w
 every store in this codebase looks like this. It is not ceremony — it's
 load-bearing.
 
-`stores/tabs.svelte.ts:120` follows the identical shape. Once you've seen two,
+`stores/tabs.svelte.ts:124` follows the identical shape. Once you've seen two,
 you've seen all of them.
 
 Note also the deliberate exception at `connections.svelte.ts:24`: the password
@@ -1083,27 +1091,32 @@ Note also the deliberate exception at `connections.svelte.ts:24`: the password
 {#if !connections.loaded}
   <Spinner size="sm" /> Loading…
 {:else if connections.loadError}
-  <div class="text-danger">Couldn't read your saved connections.</div>
+  <ErrorState kind={connections.loadError.kind} message={connections.loadError.message} filled>
+    {#snippet action()}
+      <Button variant="text-error" size="sm" onclick={() => connections.load()}>Retry</Button>
+    {/snippet}
+  </ErrorState>
 {:else if connections.profiles.length > 0}
   <ul>
     {#each connections.profiles as p (p.id)}
-      <li><ConnectionRow profile={p} onclick={() => open(p)} /></li>
+      <li><ConnectionRow profile={p} onclick={() => void connections.activate(p.id)} /></li>
     {/each}
   </ul>
 {/if}
 ```
-`components/layout/StartPanel.svelte:42` (abridged)
+`components/layout/StartPanel.svelte:53` (abridged)
 
 - `{#if}` / `{:else if}` / `{:else}` / `{/if}`
 - `{#each list as item (key)}` — the parenthesized part is the **key**, same purpose as React's `key` prop. Always provide it for lists that reorder.
 - `{#each list as item, i (key)}` — with index.
-- `{@const x = ...}` — a local binding inside a block. `DataGrid.svelte:150` uses it for `selected` and `dirty`.
+- `{@const x = ...}` — a local binding inside a block. `DataGrid.svelte:337` uses it for `selected` and `dirty`.
 - `{#await promise}` exists too, though this repo prefers explicit loading state.
 
 Notice the three-state rendering in that snippet — loading, error, empty/data.
-`DESIGN.md` mandates all three for every view, and the error branch says
-*"Couldn't read your saved connections"* with a retry button, not "Something went
-wrong."
+`DESIGN.md` mandates all three for every view. The error branch hands the failure
+`kind` to `ErrorState`, which looks the words up in `utils/errorPresentation.ts`
+and renders a sentence naming what failed plus a retry action — never "Something
+went wrong."
 
 ### Events are plain props
 
@@ -1116,7 +1129,7 @@ gone) — you call `e.preventDefault()` yourself. And when you pass `onclick` to
 *component* rather than an element, it's just a callback prop:
 
 ```svelte
-<ConnectionRow profile={p} onclick={() => open(p)} />
+<ConnectionRow profile={p} onclick={() => void connections.activate(p.id)} />
 ```
 
 No `createEventDispatcher`, no event bubbling ceremony. The child declares
@@ -1129,7 +1142,7 @@ event-dispatch layer at all.
 <div bind:this={viewport}>          <!-- element reference, like useRef -->
 <input bind:value={draft} />        <!-- two-way binding to a $state var -->
 ```
-`VirtualList.svelte:58`, `DataGrid.svelte:170`
+`VirtualList.svelte:60`, `DataGrid.svelte:359`
 
 `bind:value` is genuine two-way binding — typing updates `draft` with no
 `onChange` handler. Convenient, and occasionally too clever; use it for form
@@ -1140,7 +1153,7 @@ inputs and little else.
 ```svelte
 <input use:focusSelect ... />
 ```
-`DataGrid.svelte:169`
+`DataGrid.svelte:358`
 
 ```ts
 function focusSelect(node: HTMLInputElement): void {
@@ -1148,7 +1161,7 @@ function focusSelect(node: HTMLInputElement): void {
   node.select();
 }
 ```
-`DataGrid.svelte:67`
+`DataGrid.svelte:153`
 
 An **action** is a function that receives the DOM node when it mounts. It's the
 idiomatic escape hatch for imperative DOM work — focus management, third-party
@@ -1180,7 +1193,7 @@ Invoked with `{@render}`:
   {@render row(item, start + i)}
 {/each}
 ```
-`VirtualList.svelte:59`
+`VirtualList.svelte:62`
 
 Supplied by the caller:
 
@@ -1194,7 +1207,7 @@ Supplied by the caller:
   {/snippet}
 </VirtualList>
 ```
-`DataGrid.svelte:131`
+`DataGrid.svelte:285`
 
 This is the composition mechanism to internalize. `VirtualList` knows *nothing*
 about grids, columns, or cells — it only knows how to window a list and call your
@@ -1210,10 +1223,11 @@ Styling is Tailwind v4, which is **CSS-first**: there is no `tailwind.config.js`
 no PostCSS setup, no `content` array. Design tokens are declared with `@theme` in
 CSS, and themes are `[data-theme]` variable blocks in `src/themes/`.
 
-That's why you see semantic class names like `text-fg-2`, `bg-bg-0`,
-`border-border`, `bg-grid-row-alt` rather than `text-gray-400`. Those are tokens,
-and they're what makes the theme picker work. `DESIGN.md` bans raw color literals
-outright.
+That's why you see semantic class names like `text-on-surface-variant`,
+`bg-surface-container-low`, `border-outline-variant`, `bg-grid-row-alt` rather
+than `text-gray-400`. Those are tokens — the Material 3 role names, plus a small
+app-specific set for the grid — and they're what makes the theme picker work.
+`DESIGN.md` bans raw color literals outright.
 
 ---
 
@@ -1226,12 +1240,12 @@ languages, and the IPC boundary.
 ## Step 1 — The click (Svelte)
 
 ```svelte
-<Button variant="primary" size="sm" disabled={!canRun} loading={tab?.running}
+<Button variant="filled" size="sm" disabled={!canRun} loading={tab?.running}
         onclick={() => tab && handleRun({ sql: tab.sql })}>
-  <Play size={13} strokeWidth={2} /> Run
+  <Play size={14} strokeWidth={2} /> Run
 </Button>
 ```
-`components/editor/EditorPane.svelte:120`
+`components/editor/EditorPane.svelte:143`
 
 `canRun` is derived, so the button's disabled state maintains itself:
 
@@ -1240,7 +1254,7 @@ const tab    = $derived(editorTabs.active);
 const sess   = $derived(connections.active);
 const canRun = $derived(Boolean(sess) && Boolean(tab) && !tab?.running);
 ```
-`EditorPane.svelte:22`
+`EditorPane.svelte:32`
 
 Three signals, and any change to the active tab, active session, or running flag
 re-evaluates the chain automatically.
@@ -1264,7 +1278,7 @@ async function handleRun(payload: { sql: string; cursorOffset?: number }): Promi
       }
     } else {
       tab.runError = err;
-      if (err.kind === "internal") toast.error(err.message);
+      // ResultsPane renders every kind inline (DESIGN §8) — no toast on top.
     }
   } finally {
     tab.running = false;
@@ -1272,13 +1286,14 @@ async function handleRun(payload: { sql: string; cursorOffset?: number }): Promi
   }
 }
 ```
-`EditorPane.svelte:69`
+`EditorPane.svelte:83`
 
 Note `tab.running = true` — a mutation on a nested property of a `$state` object,
 picked up by the proxy. The Run button's `loading` prop flips with no plumbing.
 
-Note also the error handling: it branches on `err.kind`, a typed union. Only
-`internal` is allowed to become a generic toast.
+Note also the error handling: it branches on `err.kind`, a typed union. Nothing
+becomes a toast — the failure is stashed on the tab, and `ResultsPane` renders that
+kind in place, beside the SQL that caused it.
 
 ## Step 3 — The API wrapper (TypeScript)
 
@@ -1329,10 +1344,10 @@ what makes `EditorPane`'s `err.kind ===` checks safe.
 .invoke_handler(tauri::generate_handler![
     commands::query::run_query,
     commands::grid::grid_browse,
-    // ...22 more
+    // ...38 more
 ])
 ```
-`lib.rs:38`
+`lib.rs:61`
 
 A macro that generates the dispatch table. The function name becomes the command
 string — `run_query` in Rust is `"run_query"` from TS.
@@ -1361,7 +1376,7 @@ Three things worth noticing:
 
 - Tauri maps JS `camelCase` args to Rust `snake_case` params automatically. `cursorOffset` → `cursor_offset`.
 - `Option<usize>` means the argument may be absent. TS `cursorOffset?: number` lines up exactly.
-- `State<'_, AppState>` is dependency injection — Tauri hands you the value registered by `app.manage(AppState::new()?)` at `lib.rs:34`. The `'_` is an elided lifetime.
+- `State<'_, AppState>` is dependency injection — Tauri hands you the value registered by `app.manage(AppState::new()?)` at `lib.rs:56`. The `'_` is an elided lifetime.
 - `&session_id` / `&sql` — the handler *owns* those Strings, and lends them to the service rather than moving them.
 
 ## Step 7 — The service: split, then gate (Rust)
@@ -1460,7 +1475,7 @@ impl Serialize for AppError {
     }
 }
 ```
-`errors/mod.rs:141`
+`errors/mod.rs:173`
 
 On the wire:
 
@@ -1472,20 +1487,25 @@ On the wire:
 }
 ```
 
-`client.ts` recognizes the shape and throws an `ApiError`. `EditorPane.svelte:78`
+`client.ts` recognizes the shape and throws an `ApiError`. `EditorPane.svelte:96`
 catches it, matches `kind`, and renders the dialog:
 
 ```ts
 const message = list.length === 1
   ? `${list[0].reason}\n\n${list[0].statement}`
   : `${list.length} destructive statements:\n\n${list.map((s) => `• ${s.reason}`).join("\n")}`;
-return confirm({ title: "Run destructive statement?", message, confirmLabel: "Run", variant: "danger" });
+return confirm({
+  title: envConfirmTitle("Run destructive statement?", activeEnvironment),
+  message, confirmLabel: "Run", variant: "danger",
+});
 ```
-`EditorPane.svelte:99`
+`EditorPane.svelte:121`
 
-The dialog shows the *actual SQL* that will run. That's what the `detail` payload
-is for, and it's why `detail` is typed per-variant at `errors/mod.rs:114` rather
-than being a free-form string.
+The dialog shows the *actual SQL* that will run, and `envConfirmTitle`
+(`utils/environment.ts:35`) prefixes the title on a connection tagged production —
+the same dialog, louder where a mistake can't be undone. Showing the SQL is what
+the `detail` payload is for, and it's why `detail` is typed per-variant at
+`errors/mod.rs:146` rather than being a free-form string.
 
 ## Step 10 — Confirmed re-run reaches the database (Rust)
 
@@ -1565,13 +1585,13 @@ unmatched degrades to `Unknown` rather than guessing.
 tab.result = result;
 tab.activeStatement = 0;
 ```
-`EditorPane.svelte:55`
+`EditorPane.svelte:68`
 
 Two mutations on the `$state` tab object. `ResultsPane` and `DataGrid` are reading
 `tab.result` through derived values, so the grid renders. No subscription, no
 dispatch, no re-render of anything else.
 
-The run is also recorded in session history (`EditorPane.svelte:60`) — a frontend
+The run is also recorded in session history (`EditorPane.svelte:74`) — a frontend
 rune store, deliberately not a backend subsystem, because history is
 session-only and doesn't justify a database.
 
@@ -1612,6 +1632,14 @@ same eleven steps, different service.
 6. `src/lib/components/editor/EditorPane.svelte` — orchestration and typed error branching.
 7. `src/lib/components/grid/DataGrid.svelte` — the most complex component. Snippets, keyboard handling, derived layout math.
 
+**The newer surfaces, once those seven make sense:**
+
+- `src/lib/utils/errorPresentation.ts` — one `Record<ErrorKind, …>`. The mechanism behind every error sentence in the app.
+- `src/lib/components/layout/NavRail.svelte` + `src/lib/stores/panel.svelte.ts` — the navigation rail and the single side panel it drives.
+- `src/lib/components/command/CommandPalette.svelte` + `stores/palette.svelte.ts` — `mod+k`, and how one flat action list is filtered.
+- `src/lib/components/gitsync/GitSyncPanel.svelte` + `utils/commitGraph.ts`, `utils/diff.ts` — the source-control client over `src-tauri/src/gitsync/`.
+- `src/lib/stores/themeData.ts`, `utils/contrast.ts`, `utils/motion.ts` — the token tables every theme is built from, the contrast audit that keeps a custom one legible, and the M3 motion curves.
+
 ## Exercises, in difficulty order
 
 **1. Read-only (10 min).** Open `sqlgen/quote.rs`. Change `quote_ident` to also
@@ -1620,9 +1648,10 @@ stops compiling. That's the exhaustive-match payoff, felt directly.
 
 **2. Rust, small (20 min).** Add a `CellValue` variant or a new `AppError` variant
 and follow the compiler until it's green. It will walk you through `kind()`,
-`detail()`, and the mirrored TypeScript union in `src/lib/api/types.ts`. This is
-the single best way to feel how Rust's exhaustiveness turns refactors into
-checklists.
+`detail()`, the mirrored `ERROR_KINDS` list in `src/lib/api/types.ts`, and — for a
+new error kind — the user-facing copy that `utils/errorPresentation.ts` refuses to
+compile without. This is the single best way to feel how Rust's exhaustiveness
+turns refactors into checklists.
 
 **3. Svelte, small (20 min).** In `StartPanel.svelte`, add a row to the shortcuts
 list. Then try to add it *without* touching `utils/shortcuts.ts` — you can't,
@@ -1631,7 +1660,7 @@ drifting.
 
 **4. Real (45 min).** Fix finding (a) from Part 1: change
 `keyboard.ts`'s `Map<string, ShortcutHandler>` to support multiple handlers per
-combo without breaking the unregister contract at `keyboard.ts:68`. There's a
+combo without breaking the unregister contract at `keyboard.ts:89`. There's a
 co-located test file at `utils/keyboard.test.ts` — **write the failing test first**
 (register the same combo twice, unregister the second, assert the first fires
 again), then make it pass. That's the repo's stated rule: every bugfix lands with a
