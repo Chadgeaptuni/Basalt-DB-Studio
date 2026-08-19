@@ -39,7 +39,7 @@ export const MENU_SURFACE = `${POPOVER_SURFACE} min-w-44 py-2`;
  * pointer and keyboard through the same class with no second hover rule.
  */
 export const MENU_ROW =
-  "flex h-9 cursor-default items-center gap-2 px-3 text-label-md outline-none " +
+  "flex h-9 items-center gap-2 px-3 text-label-md outline-none " +
   "transition-colors duration-200 ease-standard " +
   "data-[highlighted]:bg-surface-container-highest " +
   "data-[disabled]:pointer-events-none data-[disabled]:opacity-[0.38]";

@@ -12,9 +12,16 @@ const LAYER =
   "before:pointer-events-none before:absolute before:-z-10 before:bg-current " +
   "before:opacity-0 before:transition-opacity before:duration-200 before:ease-standard";
 
+// `disabled:pointer-events-none` used to stand in for the last rule here. It also
+// took the control out of hit testing, so a disabled button reported its
+// container's cursor and app.css's `not-allowed` never rendered on it. The click
+// was never what that class was holding back — the `disabled` attribute blocks
+// that on its own — so what it was really doing, keeping the hover overlay off,
+// is now what it says. `disabled:hover:` is one condition deeper than `hover:`,
+// so it wins wherever Tailwind orders the two.
 const OPACITY =
   "hover:before:opacity-[0.08] active:before:opacity-[0.10] " +
-  "disabled:pointer-events-none disabled:opacity-[0.38]";
+  "disabled:opacity-[0.38] disabled:hover:before:opacity-0";
 
 /**
  * Hover 8% / pressed 10%, clipped to the element's own shape. For controls that
