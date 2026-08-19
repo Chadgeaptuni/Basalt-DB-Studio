@@ -169,6 +169,44 @@
     outline: none;
   }
 
+  /* Interaction affordance, declared once — the cursor is the pointer half of the
+     state layer (DESIGN §7). Keyed on what an element *is* rather than on a class
+     a call site remembers, because the miss is never the styled button: it is the
+     row bits-ui draws as a div, the segment inside a group, the trigger that
+     looks like a field. Utilities outrank `@layer base`, so a surface that means
+     something other than "click me" says so with `cursor-*` — the window
+     splitter is the only one that does. */
+  button:not(:disabled),
+  summary,
+  a[href],
+  [role="button"],
+  [role="tab"],
+  [role="option"],
+  [role="treeitem"],
+  [role="menuitem"],
+  [role="menuitemcheckbox"],
+  [role="menuitemradio"],
+  [role="switch"],
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="color"]:not(:disabled),
+  label:has(input[type="checkbox"]:not(:disabled)),
+  label:has(input[type="radio"]:not(:disabled)),
+  label:has(input[type="color"]:not(:disabled)) {
+    cursor: pointer;
+  }
+
+  /* Second, so a disabled menu row lands here: `[role="menuitem"]` above and
+     `[data-disabled]` are both one attribute deep, so document order is what
+     decides. Text fields keep the caret the engine gives them and the data grid
+     keeps the arrow — neither is named in either rule. */
+  :disabled,
+  [aria-disabled="true"],
+  [data-disabled],
+  label:has(input:disabled) {
+    cursor: not-allowed;
+  }
+
   ::selection {
     background: var(--grid-sel);
   }
