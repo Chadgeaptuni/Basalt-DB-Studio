@@ -37,10 +37,14 @@
 
   // `stateLayer` is `bg-current`, so reddening the *content* on hover reddens the
   // layer with it — the danger tone costs one class and no second hover rule.
+  // This is the deliberate exception to §7's "no hand-written hover": the hover
+  // drives the shared layer here rather than replacing it, and resting `--error`
+  // would paint every close and discard glyph red at all times.
   const toneClass = $derived(
     active === true
       ? "bg-secondary-container text-on-secondary-container"
       : tone === "danger"
+        // design-check-ignore no-hand-written-hover
         ? "text-on-surface-variant hover:text-error"
         : "text-on-surface-variant",
   );

@@ -7,6 +7,15 @@
 //
 // `isolate` + `-z-10` keeps the pseudo-element above the element's own background
 // but below its text.
+//
+// The layer carries its own radius (`before:rounded-[inherit]`) and nothing clips
+// it. It used to be clipped by `overflow-hidden` on the parent, and in WebKit —
+// Tauri's engine on macOS, which is why Chrome never showed it — an animating
+// `-z-10` pseudo inside an `isolate` stacking context is composited for the
+// transition, forcing the ancestor's rounded clip to be re-rasterized against it.
+// The promote/rasterize/demote cycle ran at every transition boundary, so buttons
+// flashed on hover-in, hover-out, press and release alike. `stateLayerPill` never
+// did, because it was already built this way.
 
 const LAYER =
   "before:pointer-events-none before:absolute before:-z-10 before:bg-current " +
@@ -21,7 +30,7 @@ const OPACITY =
  * are their own container: buttons, icon buttons, chips, menu rows, tabs.
  */
 export const stateLayer =
-  `relative isolate overflow-hidden ${LAYER} before:inset-0 ${OPACITY}`;
+  `relative isolate ${LAYER} before:inset-0 before:rounded-[inherit] ${OPACITY}`;
 
 /**
  * The same layer drawn as a `rounded-full` pill inset from the row edge, for rows
@@ -42,8 +51,19 @@ export const stateLayerPill =
  * while M3 draws the layer on its 56×32 indicator pill.
  */
 export const stateLayerGroup =
-  `relative isolate overflow-hidden ${LAYER} before:inset-0 ` +
+  `relative isolate ${LAYER} before:inset-0 before:rounded-[inherit] ` +
   "group-hover:before:opacity-[0.08] group-active:before:opacity-[0.10]";
+
+/**
+ * The 8% wash as a plain background, for the data grid's 28px rows — the one
+ * surface that cannot take the pseudo-element layer. `stateLayer` needs
+ * `overflow-hidden` to clip `before:inset-0`, which would cut the offset focus
+ * ring off the selected cell, and `stateLayerPill` needs vertical room the
+ * exempt 28px row does not have (DESIGN §2's grid carve-out).
+ *
+ * Same 8% as every other hover, declared here so the row does not hand-pick it.
+ */
+export const stateLayerGrid = "transition-colors duration-200 ease-standard hover:bg-on-surface/8";
 
 /** Focus ring is additive to the layer — never a replacement (DESIGN §7). */
 export const focusRing =

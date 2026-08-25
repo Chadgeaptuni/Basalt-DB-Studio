@@ -179,7 +179,7 @@
                 {#if desc}
                   {#each desc.columns as col (col.name)}
                     <div
-                      class="flex h-6 items-center gap-1.5 text-data text-on-surface-variant"
+                      class="flex h-7 items-center gap-1.5 text-data text-on-surface-variant"
                       style="padding-left:{2 * 12 + 4 + 16}px"
                       title={`${col.typeName}${col.nullable ? " · nullable" : " · not null"}${col.isPk ? " · primary key" : ""}`}
                     >

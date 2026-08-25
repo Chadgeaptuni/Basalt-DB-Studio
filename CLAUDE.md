@@ -196,7 +196,18 @@ frontend, never a collapsed generic error.
    ```bash
    pnpm install            # once, or after dependency changes
    pnpm tauri dev          # run the app (frontend + Rust backend)
-   pnpm check              # svelte-check + vitest run
+   pnpm check              # svelte-check + vitest run + design-check
+   pnpm design-check       # DESIGN.md's Agent Execution Directive, as a gate
+   pnpm design-check:impeccable   # the Impeccable detector (design-system-* rules)
    cd src-tauri && cargo clippy -- -D warnings && cargo test
    ```
    If a check fails, fix the reported error — never paper over it.
+
+   **No UI work lands without both design checks.** They split the directive:
+   `design-check` owns the Tailwind-utility and import-boundary rules (shape
+   scale, density tier, state layers, `invoke` boundary, legacy Svelte);
+   the Impeccable detector owns raw CSS values against DESIGN.md's frontmatter
+   (off-scale `border-radius`/`font-size`, undeclared fonts). Neither sees the
+   other's class of defect. `scripts/design-check.selftest.mjs` asserts every
+   rule still fires — a detector that reports nothing is the failure mode to
+   distrust, since that is exactly how this project read clean for months.

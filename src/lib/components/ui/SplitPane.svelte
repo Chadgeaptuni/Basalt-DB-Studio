@@ -64,9 +64,8 @@
   <div class="overflow-hidden {isH ? 'h-full' : 'w-full'}" style={firstStyle}>
     {@render a()}
   </div>
-  <!-- A 1px line, so `grab` widens the hit area to ±4px. The handle signals with
-       `--primary` directly — a translucent state layer over a hairline is a no-op
-       (DESIGN §7 carve-out). -->
+  <!-- A 1px line, so `grab` widens the hit area to ±4px. `ResizeHandle` owns the
+       hairline's resting and accent colours. -->
   <ResizeHandle
     orientation={isH ? "vertical" : "horizontal"}
     value={ratio * 100}
@@ -77,7 +76,7 @@
     toValue={toPercent}
     onchange={setPercent}
     grab
-    class="relative shrink-0 bg-outline-variant hover:bg-primary {isH ? 'w-px' : 'h-px'}"
+    class="relative shrink-0 {isH ? 'w-px' : 'h-px'}"
   />
   <div class="flex-1 overflow-hidden {isH ? 'h-full' : 'w-full'}">
     {@render b()}

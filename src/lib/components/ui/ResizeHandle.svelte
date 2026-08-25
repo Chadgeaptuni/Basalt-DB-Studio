@@ -8,7 +8,15 @@
   //
   // The parent keeps ownership of what the value *means* (a percentage of a
   // container, a pixel width) and supplies `toValue`; this owns pointer capture,
-  // the key map, and the ARIA contract.
+  // the key map, the ARIA contract, and the hairline's own appearance.
+  //
+  // Appearance lives here because it did not, and the two callers drifted: the
+  // split handle signalled with full `--primary` while the panel edge used
+  // `--primary/40`, so the same gesture gave different feedback in each pane.
+  // Callers now pass geometry only. A translucent state layer over a 1px line is
+  // a no-op, so this is DESIGN §7's documented carve-out — the line recolours
+  // outright, and holds the accent while dragging rather than dropping it the
+  // moment the pointer leaves the hairline.
   interface Props {
     /** Per ARIA: a `vertical` separator sits between left and right panes. */
     orientation: "vertical" | "horizontal";
@@ -40,7 +48,9 @@
   }: Props = $props();
 
   const vertical = $derived(orientation === "vertical");
-  let dragging = false;
+  // `$state` because the resting/dragging colour reads it — a plain `let` would
+  // set the flag and never repaint.
+  let dragging = $state(false);
 
   function move(next: number): void {
     onchange(Math.min(max, Math.max(min, next)));
@@ -89,7 +99,9 @@
   onpointerup={onPointerUp}
   onpointercancel={onPointerUp}
   onkeydown={onKeydown}
-  class="transition-colors {vertical ? 'cursor-col-resize' : 'cursor-row-resize'} {cls}"
+  class="transition-colors duration-200 ease-standard
+    {dragging ? 'bg-primary' : 'bg-outline-variant hover:bg-primary'}
+    {vertical ? 'cursor-col-resize' : 'cursor-row-resize'} {cls}"
 >
   {#if grab}
     <div

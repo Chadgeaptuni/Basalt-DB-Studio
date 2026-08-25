@@ -37,8 +37,11 @@
   in:panelIn
   out:panelOut
 >
+  <!-- No `border-r`: the resize handle below *is* this edge's hairline, the way
+       `SplitPane`'s is. Keeping both drew two lines a pixel apart, and only the
+       border recoloured on hover. -->
   <div
-    class="h-full overflow-hidden border-r border-outline-variant bg-surface-container"
+    class="h-full overflow-hidden bg-surface-container"
   >
     <div class="flex h-full flex-col" style="width:{panel.width}px">
       <!-- Keyed on the destination so swapping panels runs the fade-through
@@ -67,8 +70,8 @@
     </div>
   </div>
 
-  <!-- Right-edge resize handle: 8px grab zone straddling the 1px border, so it
-       needs no extra expander of its own. -->
+  <!-- Right-edge resize handle, and the panel's right hairline: a 1px line with
+       `grab`'s ±4px expander, identical in construction to `SplitPane`'s. -->
   <ResizeHandle
     orientation="vertical"
     value={panel.width}
@@ -78,6 +81,7 @@
     label="Resize panel"
     toValue={toWidth}
     onchange={(w) => panel.setWidth(w)}
-    class="absolute inset-y-0 -right-1 z-20 w-2 hover:bg-primary/40"
+    grab
+    class="absolute inset-y-0 right-0 z-20 w-px"
   />
 </aside>

@@ -1,3 +1,41 @@
+---
+# Machine-readable mirror of §2 (shape) and §4 (type) for the Impeccable
+# detector, which reads this frontmatter and switches off entirely without it.
+# The prose below stays authoritative: these values are transcribed from
+# src/app.css's @theme block, so a change there changes both.
+#
+# `colors` is deliberately absent. Basalt derives every colour at runtime from
+# a seed (22 palettes x 3 variants, stores/themeData.ts), so an enumerated
+# allowlist would be meaningless. The stricter project rule — no colour literal
+# outside themes/, app.css and the brand SVGs (§1) — is enforced by
+# scripts/design-check.mjs instead.
+rounded:
+  none: 0px
+  xs: 4px
+  sm: 8px
+  md: 12px
+  lg: 16px
+  xl: 28px
+  full: 9999px
+typography:
+  scale:
+    label-sm: 11px
+    body-sm: 12px
+    label-md: 12px
+    data: 12px
+    title-sm: 14px
+    body-md: 14px
+    label-lg: 14px
+    title-md: 16px
+    title-lg: 18px
+  sans:
+    fontFamily: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif
+    fontSize: 14px
+  mono:
+    fontFamily: ui-monospace, "SF Mono", "Menlo", "Consolas", "Liberation Mono", monospace
+    fontSize: 12px
+---
+
 # Basalt DB Studio — UI/UX Design System & Frontend Architecture
 
 This document is the **absolute source of truth** for all UI/UX design and Svelte

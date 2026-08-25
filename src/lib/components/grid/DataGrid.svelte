@@ -20,6 +20,7 @@
   import DropdownMenu from "$lib/components/ui/DropdownMenu.svelte";
   import Chip from "$lib/components/ui/Chip.svelte";
   import type { MenuItem } from "$lib/components/ui/menu";
+  import { stateLayer, stateLayerGrid } from "$lib/components/ui/stateLayer";
   import { formatCell, type CellDisplay } from "$lib/utils/cellDisplay";
   import { copyCellsTsv } from "$lib/utils/copy";
   import { settings } from "$lib/stores/settings.svelte";
@@ -317,7 +318,7 @@
               align="end"
               triggerClass="grid h-6 w-6 shrink-0 place-items-center rounded-full text-on-surface-muted
                 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100
-                data-[state=open]:opacity-100 hover:bg-on-surface/8"
+                data-[state=open]:opacity-100 {stateLayer}"
             >
               <ChevronDown size={14} strokeWidth={2} />
             </DropdownMenu>
@@ -329,7 +330,7 @@
       <div
         role="row"
         aria-rowindex={dr + 2}
-        class="flex {rowBg(r, dr)} hover:bg-on-surface/8"
+        class="flex {rowBg(r, dr)} {stateLayerGrid}"
         style="width:{width}px"
       >
         {#each visibleCols as { i: ci }, c (ci)}

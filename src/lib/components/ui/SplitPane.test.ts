@@ -22,4 +22,27 @@ describe("SplitPane", () => {
     await fireEvent.keyDown(separator, { key: "End" });
     expect(separator).toHaveAttribute("aria-valuenow", "80");
   });
+
+  // Regression: the appearance used to live on each caller, and the two drifted —
+  // SplitPane signalled with full `--primary`, PanelHost with `--primary/40`, so
+  // the same gesture gave different feedback per pane. ResizeHandle owns it now,
+  // which is only observable as the classes it puts on the separator itself.
+  it("takes its hairline and accent from ResizeHandle, and holds the accent while dragging", async () => {
+    render(SplitPaneTestHarness);
+    const separator = screen.getByRole("separator", { name: "Resize editor and results" });
+
+    expect(separator).toHaveClass("bg-outline-variant", "hover:bg-primary");
+    expect(separator.className).not.toMatch(/primary\/\d/);
+
+    // jsdom implements neither half of the pointer-capture API.
+    separator.setPointerCapture = () => {};
+    separator.releasePointerCapture = () => {};
+
+    await fireEvent.pointerDown(separator, { pointerId: 1 });
+    expect(separator).toHaveClass("bg-primary");
+    expect(separator).not.toHaveClass("bg-outline-variant");
+
+    await fireEvent.pointerUp(separator, { pointerId: 1 });
+    expect(separator).toHaveClass("bg-outline-variant");
+  });
 });

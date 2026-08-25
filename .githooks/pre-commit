@@ -1,0 +1,39 @@
+#!/bin/sh
+# Blocks a commit that violates DESIGN.md.
+#
+# Versioned here rather than in .git/hooks so every clone gets it; `pnpm install`
+# points core.hooksPath at this directory (see package.json "prepare").
+#
+# Scope is the design gate only — fast enough to run on every commit. The full
+# gate (svelte-check + vitest + design-check) stays `pnpm check`, and CI runs it.
+# Bypass a single commit with `git commit --no-verify` when you must.
+
+set -e
+
+# Nothing staged under src/ means nothing this gate governs.
+if ! git diff --cached --name-only --diff-filter=ACM | grep -qE '^src/.*\.(svelte|ts|css)$'; then
+  exit 0
+fi
+
+echo "pre-commit: design-check"
+node scripts/design-check.mjs
+
+# The self-test is what keeps the gate honest: a checker whose rules have
+# stopped firing reports clean and blocks nothing.
+node scripts/design-check.selftest.mjs >/dev/null
+
+# The Impeccable detector covers raw CSS values against DESIGN.md's frontmatter.
+# Absent plugin is not a commit-blocker — the wrapper says so and exits 1, and a
+# contributor without the plugin installed still gets the local rules above.
+if node scripts/impeccable-detect.mjs src 2>/dev/null; then
+  :
+else
+  status=$?
+  # 2 = findings (block). Anything else = detector unavailable (warn only).
+  if [ "$status" -eq 2 ]; then
+    echo "pre-commit: impeccable detector reported findings" >&2
+    node scripts/impeccable-detect.mjs src >&2 || true
+    exit 1
+  fi
+  echo "pre-commit: impeccable detector unavailable, ran local rules only" >&2
+fi
