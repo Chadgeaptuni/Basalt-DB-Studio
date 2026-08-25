@@ -10,8 +10,10 @@
 import fs from "node:fs";
 import path from "node:path";
 
+import { releaseDir } from "./target-dir.mjs";
+
 const LIMIT_BYTES = 30 * 1024 * 1024;
-const BUNDLE_DIR = path.resolve("src-tauri/target/release/bundle");
+const BUNDLE_DIR = path.join(releaseDir(), "bundle");
 
 // Recognized installer/app artifact extensions (compared lower-cased).
 const ARTIFACT_EXTS = new Set([

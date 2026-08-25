@@ -67,6 +67,12 @@ uuid = { version = "1", features = ["v4", "serde"] }
 # no bundle impact. sqlx/uuid are already normal deps and visible to tests.
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 
+[profile.dev]
+# Full DWARF for 538 crates dominates target/ on disk. Line tables keep readable
+# backtraces (file + line) and drop only variable-inspection info, which matters
+# solely under a debugger.
+debug = "line-tables-only"
+
 [profile.release]
 # Official Tauri size-optimized profile (spec Performance plan). Measure "s" vs
 # "z" before switching; do not touch to chase a perf issue without measuring.

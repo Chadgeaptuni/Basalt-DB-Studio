@@ -40,7 +40,7 @@ pnpm install
 
 ### 4. Installing a Local Build
 
-`pnpm tauri build` leaves the artifact inside `src-tauri/target/`. These scripts take it from there — no dragging into Applications, no clicking through an installer.
+`pnpm tauri build` leaves the artifact in Cargo's target directory (`src-tauri/target/` by default, or wherever `CARGO_TARGET_DIR` / `[build] target-dir` points). These scripts resolve that path themselves and take it from there — no dragging into Applications, no clicking through an installer.
 
 | Command | Description |
 |---|---|

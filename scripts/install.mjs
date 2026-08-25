@@ -8,6 +8,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+import { releaseDir } from './target-dir.mjs';
+
 const root = path.resolve(import.meta.dirname, '..');
 const read = (p) => JSON.parse(fs.readFileSync(path.join(root, p), 'utf8'));
 const { productName } = read('src-tauri/tauri.conf.json');
@@ -38,7 +40,7 @@ const newest = (dir, match = () => true) =>
 if (process.argv.includes('--dist')) {
   // The Tauri bundler mounts and opens the DMG itself — don't `open` it again here.
   build('--bundles', win ? 'nsis' : 'dmg');
-  const dir = path.join(root, 'src-tauri/target/release/bundle', win ? 'nsis' : 'dmg');
+  const dir = path.join(releaseDir(), 'bundle', win ? 'nsis' : 'dmg');
   const built = newest(dir, (n) => n.endsWith(win ? '.exe' : '.dmg'));
   if (!built) throw new Error(`no installer produced in ${dir}`);
   const dest = path.join(os.homedir(), 'Downloads', path.basename(built));
@@ -62,8 +64,8 @@ if (rollback) {
   build(...(win ? ['--no-bundle'] : ['--bundles', 'app']));
   // --no-bundle leaves the raw cargo binary, which is named after Cargo.toml, not productName.
   src = win
-    ? path.join(root, 'src-tauri/target/release', 'basalt-db-studio.exe')
-    : path.join(root, 'src-tauri/target/release/bundle/macos', `${productName}.app`);
+    ? path.join(releaseDir(), 'basalt-db-studio.exe')
+    : path.join(releaseDir(), 'bundle/macos', `${productName}.app`);
 }
 
 if (win) run('taskkill', ['/IM', `"${productName}.exe"`, '/F'], { stdio: 'ignore' });
