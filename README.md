@@ -38,7 +38,26 @@ pnpm install
 | `pnpm build` | Build production frontend bundle |
 | `pnpm tauri build` | Build the standalone production desktop app binary and bundle |
 
-### 4. Running Backend Tests & Lints
+### 4. Installing a Local Build
+
+`pnpm tauri build` leaves the artifact inside `src-tauri/target/`. These scripts take it from there — no dragging into Applications, no clicking through an installer.
+
+| Command | Description |
+|---|---|
+| `pnpm run install:app` | Build and install straight to the OS app location, then launch it |
+| `pnpm rollback` | Reinstall the previous build from the archive |
+| `pnpm dist` | Build the distributable installer (`.dmg` / `.exe`) and copy it to `~/Downloads` |
+
+Extra flags pass through to `tauri build` (e.g. `pnpm run install:app --target universal-apple-darwin`).
+
+| | macOS | Windows |
+|---|---|---|
+| Installs to | `/Applications/Basalt DB Studio.app` | `%LOCALAPPDATA%\Programs\Basalt DB Studio\` |
+| `pnpm dist` produces | `.dmg` (bundler opens it for you) | NSIS `-setup.exe` |
+
+The running app is quit before it is replaced, and the outgoing build is archived to `~/.basalt-builds` (5 most recent kept) so `pnpm rollback` can put it back. Local installs are unsigned — fine on the machine that built them; use `pnpm dist` plus signing/notarization to hand a build to anyone else. Linux is not covered: use `pnpm tauri build` and your distro's package.
+
+### 5. Running Backend Tests & Lints
 
 ```bash
 cd src-tauri

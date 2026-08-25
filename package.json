@@ -12,7 +12,10 @@
     "svelte-check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
     "check": "svelte-check --tsconfig ./tsconfig.json && vitest run",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "install:app": "node scripts/install.mjs",
+    "rollback": "node scripts/install.mjs --rollback",
+    "dist": "node scripts/install.mjs --dist"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.2.0",
