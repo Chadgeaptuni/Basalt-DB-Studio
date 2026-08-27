@@ -19,6 +19,3 @@ export const DESTINATIONS: Destination[] = [
   { id: "history", label: "History", icon: HistoryIcon },
   { id: "git", label: "Git", icon: GitBranch },
 ];
-
-export const destinationOf = (id: PanelId): Destination =>
-  DESTINATIONS.find((d) => d.id === id)!;
