@@ -4,7 +4,7 @@
   import HistoryPanel from "$lib/components/history/HistoryPanel.svelte";
   import GitSyncPanel from "$lib/components/gitsync/GitSyncPanel.svelte";
   import ResizeHandle from "$lib/components/ui/ResizeHandle.svelte";
-  import { fadeThroughIn, fadeThroughOut, panelIn, panelOut } from "$lib/utils/motion";
+  import { panelIn, panelOut } from "$lib/utils/motion";
   import { panel, PANEL_MAX_W, PANEL_MIN_W } from "$lib/stores/panel.svelte";
   import { zoom } from "$lib/stores/zoom.svelte";
 
@@ -43,30 +43,23 @@
   <div
     class="h-full overflow-hidden bg-surface-container"
   >
-    <div class="flex h-full flex-col" style="width:{panel.width}px">
-      <!-- Keyed on the destination so swapping panels runs the fade-through
-           (DESIGN §7). Both halves are absolutely positioned inside this box: for
-           the ~90 ms the old and new panels coexist they must overlap, not stack
-           and halve each other's height. -->
-      <div class="relative min-h-0 flex-1">
-        {#key panel.active}
-          <div
-            class="absolute inset-0 flex flex-col"
-            in:fadeThroughIn|local
-            out:fadeThroughOut|local
-          >
-            {#if panel.active === "schema"}
-              <SchemaTree />
-            {:else if panel.active === "queries"}
-              <SavedQueriesPanel />
-            {:else if panel.active === "history"}
-              <HistoryPanel />
-            {:else}
-              <GitSyncPanel />
-            {/if}
-          </div>
-        {/key}
-      </div>
+    <!-- Swapping destinations is an instant cut, not a cross-fade. The fade ran
+         300 ms with both panels mounted and absolutely positioned over each
+         other, so the incoming panel did its first layout — a schema tree of
+         several hundred rows — inside the animation, and the frames it dropped
+         were the whole effect. Each panel already reports its own loading state,
+         which is the honest signal anyway: a fade says "arriving", a spinner
+         says "still fetching". -->
+    <div class="flex h-full min-h-0 flex-col" style="width:{panel.width}px">
+      {#if panel.active === "schema"}
+        <SchemaTree />
+      {:else if panel.active === "queries"}
+        <SavedQueriesPanel />
+      {:else if panel.active === "history"}
+        <HistoryPanel />
+      {:else}
+        <GitSyncPanel />
+      {/if}
     </div>
   </div>
 

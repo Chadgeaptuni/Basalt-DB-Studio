@@ -197,7 +197,11 @@ Two assignments carry most of the M3 read and are easy to get wrong:
 - **Dialogs are 28px**, at every density. M3 never shrinks the dialog corner.
 - **A row's hover is a `rounded-full` pill inset 4px from the row edge**, not a
   full-bleed rectangle. This is the M3 list/navigation idiom, and it is what
-  makes a tree read as Material rather than as a table.
+  makes a tree read as Material rather than as a table. The exception is a row
+  inside a **divided or bordered list** (theme presets, settings groups): the
+  container already draws the row's edges, so an inset pill leaves a visible gap
+  between the hover and the divider above it and reads as a hover that missed.
+  Those rows fill (`flush`).
 
 The data grid is the one deliberate exception: cells and grid rows are square
 (`rounded-none`). M3's own dense/data guidance keeps tabular cells rectangular —
@@ -306,9 +310,16 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
   panel** for the rail's active destination · main workspace (editor tabs above,
   results below, both in a `SplitPane`) · bottom `StatusBar`. All resizable panes
   use the shared `SplitPane` primitive.
+- **Connections live in the Schema panel, and nowhere else.** Every saved profile
+  is a root of that tree — pgAdmin's shape — whether or not it holds a session;
+  expanding one connects it, several can be open at once, and connect,
+  disconnect, edit and delete are on the root's context menu. There is no
+  connection popover and no second list on the start pane: one list means one
+  place for a profile's state to be wrong. The status bar *states* the active
+  session (engine, name, environment, read-only) and manages nothing.
 - **The status bar has three zones, divided by hairlines, and a new item joins
-  one of them.** *Leading* — how the workspace is set up (panel toggle,
-  connection with its environment badge). *Session* — what is true about the
+  one of them.** *Leading* — how the workspace is set up (panel toggle, the
+  connection label with its environment badge). *Session* — what is true about the
   statement that just ran (tx badge, row count, row-limit badge, duration); every
   item is conditional and the zone disappears with its divider, so an idle bar
   carries no empty scaffolding. *Trailing* — controls for the view rather than
@@ -319,9 +330,9 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
 - **Three bars, three jobs, and nothing crosses over.** The top bar is
   *navigation* — where you go. The status bar is *session state* — what is true
   right now. The rail is *destinations*, with app-level actions in its trailing
-  group. So the connection switcher sits in the status bar beside the transaction
-  badge (which database you are pointed at is state, not navigation) and settings
-  sits at the foot of the rail. A bar that carries session state, navigation and
+  group. So which database you are pointed at is *stated* in the status bar
+  beside the transaction badge — state, not navigation — and settings sits at the
+  foot of the rail. A bar that carries session state, navigation and
   app settings at once is three bars wearing one hat, which is what the top bar
   had become.
 - **The top bar is the title bar.** The native one is removed on every platform
@@ -335,8 +346,9 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
   siblings to align to; this pane has none, and a dense block in the corner of an
   empty 1200px area reads as a rendering fault. Its shape is VSCode's empty
   editor: the mark as a watermark at ~20% opacity, one sentence under it, the
-  saved connections, then the keyboard reference — reference material, so the
-  quietest thing on the pane. Still no illustration, no headline above
+  one action it owns ([New connection]), then the keyboard reference — reference
+  material, so the quietest thing on the pane. The saved profiles themselves are
+  not repeated here; they are the Schema panel's tree roots (§5). Still no illustration, no headline above
   `text-title-sm`, and nothing present to fill space. It lays out on
   `@container`, not a viewport breakpoint: `mod+b` alone changes this pane's
   width at a fixed window size. A binding the top bar already prints on its own
@@ -462,9 +474,15 @@ the primitive**, don't fork it locally.
   `variant: 'filled' | 'tonal' | 'outlined' | 'text' | 'text-error' | 'danger'`, `size: 'sm' | 'md'`,
   `rounded-full` (M3 buttons are pills). Filled = `--primary`/`--on-primary`;
   tonal = `--primary-container`/`--on-primary-container`; outlined = transparent +
-  1px `--outline`; text = transparent, state layer only; danger =
-  `--error-container`/`--on-error-container`. `Button` owns the state layer — call
-  sites never add hover classes.
+  1px `--outline`; text = transparent, state layer only; **danger = outline →
+  fill**: 1px `--error` with `--error` text at rest, filling to
+  `--error`/`--on-error` on hover *and* `:focus-visible`. A destructive confirm
+  must not sit in a dialog looking like the button you press to get on with your
+  day, and the escalation has to be visible before the click, not after it — so
+  it is the one variant whose resting and hover states differ in kind. The pair
+  is `destructiveFill` in `ui/stateLayer.ts`, the one place a hover colour is
+  written (§7). `Button` owns the state layer — call sites never add hover
+  classes.
 - **IconButton** — `rounded-full`, `place-items-center`, state layer on hover.
   32px default / 28px dense. `title` required (doubles as `aria-label`). Toggled
   state = `--secondary-container` fill.
@@ -515,9 +533,10 @@ the primitive**, don't fork it locally.
   exists so you can read a value *while* still arrow-keying around the grid, and
   a modal would trap focus and block exactly that.
 - **ListItem** — the M3 list row: 36px, leading icon slot, headline, optional
-  supporting text, trailing slot, `stateLayerPill` hover. Every list of objects
-  (connections, saved queries, history, settings destinations) uses it — a
-  hand-rolled `<div class="flex h-9 …">` row is a review failure.
+  supporting text, trailing slot, `stateLayerPill` hover — or `flush`, the
+  full-bleed wash, for a row inside a divided or bordered list (§2). Every list
+  of objects (saved queries, history, theme presets, settings destinations) uses
+  it — a hand-rolled `<div class="flex h-9 …">` row is a review failure.
 - **Dividers** are `border-outline-variant` / `divide-outline-variant` utilities,
   not a component — the token already centralises the colour, so wrapping a 1px
   rule in a Svelte component buys nothing.
@@ -526,12 +545,20 @@ the primitive**, don't fork it locally.
   text. It is `ui/menu.ts` plus `MenuRow`, a module rather than a wrapper
   component, because anchoring, focus and dismissal differ per trigger and
   bits-ui already solves each. **Everything that floats a list of choices takes
-  its container from here** — `ContextMenu`, `DropdownMenu`, `Select`'s listbox,
-  the connection popover:
+  its container from here** — `ContextMenu`, `DropdownMenu` and `Select`'s
+  listbox:
   - `POPOVER_SURFACE` — the floating container alone (radius, outline, tonal
     fill, `shadow-e2`). No size, no padding: a menu, a listbox and a popover
     carrying its own list and footer each want different ones.
-  - `MENU_SURFACE` — that container as a menu (`min-w-44`, `py-2`).
+  - `MENU_SURFACE` — that container as a menu (`min-w-44`, `py-1`).
+  - `MENU_SEPARATOR` — the rule between two **sections**. A menu takes either a
+    flat `MenuItem[]` or `MenuItem[][]`; `menuSections()` normalises both, so a
+    call site groups its rows without every menu growing a second prop. Group
+    when the rows mean different things — what this session *does*
+    (connect/refresh) against what happens to the saved *object* (edit/delete) —
+    so the destructive row is never the neighbour of a harmless one. It is a
+    plain `role="separator"` rule, not bits-ui's `Separator`, which renders
+    `role="group"` and would announce every divider as a third, empty group.
   - `MENU_ROW` / `menuRowClass()` — the 36px row, reacting to pointer and
     keyboard through bits-ui's `data-highlighted`.
 
@@ -629,7 +656,9 @@ the primitive**, don't fork it locally.
   a **3px `--primary` indicator** under the label. No vertical dividers between
   tabs, no background-swap-only active state.
 - **TreeItem** — 36px row, `stateLayerPill` hover, indent guides, chevron in a
-  fixed 16px leading slot so labels align across depths.
+  fixed 16px leading slot so labels align across depths. Its icon takes a role
+  token (`iconClass`) so a root whose subject has a live status — a connection
+  — can carry it on the glyph, alongside the branch that states it in words.
 - **VirtualList / SplitPane** — shared primitives; any scrolling data list must
   use `VirtualList` (§10).
 
@@ -648,14 +677,17 @@ control itself.
 | Disabled | 38% content, no layer |
 
 **Components import the layer; they never write it.** `ui/stateLayer.ts` exports
-two:
+it in three shapes:
 
 - `stateLayer` — the layer clipped to the element's own shape. Buttons, icon
   buttons, chips, menu rows.
 - `stateLayerPill` — the layer as a `rounded-full` pill inset 4px from the row
   edge. List rows, tree rows, nav rail items.
+- `stateLayerFlush` — the same 8% as a full-bleed background, for the two rows
+  the pseudo-element cannot serve (see the exemptions below): grid rows, and
+  rows inside a divided or bordered list.
 
-Both use a `::before` overlay of `bg-current`, so one class string works on
+The first two use a `::before` overlay of `bg-current`, so one class string works on
 filled, tonal, outlined and text variants without knowing its own background —
 including the filled-button case M3 calls out, where the layer is `on-primary`
 over `primary`.
@@ -663,7 +695,7 @@ over `primary`.
 A literal `hover:bg-on-surface/8` at a call site is a review failure even though
 the value is right: the point is that there is exactly one place to change it.
 
-**Two surfaces are exempt, and only these two:**
+**Three surfaces are exempt, and only these three:**
 
 - **Drag handles and separators** (`SplitPane`, sidebar and section resize grips)
   signal with `--primary` directly. A translucent layer over a 1px line is
@@ -671,8 +703,13 @@ the value is right: the point is that there is exactly one place to change it.
 - **Data grid rows.** The grid renders thousands of rows through `VirtualList`;
   a `::before` pseudo-element per row is measurable overhead, and the layer's
   `overflow-hidden` would clip the selected cell's outline. Grid rows carry
-  `hover:bg-on-surface/8` directly — the same value, applied without the
-  pseudo-element. This is the same carve-out §2 makes for grid shape.
+  `hover:bg-on-surface/8` through `stateLayerFlush` — the same value, applied
+  without the pseudo-element. This is the same carve-out §2 makes for grid shape.
+- **Rows inside a divided or bordered list** take `stateLayerFlush` for the
+  reason §2 gives: the container draws their edges, so the hover has to reach
+  them. The pseudo-element is also the wrong tool there — a `before:inset-0`
+  layer inside the container's `overflow-hidden` rounded clip is exactly the
+  WebKit re-rasterization that made buttons flash on every hover.
 
 Focus is **additionally** a 2px `--primary` ring via `:focus-visible` (app.css
 `@layer base`). State layer and focus ring coexist; neither replaces the other.
@@ -725,7 +762,11 @@ Focus is **additionally** a 2px `--primary` ring via `:focus-visible` (app.css
   contents are pinned to the panel's resting width. The subtree is laid out once
   and only the outer box changes per frame; without the pin a schema tree of
   several hundred rows reflows on every one.
-- **Fade-through** when the nav rail swaps panels: 90 ms out, 210 ms in, no slide.
+- **The nav rail swaps panels with an instant cut**, not a fade. Both panels
+  are mounted and stacked for the length of a cross-fade, so the incoming
+  panel lays out — a schema tree of several hundred rows — inside the
+  animation and drops the frames the effect was made of. The panel's own
+  loading state is the cue that something is arriving.
 - A tab strip animates tabs **opening and closing** (`uiSlide`), never the
   *content* behind a tab switch. Sliding a virtualized grid or a full editor on
   every switch costs frames and makes a keyboard-driven tool feel sluggish —
@@ -770,7 +811,8 @@ Focus is **additionally** a 2px `--primary` ring via `:focus-visible` (app.css
   `staging`, `prod`, or **untagged** — untagged is a real state and never
   defaults to `local`, because a reassuring badge on an unclassified connection
   is worse than none. The value tints its badge on the status bar's connection
-  chip and in the connection list, and on `prod` every destructive confirm names the environment
+  label and on its root in the schema tree, and on `prod` every destructive
+  confirm names the environment
   in its title via `envConfirmTitle()`. Only operations that *write* escalate —
   discarding staged edits touches nothing on the server. Environment is never
   conveyed by colour alone; the badge always carries the label. All of it flows
@@ -799,8 +841,12 @@ A blank pane is a bug.
   the recovery action; they never write the words. Kind-specific behaviour on
   top of that:
   - Connection kinds (`connectionRefused`, `authFailed`, `tlsError`,
-    `tunnelError`) → inline state in the connection form / sidebar item with the
-    engine message and a [Retry] / [Edit connection] action.
+    `tunnelError`) → inline in the connection *form*, where the fields that
+    caused it are; from anywhere else a **toast** via `toast.fromError`, raised
+    once inside `connections.connect()`. The tree, the palette and the start pane
+    all connect, and an error pinned under the tree root is a message you have to
+    go back and find — the root that failed closes again and keeps the error on
+    its glyph (`--error`).
   - `queryError` → inline panel in the results area with the engine's message;
     when a position offset is present, underline the offending token in the editor.
   - `confirmationRequired` → never an error UI; it triggers `confirm()` and

@@ -36,7 +36,24 @@ export const POPOVER_SURFACE =
   "shadow-e2 outline-none";
 
 /** The container as a menu: wide enough to be one, padded for a run of rows. */
-export const MENU_SURFACE = `${POPOVER_SURFACE} min-w-44 py-2`;
+export const MENU_SURFACE = `${POPOVER_SURFACE} min-w-44 py-1`;
+
+/**
+ * A menu's items, flat or split into **sections**: a menu that mixes what an
+ * object *does* with what happens *to* the object (connect/refresh vs
+ * edit/delete) reads as one undifferentiated list, and the destructive row ends
+ * up a neighbour of a harmless one. Sections are the hairline between them.
+ */
+export type MenuItems = MenuItem[] | MenuItem[][];
+
+/** Both shapes as sections, so a menu component only renders one of them. */
+export function menuSections(items: MenuItems): MenuItem[][] {
+  if (items.length === 0) return [];
+  return Array.isArray(items[0]) ? (items as MenuItem[][]) : [items as MenuItem[]];
+}
+
+/** The rule between two sections. Full-bleed: it divides the menu, not its rows. */
+export const MENU_SEPARATOR = "my-1 h-px bg-outline-variant";
 
 /**
  * A row in any of them: 36px on the density tier. `data-highlighted` is bits-ui's

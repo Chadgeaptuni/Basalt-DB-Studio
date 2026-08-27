@@ -246,27 +246,3 @@ export function toastOut(_node: Element): TransitionConfig {
 export function uiSlide(node: Element, params: SlideParams = {}): TransitionConfig {
   return slide(node, { duration: ms(MS.popIn), easing: standard, ...params });
 }
-
-// M3 fade-through, for a surface whose *content* is replaced rather than moved —
-// the nav rail swapping panels. Asymmetric on purpose: the outgoing panel leaves
-// quickly so the two never overlap for long, and the incoming one takes its time.
-// No slide; a panel that flies in from the side reads as navigation, and the rail
-// has not navigated anywhere.
-const FADE_THROUGH_OUT = 90;
-const FADE_THROUGH_IN = 210;
-
-/** The incoming half. Waits out the outgoing half so the call site only has to
- *  name the two ends, not sequence them. */
-export function fadeThroughIn(node: Element, params: FadeParams = {}): TransitionConfig {
-  const off = reduced();
-  return fade(node, {
-    duration: off ? 0 : FADE_THROUGH_IN,
-    delay: off ? 0 : FADE_THROUGH_OUT,
-    easing: standard,
-    ...params,
-  });
-}
-
-export function fadeThroughOut(node: Element, params: FadeParams = {}): TransitionConfig {
-  return fade(node, { duration: ms(FADE_THROUGH_OUT), easing: standard, ...params });
-}

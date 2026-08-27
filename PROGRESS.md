@@ -37,6 +37,18 @@ clean. **Remaining: the separable M1 secrets slice** (keychain/vault + auto-prom
 TLS-ladder/SSH UI) and the deferred M2 backend items (pinned-tx connection,
 cancellation, statement timeout). GUI (`pnpm tauri dev`) still wants a manual pass.
 
+**UI restructure (post-M7, frontend only):** the Schema panel is the object
+explorer *and* the connection list — every saved profile is a tree root and
+expanding one connects it (pgAdmin's shape), several sessions open at once,
+connect/disconnect/edit/delete on the root's context menu. The status-bar
+switcher is now a label (`ConnectionLabel`) and the start pane no longer lists
+profiles; `ConnectionSwitcher` and `ConnectionRow` are deleted. Rail panel swaps
+are an instant cut (the fade-through helpers are gone — the incoming panel laid
+out inside the animation), the rail item keeps its state layer in both states (a
+click used to flash pale before the tonal pill arrived), and rows inside a
+divided list take the new `stateLayerFlush` full-bleed wash. GUI pass still
+owed.
+
 **Secrets slice (separable M1 tail):**
 - `secrets/` — Keychain default + EncryptedFile vault (argon2id + ChaCha20), so
   passwords survive restart. Replaces the in-memory stash; keeps the no-field

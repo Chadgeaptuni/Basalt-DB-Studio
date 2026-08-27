@@ -5,29 +5,22 @@
   //
   // The shape is VSCode's empty editor — the mark as a watermark, the keys that
   // drive the app underneath — and everything on it is functional: one sentence,
-  // the connections that already exist, and a keyboard reference. No
-  // illustration, no headline above `text-title-sm`, nothing here to fill space
-  // (DESIGN §8). Shortcuts come from the single catalogue, so this pane can never
-  // advertise a binding the app doesn't have.
-  import RotateCw from "@lucide/svelte/icons/rotate-cw";
+  // the way to add a connection, and a keyboard reference. No illustration, no
+  // headline above `text-title-sm`, nothing here to fill space (DESIGN §8).
+  // Shortcuts come from the single catalogue, so this pane can never advertise a
+  // binding the app doesn't have.
+  //
+  // The saved connections are *not* listed here: they are the schema panel's
+  // tree roots, and a second list of the same profiles is a second place to keep
+  // in sync. Creating one is still offered, because a user with none and a
+  // collapsed panel would otherwise be looking at a dead end.
   import Button from "$lib/components/ui/Button.svelte";
   import Kbd from "$lib/components/ui/Kbd.svelte";
-  import Spinner from "$lib/components/ui/Spinner.svelte";
   import BrandMark from "$lib/components/ui/BrandMark.svelte";
-  import IconButton from "$lib/components/ui/IconButton.svelte";
-  import ConnectionRow from "$lib/components/connections/ConnectionRow.svelte";
   import ConnectionForm from "$lib/components/connections/ConnectionForm.svelte";
-  import ErrorState from "$lib/components/ui/ErrorState.svelte";
-  import { connections } from "$lib/stores/connections.svelte";
   import { STARTUP_SHORTCUT_GROUPS } from "$lib/utils/shortcuts";
 
   let formOpen = $state(false);
-
-  // The Queries panel does not load these, and the Schema panel may be collapsed
-  // (mod+b) — this pane cannot depend on either being mounted.
-  $effect(() => {
-    void connections.load();
-  });
 </script>
 
 <!-- `@container`, not a viewport breakpoint: this pane's width is the window
@@ -44,58 +37,12 @@
            at 20% the stack still resolves as a shape while every line of text on
            the pane outranks it. -->
       <BrandMark size={176} class="text-on-surface opacity-20 select-none" />
-      <p class="text-title-sm text-on-surface-variant">Connect to a database to start querying.</p>
+      <p class="text-title-sm text-on-surface-variant">
+        Open a connection from the Schema panel to start querying.
+      </p>
     </div>
 
-    <!-- The connections you have, then the way to add one: with a list on screen
-         the new-connection button is the alternative, not the instruction. -->
-    <div class="flex w-full flex-col items-center gap-4">
-      {#if !connections.loaded}
-        <div class="flex items-center gap-2 text-body-md text-on-surface-muted">
-          <Spinner size="sm" /> Loading…
-        </div>
-      {:else if connections.loadError}
-        <div class="w-full overflow-hidden rounded-md">
-          <ErrorState
-            kind={connections.loadError.kind}
-            message={connections.loadError.message}
-            filled
-          >
-            {#snippet action()}
-              <Button variant="text-error" size="sm" onclick={() => connections.load()}>
-                Retry
-              </Button>
-            {/snippet}
-          </ErrorState>
-        </div>
-      {:else if connections.profiles.length > 0}
-        <ul
-          class="w-full divide-y divide-outline-variant overflow-hidden rounded-md border
-            border-outline-variant bg-surface-container-low"
-        >
-          {#each connections.profiles as p (p.id)}
-            {@const st = connections.statusFor(p.id)}
-            <li>
-              <ConnectionRow profile={p} onclick={() => void connections.activate(p.id)} />
-              {#if st.status === "error" && st.error}
-                <ErrorState kind={st.error.kind} message={st.error.message} size="inline" filled>
-                  {#snippet action()}
-                    <IconButton
-                      icon={RotateCw}
-                      title="Retry"
-                      size="sm"
-                      onclick={() => connections.connect(p.id)}
-                    />
-                  {/snippet}
-                </ErrorState>
-              {/if}
-            </li>
-          {/each}
-        </ul>
-      {/if}
-
-      <Button variant="filled" size="sm" onclick={() => (formOpen = true)}>New connection</Button>
-    </div>
+    <Button variant="filled" size="sm" onclick={() => (formOpen = true)}>New connection</Button>
 
     <!-- Reference, not navigation: nothing here is clickable, so it is the
          quietest thing on the pane. The rule running off each heading is what

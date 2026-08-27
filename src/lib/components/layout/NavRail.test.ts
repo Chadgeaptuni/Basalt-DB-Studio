@@ -131,4 +131,21 @@ describe("NavRail", () => {
 
     settingsDialog.close();
   });
+
+  // Swapping the state layer out for the active fill made a click a two-stage
+  // animation: the press wash rose over the inactive icon, then vanished the
+  // instant the class changed while the fill was still transitioning in, so the
+  // icon flashed pale before arriving at its selected colour. The layer stays on
+  // the pill in both states, with the fill behind it.
+  it("keeps the state layer on the indicator whether or not it is active", () => {
+    render(NavRail);
+    const pill = (name: string): string =>
+      screen.getByRole("tab", { name }).querySelector("span")!.className;
+
+    expect(pill("Schema")).toContain("bg-secondary-container"); // active
+    for (const name of ["Schema", "Queries"]) {
+      expect(pill(name), name).toContain("before:bg-current");
+      expect(pill(name), name).toContain("isolate");
+    }
+  });
 });

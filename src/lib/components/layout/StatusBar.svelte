@@ -5,7 +5,7 @@
   import IconButton from "$lib/components/ui/IconButton.svelte";
   import Badge from "$lib/components/ui/Badge.svelte";
   import Tooltip from "$lib/components/ui/Tooltip.svelte";
-  import ConnectionSwitcher from "$lib/components/connections/ConnectionSwitcher.svelte";
+  import ConnectionLabel from "$lib/components/connections/ConnectionLabel.svelte";
   import { stateLayer, focusRing } from "$lib/components/ui/stateLayer";
   import { zoom } from "$lib/stores/zoom.svelte";
   import { keyboard } from "$lib/utils/keyboard";
@@ -62,7 +62,7 @@
     onclick={panel.toggleCollapsed}
   />
   {@render divider()}
-  <ConnectionSwitcher />
+  <ConnectionLabel />
 
   {#if tx !== "idle" || stats}
     {@render divider()}

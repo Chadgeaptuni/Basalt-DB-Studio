@@ -8,6 +8,9 @@
     label: string;
     depth?: number;
     icon?: IconComponent;
+    /** Role token for the icon — a tree root whose subject has a live status
+     *  (a connection) colours the glyph; everything else stays muted. */
+    iconClass?: string;
     expandable?: boolean;
     expanded?: boolean;
     selected?: boolean;
@@ -22,6 +25,7 @@
     label,
     depth = 0,
     icon: Icon,
+    iconClass = "text-on-surface-muted",
     expandable = false,
     expanded = false,
     selected = false,
@@ -84,6 +88,6 @@
   {:else}
     <span class="w-4 shrink-0"></span>
   {/if}
-  {#if Icon}<Icon size={14} strokeWidth={2} class="shrink-0 text-on-surface-muted" />{/if}
+  {#if Icon}<Icon size={14} strokeWidth={2} class="shrink-0 {iconClass}" />{/if}
   <span class="truncate">{label}</span>
 </div>

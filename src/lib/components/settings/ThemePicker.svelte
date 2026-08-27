@@ -83,6 +83,7 @@
             headline={custom.name}
             supporting="User custom theme"
             selected={theme.current === custom.id}
+            flush
             onclick={() => theme.set(custom.id)}
           >
             {#snippet leading()}
@@ -118,6 +119,7 @@
           headline={preset.name}
           supporting={preset.description}
           selected={theme.current === preset.id}
+          flush
           onclick={() => theme.set(preset.id)}
         >
           {#snippet leading()}

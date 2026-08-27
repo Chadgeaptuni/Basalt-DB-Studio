@@ -1,9 +1,11 @@
 <script lang="ts">
-  import Boxes from "@lucide/svelte/icons/boxes";
-  import Table from "@lucide/svelte/icons/table";
-  import Eye from "@lucide/svelte/icons/eye";
-  import KeyRound from "@lucide/svelte/icons/key-round";
+  import Database from "@lucide/svelte/icons/database";
   import Plus from "@lucide/svelte/icons/plus";
+  import Plug from "@lucide/svelte/icons/plug";
+  import Unplug from "@lucide/svelte/icons/unplug";
+  import Pencil from "@lucide/svelte/icons/pencil";
+  import Trash2 from "@lucide/svelte/icons/trash-2";
+  import RotateCw from "@lucide/svelte/icons/rotate-cw";
   import TreeItem from "$lib/components/ui/TreeItem.svelte";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
@@ -15,14 +17,24 @@
   import SegmentedButton, { type Segment } from "$lib/components/ui/SegmentedButton.svelte";
   import ContextMenu from "$lib/components/ui/ContextMenu.svelte";
   import type { MenuItem } from "$lib/components/ui/menu";
-  import { filterRank, noMatches } from "$lib/utils/filter";
-  import { connections } from "$lib/stores/connections.svelte";
+  import ConnectionForm from "$lib/components/connections/ConnectionForm.svelte";
+  import ConnectionSchema from "./ConnectionSchema.svelte";
+  import { ENGINE_TAG, connectionTarget } from "$lib/utils/connectionLabel";
+  import { connections, type ConnStatus } from "$lib/stores/connections.svelte";
   import { schema } from "$lib/stores/schema.svelte";
-  import { editorTabs } from "$lib/stores/tabs.svelte";
-  import { ddl } from "$lib/stores/ddl.svelte";
+  import { confirm } from "$lib/stores/dialogs.svelte";
+  import type { ConnectionProfile, RelationKind } from "$lib/api/types";
 
-  const sessionId = $derived(connections.active?.sessionId ?? null);
+  // The object explorer, rooted at the connections themselves — pgAdmin's shape.
+  // A saved profile is a tree root whether or not it is connected: expanding one
+  // connects it, and several can be open at once, so the panel is both the
+  // connection list and the schema browser. That is why there is no connection
+  // popover anywhere else in the app any more (DESIGN §5); the status bar states
+  // which session the workspace is pointed at and nothing more.
   let expanded = $state<Record<string, boolean>>({});
+  let filter = $state("");
+  let kind = $state<"all" | RelationKind>("all");
+  let form = $state<{ profile: ConnectionProfile | null } | null>(null);
 
   const KIND_SEGMENTS: Segment[] = [
     { value: "all", label: "All" },
@@ -30,185 +42,178 @@
     { value: "view", label: "Views" },
   ];
 
-  function newTable(namespace: string): void {
-    ddl.open({ type: "newTable", namespace });
-  }
+  // Colour is a reinforcement here, not the signal: the row also carries its
+  // state in the branch beneath it (spinner, error, schema) (DESIGN §7).
+  const ICON_TONE: Record<ConnStatus, string> = {
+    connected: "text-ok",
+    connecting: "text-warn",
+    error: "text-error",
+    disconnected: "text-on-surface-muted",
+  };
 
-  async function openIndexDialog(ns: string, rel: string): Promise<void> {
-    const id = sessionId;
-    const desc = id ? await schema.describe(id, ns, rel) : null;
-    ddl.open({ type: "createIndex", namespace: ns, table: rel, columns: desc?.columns.map((c) => c.name) ?? [] });
-  }
-
-  function nsMenu(ns: string): MenuItem[] {
-    return [{ label: "New table…", onselect: () => newTable(ns) }];
-  }
-
-  function relMenu(ns: string, rel: string): MenuItem[] {
-    return [
-      { label: "Open data", onselect: () => editorTabs.openTable(ns, rel) },
-      { label: "Add column…", onselect: () => ddl.open({ type: "addColumn", namespace: ns, table: rel }) },
-      { label: "Create index…", onselect: () => void openIndexDialog(ns, rel) },
-      { label: "Rename table…", onselect: () => ddl.open({ type: "renameTable", namespace: ns, table: rel }) },
-      { label: "Drop table", danger: true, onselect: () => ddl.preview({ kind: "dropTable", namespace: ns, name: rel }) },
-    ];
-  }
-
-  // Load the tree the first time a session becomes active.
   $effect(() => {
-    const id = sessionId;
-    if (id && !schema.get(id)) void schema.loadTree(id);
+    void connections.load();
   });
 
-  const view = $derived(sessionId ? schema.get(sessionId) : undefined);
+  /** True once anything is open that the filter could apply to. */
+  const anyOpen = $derived(
+    connections.profiles.some(
+      (p) => expanded[p.id] && connections.statusFor(p.id).status === "connected",
+    ),
+  );
 
-  // Filtering is pure client-side over the cached tree — a keystroke costs no IPC
-  // (DESIGN §10). A namespace with no surviving relation drops out entirely, and
-  // while a filter is active every namespace is force-expanded, because a match
-  // hidden behind a collapsed node is the same as no match.
-  let filter = $state("");
-  let kind = $state<"all" | "table" | "view">("all");
-  const filtering = $derived(filter.trim().length > 0 || kind !== "all");
-
-  const namespaces = $derived.by(() => {
-    const tree = view?.tree;
-    if (!tree) return [];
-    if (!filtering) return tree.namespaces;
-    return tree.namespaces
-      .map((ns) => ({
-        ...ns,
-        relations: filterRank(
-          kind === "all" ? ns.relations : ns.relations.filter((r) => r.kind === kind),
-          filter,
-          (r) => r.name,
-        ),
-      }))
-      .filter((ns) => ns.relations.length > 0);
-  });
-
-  const matchCount = $derived(namespaces.reduce((n, ns) => n + ns.relations.length, 0));
-  const isExpanded = (key: string): boolean => filtering || Boolean(expanded[key]);
-
-  function toggleNs(name: string): void {
-    expanded[`ns:${name}`] = !expanded[`ns:${name}`];
+  function isActive(p: ConnectionProfile): boolean {
+    const session = connections.statusFor(p.id).session;
+    return !!session && connections.active?.sessionId === session.sessionId;
   }
-  async function toggleTable(ns: string, name: string): Promise<void> {
-    const key = `tbl:${ns}:${name}`;
-    expanded[key] = !expanded[key];
-    if (expanded[key] && sessionId) await schema.describe(sessionId, ns, name);
+
+  /** Expanding a disconnected root connects it — the connection *is* the node. */
+  async function toggle(p: ConnectionProfile): Promise<void> {
+    const st = connections.statusFor(p.id);
+    if (st.status === "connected" && st.session) connections.setActive(st.session);
+    expanded[p.id] = !expanded[p.id];
+    if (expanded[p.id] && st.status !== "connected" && st.status !== "connecting") {
+      // Failing to connect collapses the root again: the toast says what went
+      // wrong, and an open root with nothing under it says only that something did.
+      if (!(await connections.connect(p.id))) expanded[p.id] = false;
+    }
+  }
+
+  function activate(p: ConnectionProfile): void {
+    const session = connections.statusFor(p.id).session;
+    if (session) connections.setActive(session);
+  }
+
+  async function del(p: ConnectionProfile): Promise<void> {
+    const ok = await confirm({
+      title: `Delete connection “${p.name}”?`,
+      message: "This removes the saved profile. The database itself is untouched.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (ok) await connections.remove(p.id);
+  }
+
+  // Two sections, because the rows mean two different things: what this *session*
+  // does, then what happens to the saved *profile*. Delete is the last row of the
+  // second, past a hairline, so it is never the neighbour of Disconnect.
+  function connMenu(p: ConnectionProfile): MenuItem[][] {
+    const st = connections.statusFor(p.id);
+    const session: MenuItem[] =
+      st.status === "connected"
+        ? [
+            {
+              label: "Refresh",
+              icon: RotateCw,
+              onselect: () => st.session && schema.clear(st.session.sessionId),
+            },
+            {
+              label: "Disconnect",
+              icon: Unplug,
+              onselect: () => {
+                expanded[p.id] = false;
+                void connections.disconnect(p.id);
+              },
+            },
+          ]
+        : [{ label: "Connect", icon: Plug, onselect: () => void connections.connect(p.id) }];
+    return [
+      session,
+      [
+        { label: "Edit…", icon: Pencil, onselect: () => (form = { profile: p }) },
+        { label: "Delete", icon: Trash2, danger: true, onselect: () => void del(p) },
+      ],
+    ];
   }
 </script>
 
 <Panel title="Schema">
   {#snippet actions()}
-    {#if view?.tree && view.tree.namespaces.length > 0}
+    <!-- Only while there is a list to add to: with none saved the empty state
+         below carries the same action as a labelled button, and two controls
+         with one accessible name is a control too many. -->
+    {#if connections.profiles.length > 0}
       <IconButton
         icon={Plus}
-        title="New table"
+        title="New connection"
         size="sm"
-        onclick={() => newTable(view.tree!.namespaces[0].name)}
+        onclick={() => (form = { profile: null })}
       />
     {/if}
   {/snippet}
 
-  {#if view?.tree && view.tree.namespaces.length > 0}
+  {#if anyOpen}
     <div class="flex shrink-0 flex-col gap-2 border-b border-outline-variant p-2">
       <SearchField bind:value={filter} label="Filter tables and views" placeholder="Filter…" />
-      <div class="flex items-center gap-2">
-        <SegmentedButton
-          label="Relation kind"
-          segments={KIND_SEGMENTS}
-          value={kind}
-          onchange={(v) => (kind = v as typeof kind)}
-        />
-        {#if filtering}
-          <span class="text-label-sm text-on-surface-muted tabular-nums">{matchCount}</span>
-        {/if}
-      </div>
+      <SegmentedButton
+        label="Relation kind"
+        segments={KIND_SEGMENTS}
+        value={kind}
+        onchange={(v) => (kind = v as typeof kind)}
+      />
     </div>
   {/if}
 
   <div class="flex-1 overflow-auto py-1">
-    {#if !sessionId}
-      <EmptyState
-        message="Not connected."
-        hint="Pick a connection from the status bar to browse its tables and views."
-      />
-    {:else if !view || view.loading}
-      <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-muted"><Spinner size="sm" /> Introspecting…</div>
-    {:else if view.error}
-      <ErrorState kind={view.error.kind} message={view.error.message}>
+    {#if !connections.loaded}
+      <div class="flex items-center gap-2 p-3 text-body-md text-on-surface-muted">
+        <Spinner size="sm" /> Loading…
+      </div>
+    {:else if connections.loadError}
+      <ErrorState kind={connections.loadError.kind} message={connections.loadError.message}>
         {#snippet action()}
-          <Button size="sm" onclick={() => sessionId && schema.loadTree(sessionId)}>Retry</Button>
+          <Button size="sm" onclick={() => connections.load()}>Retry</Button>
         {/snippet}
       </ErrorState>
-    {:else if filtering && matchCount === 0}
-      <EmptyState message={noMatches(filter)} hint="Try a shorter or different term." />
-    {:else if view.tree && view.tree.namespaces.length > 0}
+    {:else if connections.profiles.length === 0}
+      <EmptyState
+        icon={Database}
+        message="No connections yet."
+        hint="Add one to browse its tables and views."
+      >
+        {#snippet action()}
+          <Button variant="filled" size="sm" onclick={() => (form = { profile: null })}>
+            New connection
+          </Button>
+        {/snippet}
+      </EmptyState>
+    {:else}
       <div role="tree">
-        {#each namespaces as ns (ns.name)}
-          <ContextMenu items={nsMenu(ns.name)}>
+        {#each connections.profiles as p (p.id)}
+          {@const st = connections.statusFor(p.id)}
+          <ContextMenu items={connMenu(p)}>
             <TreeItem
-              label={ns.name}
-              icon={Boxes}
+              label={p.name}
+              icon={Database}
+              iconClass={ICON_TONE[st.status]}
               depth={0}
               expandable
-              expanded={isExpanded(`ns:${ns.name}`)}
-              onclick={() => toggleNs(ns.name)}
-              ontoggle={() => toggleNs(ns.name)}
+              expanded={expanded[p.id]}
+              selected={isActive(p)}
+              title={`${ENGINE_TAG[p.engine]} · ${connectionTarget(p)}`}
+              onclick={() => void toggle(p)}
+              ontoggle={() => void toggle(p)}
             />
           </ContextMenu>
-          {#if isExpanded(`ns:${ns.name}`)}
-            {#each ns.relations as rel (rel.name)}
-              {@const tkey = `tbl:${ns.name}:${rel.name}`}
-              <ContextMenu items={relMenu(ns.name, rel.name)}>
-                <TreeItem
-                  label={rel.name}
-                  icon={rel.kind === "view" ? Eye : Table}
-                  depth={1}
-                  expandable
-                  expanded={expanded[tkey]}
-                  title={`${rel.kind} · double-click to open data`}
-                  onclick={() => toggleTable(ns.name, rel.name)}
-                  ondblclick={() => editorTabs.openTable(ns.name, rel.name)}
-                  ontoggle={() => toggleTable(ns.name, rel.name)}
-                />
-              </ContextMenu>
-              {#if expanded[tkey] && sessionId}
-                {@const desc = schema.describeCached(sessionId, ns.name, rel.name)}
-                {#if desc}
-                  {#each desc.columns as col (col.name)}
-                    <div
-                      class="flex h-7 items-center gap-1.5 text-data text-on-surface-variant"
-                      style="padding-left:{2 * 12 + 4 + 16}px"
-                      title={`${col.typeName}${col.nullable ? " · nullable" : " · not null"}${col.isPk ? " · primary key" : ""}`}
-                    >
-                      {#if col.isPk}<KeyRound size={11} class="shrink-0 text-warn" />{/if}
-                      <span class="truncate">{col.name}</span>
-                      <span class="truncate text-on-surface-muted">{col.typeName}</span>
-                    </div>
-                  {/each}
-                  {#if desc.columns.length === 0}
-                    <div class="py-1 text-body-sm text-on-surface-muted" style="padding-left:{2 * 12 + 20}px">No columns</div>
-                  {/if}
-                {:else}
-                  <div class="flex items-center gap-2 py-1 text-body-sm text-on-surface-muted" style="padding-left:{2 * 12 + 20}px">
-                    <Spinner size="sm" /> Loading columns…
-                  </div>
-                {/if}
-              {/if}
-            {/each}
-            {#if ns.relations.length === 0}
-              <div class="py-1 text-body-sm text-on-surface-muted" style="padding-left:16px">No tables</div>
-            {/if}
+
+          {#if st.status === "connecting"}
+            <div class="flex items-center gap-2 py-1 pl-8 text-body-sm text-on-surface-muted">
+              <Spinner size="sm" /> Connecting…
+            </div>
+          {:else if expanded[p.id] && st.session}
+            <ConnectionSchema
+              sessionId={st.session.sessionId}
+              {filter}
+              {kind}
+              activate={() => activate(p)}
+            />
           {/if}
         {/each}
       </div>
-    {:else}
-      <EmptyState
-        message="This database is empty."
-        hint="No tables or views yet — create one from a namespace's menu."
-      />
     {/if}
   </div>
 </Panel>
+
+{#if form}
+  <ConnectionForm profile={form.profile} onclose={() => (form = null)} />
+{/if}

@@ -1,5 +1,6 @@
 import { connectionsApi } from "$lib/api/connections";
 import type { ApiError } from "$lib/api/client";
+import { toast } from "./toasts.svelte";
 import type { ConnectionProfile, SessionInfo } from "$lib/api/types";
 
 export type ConnStatus = "disconnected" | "connecting" | "connected" | "error";
@@ -70,6 +71,12 @@ async function connect(id: string): Promise<SessionInfo | null> {
     return session;
   } catch (e) {
     statuses[id] = { status: "error", error: e as ApiError };
+    // A failed connect is announced once, here, rather than rendered wherever the
+    // click came from: the schema tree, the command palette and the start pane all
+    // call this, and an error pinned under a tree row is a message you have to go
+    // back and find. The status still carries the error, which is what colours the
+    // root's glyph.
+    toast.fromError(e, `Connect to “${profiles.find((p) => p.id === id)?.name ?? id}”`);
     return null;
   }
 }

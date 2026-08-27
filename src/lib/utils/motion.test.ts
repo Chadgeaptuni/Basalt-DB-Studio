@@ -8,8 +8,6 @@ import {
   EASE_EMPHASIZED,
   EASE_EMPHASIZED_ACCELERATE,
   EASE_STANDARD,
-  fadeThroughIn,
-  fadeThroughOut,
   panelIn,
   panelOut,
   popIn,
@@ -65,8 +63,6 @@ describe("motion", () => {
     panelOut,
     toastIn,
     toastOut,
-    fadeThroughIn,
-    fadeThroughOut,
   };
 
   it("animates at its documented duration by default", () => {
@@ -87,11 +83,6 @@ describe("motion", () => {
       expect(config.duration, name).toBe(0);
       expect(config.delay ?? 0, name).toBe(0);
     }
-  });
-
-  it("sequences the fade-through so the halves do not overlap", () => {
-    matchReduced(false);
-    expect(fadeThroughIn(node()).delay).toBe(fadeThroughOut(node()).duration);
   });
 
   // An entrance is the app answering; an exit is it getting out of the way. An

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import type { IconComponent } from "./icon";
-  import { stateLayerPill, focusRing } from "./stateLayer";
+  import { stateLayerPill, stateLayerFlush, focusRing } from "./stateLayer";
 
   // The M3 list row (DESIGN §6): 36px, leading icon, headline, optional supporting
   // text, trailing slot. Every list of objects renders through this — a hand-rolled
@@ -21,6 +21,9 @@
     title?: string;
     /** Renders the headline in mono — for rows whose subject is data (a table, a host). */
     mono?: boolean;
+    /** For a row inside a divided or bordered list: hover fills the row instead of
+     *  drawing the inset pill, which would leave a gap against the divider. */
+    flush?: boolean;
     onclick?: () => void;
     ondblclick?: () => void;
     leading?: Snippet;
@@ -34,6 +37,7 @@
     selected = false,
     title,
     mono = false,
+    flush = false,
     onclick,
     ondblclick,
     leading,
@@ -41,19 +45,26 @@
   }: Props = $props();
 </script>
 
-<div class="flex h-9 items-center {selected ? 'text-on-secondary-container' : 'text-on-surface-variant'}">
+<!-- A flush row's selected fill sits on this container, not on the button: the
+     flush layer is a real background, so a tonal fill on the same element would
+     be replaced by the 8% wash on hover instead of washed over. -->
+<div
+  class="flex h-9 items-center {selected ? 'text-on-secondary-container' : 'text-on-surface-variant'}
+    {flush && selected ? 'bg-secondary-container' : ''}"
+>
   <button
     type="button"
     {title}
     aria-current={selected ? true : undefined}
     {onclick}
     {ondblclick}
-    class="flex h-full min-w-0 flex-1 items-center gap-2 px-3 text-left {stateLayerPill} {focusRing}"
+    class="flex h-full min-w-0 flex-1 items-center gap-2 px-3 text-left {focusRing}
+      {flush ? stateLayerFlush : stateLayerPill}"
   >
     <!-- Selected is a tonal pill *behind* the state layer (-z-20 vs -z-10), not a
          brighter layer: folding it into `before` would make hovering a selected
          row dim it back down to the 8% hover value. -->
-    {#if selected}
+    {#if selected && !flush}
       <span
         aria-hidden="true"
         class="pointer-events-none absolute inset-x-1 inset-y-0.5 -z-20 rounded-full bg-secondary-container"

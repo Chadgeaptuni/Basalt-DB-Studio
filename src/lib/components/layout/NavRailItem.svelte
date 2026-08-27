@@ -43,12 +43,19 @@
       <!-- The indicator is the pill, not the icon colour: M3 marks the active
            destination with a filled container so it reads without relying on
            colour alone. 48×32 rather than the spec's 56×32, to the same ratio as
-           the narrowed rail around it. -->
+           the narrowed rail around it.
+
+           The state layer stays on the pill in both states, with the tonal fill
+           behind it (`isolate` + `before:-z-10` — see ui/stateLayer.ts). Swapping
+           the layer out for the fill made a click a two-stage animation: the
+           press wash rose over the inactive icon, then vanished the instant the
+           class changed while the fill was still transitioning in, so the icon
+           flashed pale before arriving at its selected colour. -->
       <span
         class="grid h-8 w-12 place-items-center rounded-full transition-colors duration-200
-          ease-standard {active
+          ease-standard {stateLayerGroup} {active
           ? 'bg-secondary-container text-on-secondary-container'
-          : stateLayerGroup}"
+          : ''}"
       >
         <Icon size={20} strokeWidth={2} />
       </span>

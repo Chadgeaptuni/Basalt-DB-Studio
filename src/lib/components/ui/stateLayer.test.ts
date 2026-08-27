@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { stateLayer, stateLayerPill, stateLayerGroup, stateLayerGrid } from "./stateLayer";
+import {
+  destructiveFill,
+  stateLayer,
+  stateLayerPill,
+  stateLayerGroup,
+  stateLayerFlush,
+} from "./stateLayer";
 
 // Regression: the pseudo-element layer used to be clipped by `overflow-hidden`
 // on its own parent. In WebKit — the engine Tauri uses on macOS, but not the one
@@ -43,8 +49,19 @@ describe("state layer", () => {
     expect(stateLayerPill).toContain("before:rounded-full");
   });
 
-  it("keeps stateLayerGrid free of a pseudo-element entirely", () => {
-    expect(stateLayerGrid).not.toContain("before:");
-    expect(stateLayerGrid).toContain("hover:bg-on-surface/8");
+  it("keeps stateLayerFlush free of a pseudo-element entirely", () => {
+    expect(stateLayerFlush).not.toContain("before:");
+    expect(stateLayerFlush).toContain("hover:bg-on-surface/8");
+  });
+
+  // The destructive confirm rests as an outline and fills on hover *or* keyboard
+  // focus: a keyboard user gets the same escalation a mouse user does, and both
+  // see it before the click rather than after.
+  it("gives the destructive confirm an outline at rest and a fill on both", () => {
+    expect(destructiveFill).toContain("border-error");
+    expect(destructiveFill).toContain("text-error");
+    expect(destructiveFill).toContain("hover:bg-error");
+    expect(destructiveFill).toContain("focus-visible:bg-error");
+    expect(destructiveFill).not.toContain("bg-error-container");
   });
 });

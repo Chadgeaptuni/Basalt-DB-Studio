@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import Spinner from "./Spinner.svelte";
-  import { stateLayer, focusRing } from "./stateLayer";
+  import { stateLayer, focusRing, destructiveFill } from "./stateLayer";
 
   // The M3 button family (DESIGN §6). The `primary`/`secondary`/`ghost` aliases
   // are gone — every call site now names the M3 variant it means.
@@ -44,7 +44,10 @@
     // The text button *inside* an error surface — primary blue on an error
     // container reads as an unrelated link and fails contrast.
     "text-error": "text-on-error-container",
-    danger: "bg-error-container text-on-error-container",
+    // Outlined at rest, filled on hover/focus (DESIGN §7): the destructive
+    // confirm must not sit in a dialog looking like the button you press to get
+    // on with your day.
+    danger: destructiveFill,
   };
 </script>
 

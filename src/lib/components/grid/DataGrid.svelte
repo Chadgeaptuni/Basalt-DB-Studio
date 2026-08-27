@@ -20,7 +20,7 @@
   import DropdownMenu from "$lib/components/ui/DropdownMenu.svelte";
   import Chip from "$lib/components/ui/Chip.svelte";
   import type { MenuItem } from "$lib/components/ui/menu";
-  import { stateLayer, stateLayerGrid } from "$lib/components/ui/stateLayer";
+  import { stateLayer, stateLayerFlush } from "$lib/components/ui/stateLayer";
   import { formatCell, type CellDisplay } from "$lib/utils/cellDisplay";
   import { copyCellsTsv } from "$lib/utils/copy";
   import { settings } from "$lib/stores/settings.svelte";
@@ -330,7 +330,7 @@
       <div
         role="row"
         aria-rowindex={dr + 2}
-        class="flex {rowBg(r, dr)} {stateLayerGrid}"
+        class="flex {rowBg(r, dr)} {stateLayerFlush}"
         style="width:{width}px"
       >
         {#each visibleCols as { i: ci }, c (ci)}
