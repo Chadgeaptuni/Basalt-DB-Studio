@@ -27,13 +27,17 @@
     filter: string;
     kind: "all" | RelationKind;
     activate: () => void;
+    /** Depth of this branch's first namespace row. 1 under a connection root; 2
+     *  under a Postgres database node, which adds a level above. */
+    depth?: number;
   }
-  let { sessionId, filter, kind, activate }: Props = $props();
+  let { sessionId, filter, kind, activate, depth = 1 }: Props = $props();
 
-  const NS_DEPTH = 1;
-  const REL_DEPTH = 2;
-  /** Column rows are not tree items — they indent to where a depth-3 label sits. */
-  const COL_INDENT = 3 * 12 + 20;
+  const NS_DEPTH = $derived(depth);
+  const REL_DEPTH = $derived(depth + 1);
+  /** Column rows are not tree items — they indent to where the label one level
+   *  below a relation would sit. */
+  const COL_INDENT = $derived((depth + 2) * 12 + 20);
 
   // ponytail: which namespaces were open is component state, so collapsing the
   // connection forgets it. The cached tree means reopening costs no IPC; lift it

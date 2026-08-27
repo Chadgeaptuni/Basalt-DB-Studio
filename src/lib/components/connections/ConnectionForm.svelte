@@ -161,8 +161,19 @@
         </div>
       </div>
       <div>
-        <label for="conn-db" class="mb-1 block text-body-sm text-on-surface-muted">Database</label>
-        <Input id="conn-db" bind:value={database} />
+        <!-- Postgres cannot leave the database it connects to, so this field is
+             the one the *server* is discovered over, not the one you are stuck
+             with: the tree lists the rest and opens whichever you pick. Blank
+             means `postgres`, which every stock server has. MySQL browses every
+             database on one connection, so there the field genuinely is optional. -->
+        <label for="conn-db" class="mb-1 block text-body-sm text-on-surface-muted">
+          {engine === "postgres" ? "Maintenance database" : "Database"}
+        </label>
+        <Input
+          id="conn-db"
+          bind:value={database}
+          placeholder={engine === "postgres" ? "postgres" : "All databases"}
+        />
       </div>
       <div>
         <label for="conn-user" class="mb-1 block text-body-sm text-on-surface-muted">Username</label>

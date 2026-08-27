@@ -72,6 +72,12 @@ pub struct SessionInfo {
     pub profile_id: String,
     pub engine: Engine,
     pub read_only: bool,
+    /// The database this session is actually pointed at, which is the profile's
+    /// only until a Postgres database node opens a second session on the same
+    /// profile. Carried so the tree can label the row it belongs to without
+    /// re-deriving it from the profile it no longer matches.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub database: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]

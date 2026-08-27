@@ -108,6 +108,11 @@ export interface SessionInfo {
   profileId: string;
   engine: Engine;
   readOnly: boolean;
+  /** The database this session actually opened. Absent for SQLite (the file is
+   *  the database) and for MySQL profiles that name none (one connection sees
+   *  every database); always set for Postgres, which cannot leave the database
+   *  it opened. */
+  database?: string;
 }
 
 // ── Schema introspection (M1) ───────────────────────────────────────────────

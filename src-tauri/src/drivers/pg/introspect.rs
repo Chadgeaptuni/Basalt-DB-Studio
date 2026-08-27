@@ -49,6 +49,33 @@ pub async fn introspect(pool: &PgPool) -> AppResult<SchemaTree> {
     Ok(SchemaTree { namespaces })
 }
 
+/// Every database on this server the current role may open.
+///
+/// A Postgres connection is bound to one database for its life — there is no
+/// `USE`, and no cross-database query — so this is the only way to learn what
+/// else is on the server, and browsing any of it means a second pool.
+///
+/// pgAdmin reads the same catalog but hides system databases by OID watermark
+/// (a hardcoded 16383, since `datlastsysoid` was dropped in PG 15) and returns
+/// `datallowconn`/`datistemplate` as *flags*, rendering `template0` as a
+/// disabled node. Filtering on the two flags instead gets the same practical
+/// set with no version-dependent constant: a row we would only ever grey out is
+/// noise in a query tool, and `postgres` survives either rule.
+pub async fn list_databases(pool: &PgPool) -> AppResult<Vec<String>> {
+    let rows = sqlx::query(
+        "SELECT datname FROM pg_catalog.pg_database \
+         WHERE datallowconn AND NOT datistemplate \
+         ORDER BY datname",
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(AppError::internal)?;
+
+    rows.iter()
+        .map(|row| row.try_get("datname").map_err(AppError::internal))
+        .collect()
+}
+
 pub async fn describe_table(
     pool: &PgPool,
     namespace: &str,

@@ -68,6 +68,7 @@ pub fn run() {
             commands::connections::connect,
             commands::connections::disconnect,
             commands::introspect::introspect,
+            commands::introspect::list_databases,
             commands::introspect::describe_table,
             commands::query::run_query,
             commands::grid::grid_browse,

@@ -21,12 +21,23 @@ const tree = {
 };
 
 function mock(calls: string[]): void {
-  mockIPC((cmd) => {
+  let opened = 0;
+  mockIPC((cmd, args) => {
     calls.push(cmd);
     if (cmd === "list_connections") return [profile];
     if (cmd === "connect") {
-      return { sessionId: "s1", profileId: "p1", engine: "postgres", readOnly: false };
+      // The backend resolves the maintenance database when the profile names
+      // none; the mock just echoes whichever database the session opened.
+      const database = (args as { database?: string })?.database ?? profile.database;
+      return {
+        sessionId: `s${++opened}`,
+        profileId: "p1",
+        engine: "postgres",
+        readOnly: false,
+        database,
+      };
     }
+    if (cmd === "list_databases") return ["analytics", "billing"];
     if (cmd === "introspect") return tree;
     return undefined;
   });
@@ -55,16 +66,49 @@ describe("SchemaTree", () => {
     expect(root).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("connects and introspects when a root is expanded", async () => {
+  // A Postgres root opens onto the server's *databases*, not its schemas: a pg
+  // connection is bound to the database it opened, so the schemas under it are
+  // only ever one database's worth. The maintenance session discovers the list.
+  it("lists the server's databases when a Postgres root is expanded", async () => {
     const calls: string[] = [];
     mock(calls);
     render(SchemaTree);
 
     await fireEvent.click(await screen.findByRole("treeitem", { name: /warehouse/ }));
 
-    expect(await screen.findByRole("treeitem", { name: /public/ })).toBeInTheDocument();
+    expect(await screen.findByRole("treeitem", { name: /billing/ })).toBeInTheDocument();
     expect(calls).toContain("connect");
+    expect(calls).toContain("list_databases");
+    expect(calls).not.toContain("introspect");
+  });
+
+  // Expanding a database *opens* it, because there is no other way to read it —
+  // the maintenance session cannot see across into it.
+  it("opens a database as its own session and introspects that one", async () => {
+    const calls: string[] = [];
+    mock(calls);
+    render(SchemaTree);
+
+    await fireEvent.click(await screen.findByRole("treeitem", { name: /warehouse/ }));
+    await fireEvent.click(await screen.findByRole("treeitem", { name: /billing/ }));
+
+    expect(await screen.findByRole("treeitem", { name: /public/ })).toBeInTheDocument();
+    expect(calls.filter((c) => c === "connect")).toHaveLength(2);
     expect(calls).toContain("introspect");
+  });
+
+  // The profile's own database is already open on the maintenance session, so
+  // expanding its row must reuse it rather than pay for a second pool.
+  it("reuses the server session for the database the profile already opened", async () => {
+    const calls: string[] = [];
+    mock(calls);
+    render(SchemaTree);
+
+    await fireEvent.click(await screen.findByRole("treeitem", { name: /warehouse/ }));
+    await fireEvent.click(await screen.findByRole("treeitem", { name: /analytics/ }));
+
+    expect(await screen.findByRole("treeitem", { name: /public/ })).toBeInTheDocument();
+    expect(calls.filter((c) => c === "connect")).toHaveLength(1);
   });
 
   it("offers the connection form when there are none saved", async () => {

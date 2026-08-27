@@ -19,7 +19,7 @@ async fn postgres_connect_introspect_describe() {
     let (profile, password) = profile_from_url(&url);
     let reg = registry();
 
-    let info = connection_service::connect(&profile, password.as_deref(), &reg)
+    let info = connection_service::connect(&profile, password.as_deref(), None, &reg)
         .await
         .expect("connect to postgres");
 
@@ -63,6 +63,59 @@ async fn postgres_connect_introspect_describe() {
         .unwrap();
 }
 
+// The server-node behaviour: discover the databases over the maintenance
+// connection, then open one of them as its own session. Both halves are asserted
+// together because either alone is useless — a list you cannot open, or an
+// override with nothing to point it at.
+#[tokio::test]
+async fn postgres_lists_databases_and_opens_a_second_session_on_one() {
+    let Ok(url) = std::env::var("BASALT_TEST_PG_URL") else {
+        eprintln!("BASALT_TEST_PG_URL unset — skipping postgres database-list test");
+        return;
+    };
+    let (profile, password) = profile_from_url(&url);
+    let reg = registry();
+
+    let info = connection_service::connect(&profile, password.as_deref(), None, &reg)
+        .await
+        .expect("connect to postgres");
+
+    let databases = connection_service::list_databases(&info.session_id, &reg)
+        .await
+        .expect("list databases");
+    assert!(
+        databases.contains(&"postgres".to_string()),
+        "the default database is always listed: {databases:?}"
+    );
+    assert!(
+        !databases.iter().any(|d| d.starts_with("template")),
+        "templates are filtered out by datistemplate: {databases:?}"
+    );
+    assert!(
+        databases.windows(2).all(|w| w[0] <= w[1]),
+        "sorted by name: {databases:?}"
+    );
+
+    // The override must not disturb the first session: two pools, two ids.
+    let second = connection_service::connect(&profile, password.as_deref(), Some("postgres"), &reg)
+        .await
+        .expect("connect to the postgres database by override");
+    assert_ne!(second.session_id, info.session_id);
+    assert_eq!(second.database.as_deref(), Some("postgres"));
+    assert_eq!(second.profile_id, info.profile_id);
+
+    connection_service::introspect(&second.session_id, &reg)
+        .await
+        .expect("the overridden session introspects");
+
+    connection_service::disconnect(&second.session_id, &reg)
+        .await
+        .unwrap();
+    connection_service::disconnect(&info.session_id, &reg)
+        .await
+        .unwrap();
+}
+
 #[tokio::test]
 async fn mysql_connect_introspect_describe() {
     let Ok(url) = std::env::var("BASALT_TEST_MYSQL_URL") else {
@@ -72,7 +125,7 @@ async fn mysql_connect_introspect_describe() {
     let (profile, password) = profile_from_url(&url);
     let reg = registry();
 
-    let info = connection_service::connect(&profile, password.as_deref(), &reg)
+    let info = connection_service::connect(&profile, password.as_deref(), None, &reg)
         .await
         .expect("connect to mysql");
 
@@ -128,7 +181,7 @@ async fn postgres_wrong_password_is_auth_failed() {
     };
     let (profile, _) = profile_from_url(&url);
     let reg = registry();
-    let err = connection_service::connect(&profile, Some("wrong-password"), &reg)
+    let err = connection_service::connect(&profile, Some("wrong-password"), None, &reg)
         .await
         .expect_err("wrong password must fail");
     assert_eq!(err.kind(), "authFailed", "got: {err}");
@@ -142,7 +195,7 @@ async fn mysql_wrong_password_is_auth_failed() {
     };
     let (profile, _) = profile_from_url(&url);
     let reg = registry();
-    let err = connection_service::connect(&profile, Some("wrong-password"), &reg)
+    let err = connection_service::connect(&profile, Some("wrong-password"), None, &reg)
         .await
         .expect_err("wrong password must fail");
     assert_eq!(err.kind(), "authFailed", "got: {err}");
@@ -156,7 +209,7 @@ async fn postgres_run_query_decodes_edge_types() {
     };
     let (profile, password) = profile_from_url(&url);
     let reg = registry();
-    let info = connection_service::connect(&profile, password.as_deref(), &reg)
+    let info = connection_service::connect(&profile, password.as_deref(), None, &reg)
         .await
         .unwrap();
 
@@ -210,7 +263,7 @@ async fn mysql_run_query_decodes_edge_types() {
     };
     let (profile, password) = profile_from_url(&url);
     let reg = registry();
-    let info = connection_service::connect(&profile, password.as_deref(), &reg)
+    let info = connection_service::connect(&profile, password.as_deref(), None, &reg)
         .await
         .unwrap();
 

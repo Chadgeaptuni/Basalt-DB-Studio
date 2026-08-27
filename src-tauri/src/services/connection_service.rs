@@ -3,6 +3,7 @@
 //! a cheap driver clone out under a short lock, then awaits the database with the
 //! lock released, so one slow query never blocks other sessions.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -17,6 +18,10 @@ use crate::{AppError, AppResult};
 const DEFAULT_CONNECT_TIMEOUT_SECS: u64 = 10;
 /// Pool size per session — small; a GUI drives a handful of concurrent queries.
 const POOL_MAX: u32 = 4;
+/// Where a Postgres profile connects when it names no database. Every stock
+/// server has one, and it is what pgAdmin defaults its "maintenance database"
+/// field to — the connection it discovers the rest of the server over.
+const PG_MAINTENANCE_DB: &str = "postgres";
 
 pub struct Session {
     pub info: SessionInfo,
@@ -26,17 +31,26 @@ pub struct Session {
 
 pub type SessionRegistry = Mutex<HashMap<String, Session>>;
 
+/// Opens a session. `database` overrides the profile's — that is how a second
+/// Postgres database on the same server is browsed, since a pg connection can
+/// never leave the database it opened. The override is applied to a copy so the
+/// saved profile stays the maintenance database it was configured as.
 pub async fn connect(
     profile: &ConnectionProfile,
     password: Option<&str>,
+    database: Option<&str>,
     registry: &SessionRegistry,
 ) -> AppResult<SessionInfo> {
+    let profile = effective_profile(profile, database);
+    let profile = profile.as_ref();
+
     let driver = open_driver(profile, password).await?;
     let info = SessionInfo {
         session_id: uuid::Uuid::new_v4().to_string(),
         profile_id: profile.id.clone(),
         engine: profile.engine,
         read_only: profile.read_only,
+        database: profile.database.clone(),
     };
     registry.lock().await.insert(
         info.session_id.clone(),
@@ -49,9 +63,38 @@ pub async fn connect(
     Ok(info)
 }
 
-/// Opens a throwaway connection, confirms it works, then closes it.
+/// The profile a session actually opens. `database` overrides the profile's own
+/// — that is a Postgres database node opening its own pool. A Postgres profile
+/// that names no database at all falls back to the maintenance database, because
+/// "no database" is not a state a pg session can be in: sqlx would otherwise
+/// connect to one named after the *user*, which usually does not exist, and the
+/// miss surfaces as a connection failure rather than as the empty field it is.
+fn effective_profile<'a>(
+    profile: &'a ConnectionProfile,
+    database: Option<&str>,
+) -> Cow<'a, ConnectionProfile> {
+    let resolved = database
+        .map(str::to_owned)
+        .or_else(|| profile.database.clone())
+        .or_else(|| {
+            (profile.engine == Engine::Postgres).then(|| PG_MAINTENANCE_DB.to_owned())
+        });
+
+    if resolved == profile.database {
+        Cow::Borrowed(profile)
+    } else {
+        Cow::Owned(ConnectionProfile {
+            database: resolved,
+            ..profile.clone()
+        })
+    }
+}
+
+/// Opens a throwaway connection, confirms it works, then closes it. Resolves the
+/// same effective profile `connect` would, so Test never passes on a target
+/// Connect would miss.
 pub async fn test_connection(profile: &ConnectionProfile, password: Option<&str>) -> AppResult<()> {
-    let driver = open_driver(profile, password).await?;
+    let driver = open_driver(effective_profile(profile, None).as_ref(), password).await?;
     driver.close().await;
     Ok(())
 }
@@ -70,6 +113,10 @@ pub async fn introspect(
     registry: &SessionRegistry,
 ) -> AppResult<crate::drivers::types::SchemaTree> {
     driver_for(session_id, registry).await?.introspect().await
+}
+
+pub async fn list_databases(session_id: &str, registry: &SessionRegistry) -> AppResult<Vec<String>> {
+    driver_for(session_id, registry).await?.list_databases().await
 }
 
 pub async fn describe_table(
@@ -347,13 +394,75 @@ mod tests {
         }
     }
 
+    fn pg_profile(database: Option<&str>) -> ConnectionProfile {
+        ConnectionProfile {
+            engine: Engine::Postgres,
+            host: Some("localhost".into()),
+            database: database.map(str::to_owned),
+            ..sqlite_profile("")
+        }
+    }
+
+    #[test]
+    fn a_postgres_profile_with_no_database_falls_back_to_the_maintenance_database() {
+        let profile = pg_profile(None);
+        assert_eq!(
+            effective_profile(&profile, None).database.as_deref(),
+            Some(PG_MAINTENANCE_DB)
+        );
+    }
+
+    #[test]
+    fn the_override_wins_over_the_profile_and_leaves_the_profile_alone() {
+        let profile = pg_profile(Some("app"));
+        assert_eq!(
+            effective_profile(&profile, Some("reporting"))
+                .database
+                .as_deref(),
+            Some("reporting")
+        );
+        assert_eq!(profile.database.as_deref(), Some("app"), "profile untouched");
+    }
+
+    // SQLite has no database name and MySQL browses every database over one
+    // connection, so neither may acquire a maintenance default it would then try
+    // to connect to.
+    #[test]
+    fn non_postgres_profiles_get_no_database_default() {
+        for engine in [Engine::Sqlite, Engine::MySql] {
+            let profile = ConnectionProfile {
+                engine,
+                ..pg_profile(None)
+            };
+            assert_eq!(effective_profile(&profile, None).database, None);
+        }
+    }
+
+    // An empty list is the signal the tree uses to skip its database level, so
+    // the non-Postgres engines returning empty is a contract, not an omission.
+    #[tokio::test]
+    async fn sqlite_reports_no_databases_to_browse() {
+        let path = seed_db_file().await;
+        let profile = sqlite_profile(&path);
+        let registry: SessionRegistry = Mutex::new(HashMap::new());
+
+        let info = connect(&profile, None, None, &registry).await.unwrap();
+        assert!(list_databases(&info.session_id, &registry)
+            .await
+            .unwrap()
+            .is_empty());
+
+        disconnect(&info.session_id, &registry).await.unwrap();
+        std::fs::remove_file(&path).ok();
+    }
+
     #[tokio::test]
     async fn connect_introspect_disconnect_lifecycle() {
         let path = seed_db_file().await;
         let profile = sqlite_profile(&path);
         let registry: SessionRegistry = Mutex::new(HashMap::new());
 
-        let info = connect(&profile, None, &registry).await.unwrap();
+        let info = connect(&profile, None, None, &registry).await.unwrap();
         assert_eq!(info.engine, Engine::Sqlite);
         assert_eq!(info.profile_id, "conn-test");
 
@@ -378,7 +487,7 @@ mod tests {
     async fn connect_to_missing_file_is_connection_refused() {
         let profile = sqlite_profile("/nonexistent/basalt-missing.db");
         let registry: SessionRegistry = Mutex::new(HashMap::new());
-        let err = connect(&profile, None, &registry).await.unwrap_err();
+        let err = connect(&profile, None, None, &registry).await.unwrap_err();
         assert_eq!(err.kind(), "connectionRefused");
     }
 

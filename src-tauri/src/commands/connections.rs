@@ -37,10 +37,17 @@ pub async fn test_connection(
 pub async fn connect(
     profile_id: String,
     password: Option<String>,
+    database: Option<String>,
     state: State<'_, AppState>,
 ) -> AppResult<SessionInfo> {
     let profile = connections::load_one(&state.paths, &profile_id)?;
-    connection_service::connect(&profile, password.as_deref(), &state.sessions).await
+    connection_service::connect(
+        &profile,
+        password.as_deref(),
+        database.as_deref(),
+        &state.sessions,
+    )
+    .await
 }
 
 #[tauri::command]

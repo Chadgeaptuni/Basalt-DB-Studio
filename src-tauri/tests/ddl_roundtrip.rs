@@ -33,7 +33,7 @@ async fn run_ddl(sid: &str, req: &DdlRequest, reg: &connection_service::SessionR
 async fn ddl_roundtrip(url: &str, namespace: &str) {
     let (profile, password) = profile_from_url(url);
     let reg = registry();
-    let info = connection_service::connect(&profile, password.as_deref(), &reg)
+    let info = connection_service::connect(&profile, password.as_deref(), None, &reg)
         .await
         .expect("connect");
     let sid = &info.session_id;

@@ -15,10 +15,11 @@
     void connections.load();
   });
 
+  // Matched on the session's own `profileId` rather than by hunting for the
+  // profile whose *server* session this is: a Postgres profile holds one session
+  // per database it has open, and only one of them is the server's.
   const profile = $derived(
-    connections.profiles.find(
-      (p) => connections.statusFor(p.id).session?.sessionId === connections.active?.sessionId,
-    ) ?? null,
+    connections.profiles.find((p) => p.id === connections.active?.profileId) ?? null,
   );
 </script>
 
@@ -27,6 +28,11 @@
     <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-ok"></span>
     <span class="shrink-0 text-on-surface-muted">{ENGINE_TAG[connections.active.engine]}</span>
     <span class="min-w-0 truncate text-on-surface-variant">{profile.name}</span>
+    <!-- The profile name stops identifying the session once one profile can hold
+         several, so a Postgres session names the database it opened. -->
+    {#if connections.active.database}
+      <span class="shrink-0 text-on-surface-muted">/{connections.active.database}</span>
+    {/if}
     <!-- Label as well as colour: which database you are pointed at is exactly the
          thing that must not depend on distinguishing red from amber. -->
     {#if profile.environment}

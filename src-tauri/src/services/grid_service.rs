@@ -221,7 +221,7 @@ mod tests {
             ssh: None,
         };
         let registry: SessionRegistry = Mutex::new(HashMap::new());
-        let info = connection_service::connect(&profile, None, &registry)
+        let info = connection_service::connect(&profile, None, None, &registry)
             .await
             .unwrap();
         (info.session_id, registry)

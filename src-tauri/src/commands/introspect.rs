@@ -14,6 +14,14 @@ pub async fn introspect(session_id: String, state: State<'_, AppState>) -> AppRe
 }
 
 #[tauri::command]
+pub async fn list_databases(
+    session_id: String,
+    state: State<'_, AppState>,
+) -> AppResult<Vec<String>> {
+    connection_service::list_databases(&session_id, &state.sessions).await
+}
+
+#[tauri::command]
 pub async fn describe_table(
     session_id: String,
     namespace: String,

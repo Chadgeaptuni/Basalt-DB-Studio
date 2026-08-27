@@ -19,7 +19,8 @@
   import type { MenuItem } from "$lib/components/ui/menu";
   import ConnectionForm from "$lib/components/connections/ConnectionForm.svelte";
   import ConnectionSchema from "./ConnectionSchema.svelte";
-  import { ENGINE_TAG, connectionTarget } from "$lib/utils/connectionLabel";
+  import DatabaseList from "./DatabaseList.svelte";
+  import { ENGINE_TAG, ENGINE_ICON, connectionTarget } from "$lib/utils/connectionLabel";
   import { connections, type ConnStatus } from "$lib/stores/connections.svelte";
   import { schema } from "$lib/stores/schema.svelte";
   import { confirm } from "$lib/stores/dialogs.svelte";
@@ -184,7 +185,7 @@
           <ContextMenu items={connMenu(p)}>
             <TreeItem
               label={p.name}
-              icon={Database}
+              icon={ENGINE_ICON[p.engine]}
               iconClass={ICON_TONE[st.status]}
               depth={0}
               expandable
@@ -201,12 +202,19 @@
               <Spinner size="sm" /> Connecting…
             </div>
           {:else if expanded[p.id] && st.session}
-            <ConnectionSchema
-              sessionId={st.session.sessionId}
-              {filter}
-              {kind}
-              activate={() => activate(p)}
-            />
+            <!-- Postgres roots open onto their databases, because a pg session
+                 can only ever see the one it connected to; the other engines
+                 have no such level and go straight to their namespaces. -->
+            {#if p.engine === "postgres"}
+              <DatabaseList profile={p} sessionId={st.session.sessionId} {filter} {kind} />
+            {:else}
+              <ConnectionSchema
+                sessionId={st.session.sessionId}
+                {filter}
+                {kind}
+                activate={() => activate(p)}
+              />
+            {/if}
           {/if}
         {/each}
       </div>

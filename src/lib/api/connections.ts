@@ -11,7 +11,9 @@ export const connectionsApi = {
   remove: (id: string) => invoke<void>("delete_connection", { id }),
   test: (profile: ConnectionProfile, password?: string) =>
     invoke<void>("test_connection", { profile, password }),
-  connect: (profileId: string, password?: string) =>
-    invoke<SessionInfo>("connect", { profileId, password }),
+  // `database` overrides the profile's — a Postgres database node opening its
+  // own session, since a pg connection can never leave the database it opened.
+  connect: (profileId: string, password?: string, database?: string) =>
+    invoke<SessionInfo>("connect", { profileId, password, database }),
   disconnect: (sessionId: string) => invoke<void>("disconnect", { sessionId }),
 };

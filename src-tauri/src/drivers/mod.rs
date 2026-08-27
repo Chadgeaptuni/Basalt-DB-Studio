@@ -42,6 +42,21 @@ impl Driver {
         }
     }
 
+    /// The other databases on this server, for the tree's database level.
+    ///
+    /// Postgres only, because it is the only engine that needs one: a MySQL
+    /// connection already sees every database on the server as a namespace of
+    /// `introspect`, and a SQLite file *is* the database. Those two return empty
+    /// rather than erroring so the command stays total — the tree does not draw
+    /// the level for them, and a caller that asks anyway gets "nothing to
+    /// browse", not a failure.
+    pub async fn list_databases(&self) -> AppResult<Vec<String>> {
+        match self {
+            Driver::Postgres(pool) => pg::list_databases(pool).await,
+            Driver::MySql(_) | Driver::Sqlite(_) => Ok(Vec::new()),
+        }
+    }
+
     pub async fn describe_table(
         &self,
         namespace: &str,
