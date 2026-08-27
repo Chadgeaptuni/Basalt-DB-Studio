@@ -116,6 +116,72 @@ async fn postgres_lists_databases_and_opens_a_second_session_on_one() {
         .unwrap();
 }
 
+// `pg_database` is world-readable, so the flags alone listed databases the role
+// cannot open — and expanding one came back as `connectionRefused`, which reads
+// as an unreachable server rather than a privilege it does not hold.
+#[tokio::test]
+async fn postgres_hides_databases_the_role_may_not_open() {
+    let Ok(url) = std::env::var("BASALT_TEST_PG_URL") else {
+        eprintln!("BASALT_TEST_PG_URL unset — skipping postgres database-privilege test");
+        return;
+    };
+    let (admin_profile, password) = profile_from_url(&url);
+    let reg = registry();
+    let admin = connection_service::connect(&admin_profile, password.as_deref(), None, &reg)
+        .await
+        .expect("connect to postgres as the test user");
+
+    // Dropped first as well as last, so a crashed earlier run cannot wedge this one.
+    let fixture = [
+        "DROP DATABASE IF EXISTS basalt_private",
+        "DROP ROLE IF EXISTS basalt_limited",
+        "CREATE ROLE basalt_limited LOGIN PASSWORD 'basalt_limited'",
+        "CREATE DATABASE basalt_private",
+        "REVOKE CONNECT ON DATABASE basalt_private FROM PUBLIC",
+    ];
+    for sql in fixture {
+        let out = query_service::run(&admin.session_id, sql, None, true, None, &reg)
+            .await
+            .expect("run the privilege fixture");
+        for s in &out.statements {
+            assert!(s.error.is_none(), "fixture [{sql}] failed: {:?}", s.error);
+        }
+    }
+
+    // The whole point is *whose* privileges are read: `has_database_privilege`
+    // answers for `current_user`, so the check only shows up over a role holding
+    // less than the one that created the database.
+    let mut limited_profile = admin_profile.clone();
+    limited_profile.username = Some("basalt_limited".into());
+    let limited = connection_service::connect(&limited_profile, Some("basalt_limited"), None, &reg)
+        .await
+        .expect("connect as the limited role");
+
+    let visible = connection_service::list_databases(&limited.session_id, &reg)
+        .await
+        .expect("list databases as the limited role");
+    assert!(
+        !visible.contains(&"basalt_private".to_string()),
+        "a database this role has no CONNECT on must not be listed: {visible:?}"
+    );
+    assert!(
+        visible.contains(&"postgres".to_string()),
+        "the databases it may open are still listed: {visible:?}"
+    );
+
+    connection_service::disconnect(&limited.session_id, &reg)
+        .await
+        .unwrap();
+    for sql in ["DROP DATABASE basalt_private", "DROP ROLE basalt_limited"] {
+        query_service::run(&admin.session_id, sql, None, true, None, &reg)
+            .await
+            .expect("tear down the privilege fixture");
+    }
+    connection_service::disconnect(&admin.session_id, &reg)
+        .await
+        .unwrap();
+}
+
 #[tokio::test]
 async fn mysql_connect_introspect_describe() {
     let Ok(url) = std::env::var("BASALT_TEST_MYSQL_URL") else {
