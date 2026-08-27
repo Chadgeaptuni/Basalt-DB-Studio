@@ -59,7 +59,6 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            commands::ping,
             commands::app_info::app_info,
             commands::connections::list_connections,
             commands::connections::save_connection,
