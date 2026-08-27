@@ -51,8 +51,10 @@
         running = false;
         return;
       }
-      // DDL changed the schema — clear the cache and reload the tree.
-      schema.clear(sess.sessionId);
+      // DDL changed the relations, not the server's database list — and on a
+      // Postgres server session `clear` drops both, collapsing the branch the
+      // database rows are drawn from.
+      schema.clearTree(sess.sessionId);
       await schema.loadTree(sess.sessionId);
       toast.success("Applied.");
       ddl.close();
