@@ -1,17 +1,15 @@
 <script lang="ts">
   import DatabaseIcon from "@lucide/svelte/icons/database";
-  import Unplug from "@lucide/svelte/icons/unplug";
-  import RotateCw from "@lucide/svelte/icons/rotate-cw";
-  import TreeItem from "$lib/components/ui/TreeItem.svelte";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import ErrorState from "$lib/components/ui/ErrorState.svelte";
   import Button from "$lib/components/ui/Button.svelte";
-  import ContextMenu from "$lib/components/ui/ContextMenu.svelte";
-  import type { MenuItem } from "$lib/components/ui/menu";
   import type { ConnectionProfile, RelationKind } from "$lib/api/types";
   import ConnectionSchema from "./ConnectionSchema.svelte";
-  import { connections, type ConnStatus } from "$lib/stores/connections.svelte";
+  import SessionNode from "./SessionNode.svelte";
+  import { branchIndent, refreshSession } from "./tree";
+  import { connections, type ConnState } from "$lib/stores/connections.svelte";
   import { schema } from "$lib/stores/schema.svelte";
+  import { connectionServer } from "$lib/utils/connectionLabel";
 
   // The database level of a Postgres connection — pgAdmin's server node. It
   // exists only for Postgres, because only Postgres needs it: a pg connection is
@@ -20,6 +18,8 @@
   // one therefore *opens* it, as its own session against its own pool. MySQL
   // already sees every database on the server as a namespace of one connection
   // and a SQLite file is the database, so neither draws this level at all.
+  //
+  // Each row is a SessionNode — the same node the connection root above it is.
   interface Props {
     profile: ConnectionProfile;
     /** The server session, opened against the maintenance database. Used to
@@ -31,7 +31,7 @@
   let { profile, sessionId, filter, kind }: Props = $props();
 
   const DB_DEPTH = 1;
-  const BRANCH_INDENT = (DB_DEPTH + 1) * 12 + 20;
+  const BRANCH_INDENT = branchIndent(DB_DEPTH + 1);
 
   let expanded = $state<Record<string, boolean>>({});
 
@@ -40,64 +40,19 @@
   });
 
   const view = $derived(schema.databases(sessionId));
+  const server = $derived(connectionServer(profile));
 
   // Filtering the database list by the table filter would hide the database the
   // match is in, so the filter passes straight through to each open branch and
   // the list itself always shows every database (DESIGN §6).
   const databases = $derived(view?.list ?? []);
 
-  const ICON_TONE: Record<ConnStatus, string> = {
-    connected: "text-ok",
-    connecting: "text-warn",
-    error: "text-error",
-    disconnected: "text-on-surface-muted",
-  };
-
-  function sessionFor(database: string) {
-    return connections.databaseStateFor(profile.id, database).session;
-  }
-
-  function statusFor(database: string): ConnStatus {
-    return connections.databaseStateFor(profile.id, database).status;
-  }
-
-  async function toggle(database: string): Promise<void> {
-    const open = !expanded[database];
-    expanded[database] = open;
-    if (!open) return;
-
-    const existing = sessionFor(database);
-    if (existing) {
-      connections.setActive(existing);
-      return;
-    }
-    // A failed open collapses the row again: the toast says what went wrong, and
-    // an open node with nothing under it says only that something did.
-    if (!(await connections.connectDatabase(profile.id, database))) expanded[database] = false;
-  }
-
-  function dbMenu(database: string): MenuItem[][] {
-    const session = sessionFor(database);
-    const isServerSession = connections.statusFor(profile.id).session?.database === database;
-    if (!session) return [[{ label: "Open", onselect: () => void toggle(database) }]];
-    return [
-      [{ label: "Refresh", icon: RotateCw, onselect: () => schema.clear(session.sessionId) }],
-      // The maintenance database's session is the connection's own — closing it
-      // here would take the database list down with it, so that row offers the
-      // close on the connection root instead of a Disconnect that guts its parent.
-      isServerSession
-        ? []
-        : [
-            {
-              label: "Disconnect",
-              icon: Unplug,
-              onselect: () => {
-                expanded[database] = false;
-                void connections.disconnectDatabase(profile.id, database);
-              },
-            },
-          ],
-    ].filter((group) => group.length > 0);
+  /** The maintenance database's row *is* the connection's own session, so it has
+   *  no Disconnect of its own: closing it here would take the database list —
+   *  this row's own parent — down with it. The root offers that close instead. */
+  function closeFor(database: string, state: ConnState): (() => void) | undefined {
+    if (!state.session || state.session.sessionId === sessionId) return undefined;
+    return () => void connections.disconnectDatabase(profile.id, database);
   }
 </script>
 
@@ -122,37 +77,28 @@
   </div>
 {:else}
   {#each databases as database (database)}
-    {@const session = sessionFor(database)}
-    <ContextMenu items={dbMenu(database)}>
-      <TreeItem
-        label={database}
-        icon={DatabaseIcon}
-        iconClass={ICON_TONE[statusFor(database)]}
-        depth={DB_DEPTH}
-        expandable
-        expanded={expanded[database]}
-        selected={!!session && connections.active?.sessionId === session.sessionId}
-        title={`database on ${profile.host ?? ""}`}
-        onclick={() => void toggle(database)}
-        ontoggle={() => void toggle(database)}
-      />
-    </ContextMenu>
-
-    {#if statusFor(database) === "connecting"}
-      <div
-        class="flex items-center gap-2 py-1 text-body-sm text-on-surface-muted"
-        style="padding-left:{BRANCH_INDENT}px"
-      >
-        <Spinner size="sm" /> Connecting…
-      </div>
-    {:else if expanded[database] && session}
-      <ConnectionSchema
-        sessionId={session.sessionId}
-        {filter}
-        {kind}
-        depth={DB_DEPTH + 1}
-        activate={() => connections.setActive(session)}
-      />
-    {/if}
+    {@const state = connections.databaseStateFor(profile.id, database)}
+    <SessionNode
+      label={database}
+      icon={DatabaseIcon}
+      depth={DB_DEPTH}
+      title={server ? `database on ${server}` : "database"}
+      {state}
+      expanded={!!expanded[database]}
+      open={() => connections.connectDatabase(profile.id, database)}
+      refresh={() => state.session && refreshSession(state.session.sessionId)}
+      close={closeFor(database, state)}
+      onexpand={(v) => (expanded[database] = v)}
+    >
+      {#snippet branch(session)}
+        <ConnectionSchema
+          sessionId={session.sessionId}
+          {filter}
+          {kind}
+          depth={DB_DEPTH + 1}
+          activate={() => connections.setActive(session)}
+        />
+      {/snippet}
+    </SessionNode>
   {/each}
 {/if}

@@ -111,6 +111,25 @@ describe("SchemaTree", () => {
     expect(calls.filter((c) => c === "connect")).toHaveLength(1);
   });
 
+  // Every grid commit and editor run resolves the *active* session at execute
+  // time. A click on a connected root re-pointed it at the root's own session —
+  // for Postgres, the maintenance database — so collapsing the tree could send a
+  // staged UPDATE to a different database than the one it was staged against.
+  it("leaves the workspace pointed at the database when the root is clicked", async () => {
+    mock([]);
+    render(SchemaTree);
+
+    await fireEvent.click(await screen.findByRole("treeitem", { name: /warehouse/ }));
+    await fireEvent.click(await screen.findByRole("treeitem", { name: /billing/ }));
+    await waitFor(() => expect(connections.active?.database).toBe("billing"));
+
+    // Collapse the root. The maintenance session is `analytics` here, so a
+    // re-pointed workspace is visible in the active session's database.
+    await fireEvent.click(screen.getByRole("treeitem", { name: /warehouse/ }));
+
+    expect(connections.active?.database).toBe("billing");
+  });
+
   it("offers the connection form when there are none saved", async () => {
     mockIPC((cmd) => (cmd === "list_connections" ? [] : undefined));
     render(SchemaTree);
@@ -137,6 +156,8 @@ describe("SchemaTree", () => {
       expect(toasts.items.at(-1)?.message).toBe("Connect to “warehouse”: Authentication failed"),
     );
     expect(screen.queryByText("password authentication failed")).not.toBeInTheDocument();
-    expect(root).toHaveAttribute("aria-expanded", "false");
+    // Eventual, not immediate: the toast is raised inside the connect and the
+    // re-collapse is one await further on, when the failed open returns.
+    await waitFor(() => expect(root).toHaveAttribute("aria-expanded", "false"));
   });
 });

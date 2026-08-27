@@ -1,12 +1,8 @@
 <script lang="ts">
   import Database from "@lucide/svelte/icons/database";
   import Plus from "@lucide/svelte/icons/plus";
-  import Plug from "@lucide/svelte/icons/plug";
-  import Unplug from "@lucide/svelte/icons/unplug";
   import Pencil from "@lucide/svelte/icons/pencil";
   import Trash2 from "@lucide/svelte/icons/trash-2";
-  import RotateCw from "@lucide/svelte/icons/rotate-cw";
-  import TreeItem from "$lib/components/ui/TreeItem.svelte";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import EmptyState from "$lib/components/ui/EmptyState.svelte";
   import ErrorState from "$lib/components/ui/ErrorState.svelte";
@@ -15,14 +11,14 @@
   import Panel from "$lib/components/layout/Panel.svelte";
   import SearchField from "$lib/components/ui/SearchField.svelte";
   import SegmentedButton, { type Segment } from "$lib/components/ui/SegmentedButton.svelte";
-  import ContextMenu from "$lib/components/ui/ContextMenu.svelte";
   import type { MenuItem } from "$lib/components/ui/menu";
   import ConnectionForm from "$lib/components/connections/ConnectionForm.svelte";
   import ConnectionSchema from "./ConnectionSchema.svelte";
   import DatabaseList from "./DatabaseList.svelte";
+  import SessionNode from "./SessionNode.svelte";
+  import { hasDatabaseLevel, refreshProfile } from "./tree";
   import { ENGINE_TAG, ENGINE_ICON, connectionTarget } from "$lib/utils/connectionLabel";
-  import { connections, type ConnStatus } from "$lib/stores/connections.svelte";
-  import { schema } from "$lib/stores/schema.svelte";
+  import { connections } from "$lib/stores/connections.svelte";
   import { confirm } from "$lib/stores/dialogs.svelte";
   import type { ConnectionProfile, RelationKind } from "$lib/api/types";
 
@@ -32,6 +28,9 @@
   // connection list and the schema browser. That is why there is no connection
   // popover anywhere else in the app any more (DESIGN §5); the status bar states
   // which session the workspace is pointed at and nothing more.
+  //
+  // A root *is* a session-owning node (SessionNode.svelte) — the same node a
+  // Postgres database row is, one level down.
   let expanded = $state<Record<string, boolean>>({});
   let filter = $state("");
   let kind = $state<"all" | RelationKind>("all");
@@ -42,15 +41,6 @@
     { value: "table", label: "Tables" },
     { value: "view", label: "Views" },
   ];
-
-  // Colour is a reinforcement here, not the signal: the row also carries its
-  // state in the branch beneath it (spinner, error, schema) (DESIGN §7).
-  const ICON_TONE: Record<ConnStatus, string> = {
-    connected: "text-ok",
-    connecting: "text-warn",
-    error: "text-error",
-    disconnected: "text-on-surface-muted",
-  };
 
   $effect(() => {
     void connections.load();
@@ -63,28 +53,6 @@
     ),
   );
 
-  function isActive(p: ConnectionProfile): boolean {
-    const session = connections.statusFor(p.id).session;
-    return !!session && connections.active?.sessionId === session.sessionId;
-  }
-
-  /** Expanding a disconnected root connects it — the connection *is* the node. */
-  async function toggle(p: ConnectionProfile): Promise<void> {
-    const st = connections.statusFor(p.id);
-    if (st.status === "connected" && st.session) connections.setActive(st.session);
-    expanded[p.id] = !expanded[p.id];
-    if (expanded[p.id] && st.status !== "connected" && st.status !== "connecting") {
-      // Failing to connect collapses the root again: the toast says what went
-      // wrong, and an open root with nothing under it says only that something did.
-      if (!(await connections.connect(p.id))) expanded[p.id] = false;
-    }
-  }
-
-  function activate(p: ConnectionProfile): void {
-    const session = connections.statusFor(p.id).session;
-    if (session) connections.setActive(session);
-  }
-
   async function del(p: ConnectionProfile): Promise<void> {
     const ok = await confirm({
       title: `Delete connection “${p.name}”?`,
@@ -95,35 +63,12 @@
     if (ok) await connections.remove(p.id);
   }
 
-  // Two sections, because the rows mean two different things: what this *session*
-  // does, then what happens to the saved *profile*. Delete is the last row of the
-  // second, past a hairline, so it is never the neighbour of Disconnect.
-  function connMenu(p: ConnectionProfile): MenuItem[][] {
-    const st = connections.statusFor(p.id);
-    const session: MenuItem[] =
-      st.status === "connected"
-        ? [
-            {
-              label: "Refresh",
-              icon: RotateCw,
-              onselect: () => st.session && schema.clear(st.session.sessionId),
-            },
-            {
-              label: "Disconnect",
-              icon: Unplug,
-              onselect: () => {
-                expanded[p.id] = false;
-                void connections.disconnect(p.id);
-              },
-            },
-          ]
-        : [{ label: "Connect", icon: Plug, onselect: () => void connections.connect(p.id) }];
+  // What happens to the saved *profile*, as against what the session does. Delete
+  // is the last row, past a hairline, so it is never the neighbour of Disconnect.
+  function profileMenu(p: ConnectionProfile): MenuItem[] {
     return [
-      session,
-      [
-        { label: "Edit…", icon: Pencil, onselect: () => (form = { profile: p }) },
-        { label: "Delete", icon: Trash2, danger: true, onselect: () => void del(p) },
-      ],
+      { label: "Edit…", icon: Pencil, onselect: () => (form = { profile: p }) },
+      { label: "Delete", icon: Trash2, danger: true, onselect: () => void del(p) },
     ];
   }
 </script>
@@ -181,41 +126,36 @@
     {:else}
       <div role="tree">
         {#each connections.profiles as p (p.id)}
-          {@const st = connections.statusFor(p.id)}
-          <ContextMenu items={connMenu(p)}>
-            <TreeItem
-              label={p.name}
-              icon={ENGINE_ICON[p.engine]}
-              iconClass={ICON_TONE[st.status]}
-              depth={0}
-              expandable
-              expanded={expanded[p.id]}
-              selected={isActive(p)}
-              title={`${ENGINE_TAG[p.engine]} · ${connectionTarget(p)}`}
-              onclick={() => void toggle(p)}
-              ontoggle={() => void toggle(p)}
-            />
-          </ContextMenu>
-
-          {#if st.status === "connecting"}
-            <div class="flex items-center gap-2 py-1 pl-8 text-body-sm text-on-surface-muted">
-              <Spinner size="sm" /> Connecting…
-            </div>
-          {:else if expanded[p.id] && st.session}
-            <!-- Postgres roots open onto their databases, because a pg session
-                 can only ever see the one it connected to; the other engines
-                 have no such level and go straight to their namespaces. -->
-            {#if p.engine === "postgres"}
-              <DatabaseList profile={p} sessionId={st.session.sessionId} {filter} {kind} />
-            {:else}
-              <ConnectionSchema
-                sessionId={st.session.sessionId}
-                {filter}
-                {kind}
-                activate={() => activate(p)}
-              />
-            {/if}
-          {/if}
+          <SessionNode
+            label={p.name}
+            icon={ENGINE_ICON[p.engine]}
+            depth={0}
+            title={`${ENGINE_TAG[p.engine]} · ${connectionTarget(p)}`}
+            state={connections.statusFor(p.id)}
+            expanded={!!expanded[p.id]}
+            activates={!hasDatabaseLevel(p)}
+            open={() => connections.connect(p.id)}
+            refresh={() => refreshProfile(p)}
+            close={() => void connections.disconnect(p.id)}
+            onexpand={(v) => (expanded[p.id] = v)}
+            menu={[profileMenu(p)]}
+          >
+            {#snippet branch(session)}
+              <!-- Postgres roots open onto their databases, because a pg session
+                   can only ever see the one it connected to; the other engines
+                   have no such level and go straight to their namespaces. -->
+              {#if hasDatabaseLevel(p)}
+                <DatabaseList profile={p} sessionId={session.sessionId} {filter} {kind} />
+              {:else}
+                <ConnectionSchema
+                  sessionId={session.sessionId}
+                  {filter}
+                  {kind}
+                  activate={() => connections.setActive(session)}
+                />
+              {/if}
+            {/snippet}
+          </SessionNode>
         {/each}
       </div>
     {/if}

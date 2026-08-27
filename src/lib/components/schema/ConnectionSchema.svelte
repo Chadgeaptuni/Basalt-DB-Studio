@@ -11,6 +11,7 @@
   import type { MenuItem } from "$lib/components/ui/menu";
   import type { RelationKind } from "$lib/api/types";
   import { filterRank, noMatches } from "$lib/utils/filter";
+  import { branchIndent } from "./tree";
   import { schema } from "$lib/stores/schema.svelte";
   import { editorTabs } from "$lib/stores/tabs.svelte";
   import { ddl } from "$lib/stores/ddl.svelte";
@@ -37,7 +38,7 @@
   const REL_DEPTH = $derived(depth + 1);
   /** Column rows are not tree items — they indent to where the label one level
    *  below a relation would sit. */
-  const COL_INDENT = $derived((depth + 2) * 12 + 20);
+  const COL_INDENT = $derived(branchIndent(depth + 2));
 
   // ponytail: which namespaces were open is component state, so collapsing the
   // connection forgets it. The cached tree means reopening costs no IPC; lift it

@@ -20,10 +20,14 @@ export const ENGINE_ICON: Record<Engine, IconComponent> = {
   sqlite: Feather,
 };
 
+/** Where the server lives — `host:port`. Empty for SQLite, which has none. */
+export function connectionServer(profile: ConnectionProfile): string {
+  if (profile.engine === "sqlite") return "";
+  return `${profile.host ?? ""}${profile.port ? `:${profile.port}` : ""}`;
+}
+
 /** Where the profile points — a file for SQLite, `host:port/database` otherwise. */
 export function connectionTarget(profile: ConnectionProfile): string {
   if (profile.engine === "sqlite") return profile.filePath ?? "";
-  const port = profile.port ? `:${profile.port}` : "";
-  const database = profile.database ? `/${profile.database}` : "";
-  return `${profile.host ?? ""}${port}${database}`;
+  return `${connectionServer(profile)}${profile.database ? `/${profile.database}` : ""}`;
 }
