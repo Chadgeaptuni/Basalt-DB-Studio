@@ -53,19 +53,12 @@
     disconnected: "text-on-surface-muted",
   };
 
-  /** The session the maintenance connection already holds, when it happens to be
-   *  the database being expanded — reusing it saves a second pool onto the same
-   *  database, which is the common case since that is the one the profile names. */
   function sessionFor(database: string) {
-    const server = connections.statusFor(profile.id).session;
-    if (server?.database === database) return server;
-    return connections.dbStatusFor(profile.id, database).session;
+    return connections.databaseStateFor(profile.id, database).session;
   }
 
   function statusFor(database: string): ConnStatus {
-    const server = connections.statusFor(profile.id).session;
-    if (server?.database === database) return "connected";
-    return connections.dbStatusFor(profile.id, database).status;
+    return connections.databaseStateFor(profile.id, database).status;
   }
 
   async function toggle(database: string): Promise<void> {
