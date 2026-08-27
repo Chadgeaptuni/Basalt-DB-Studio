@@ -72,8 +72,12 @@
     {/snippet}
   </ErrorState>
 {:else if databases.length === 0}
+  <!-- What the query actually checked, no more: a database drops out of the list
+       for want of CONNECT, for `datallowconn`, or for being a template. Naming
+       privileges as *the* cause sent people to their DBA over one of three
+       (DESIGN §8). -->
   <div class="py-1 text-body-sm text-on-surface-muted" style="padding-left:{BRANCH_INDENT}px">
-    This role may not open any database on this server.
+    This server has no database this role can open.
   </div>
 {:else}
   {#each databases as database (database)}

@@ -130,6 +130,32 @@ describe("SchemaTree", () => {
     expect(connections.active?.database).toBe("billing");
   });
 
+  // The empty branch used to name privileges as the cause. Three filters can
+  // empty that list, and only one of them is a privilege.
+  it("claims no cause the database query did not check", async () => {
+    mockIPC((cmd, args) => {
+      if (cmd === "list_connections") return [profile];
+      if (cmd === "connect") {
+        return {
+          sessionId: "s-empty",
+          profileId: "p1",
+          engine: "postgres",
+          readOnly: false,
+          database: (args as { database?: string })?.database ?? profile.database,
+        };
+      }
+      if (cmd === "list_databases") return [];
+      return undefined;
+    });
+    render(SchemaTree);
+
+    await fireEvent.click(await screen.findByRole("treeitem", { name: /warehouse/ }));
+
+    expect(
+      await screen.findByText("This server has no database this role can open."),
+    ).toBeInTheDocument();
+  });
+
   it("offers the connection form when there are none saved", async () => {
     mockIPC((cmd) => (cmd === "list_connections" ? [] : undefined));
     render(SchemaTree);
