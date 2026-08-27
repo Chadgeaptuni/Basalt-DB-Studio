@@ -83,7 +83,7 @@ export function resolveColor(value: string): Rgb | null {
 }
 
 /** WCAG 2.1 relative luminance. */
-export function relativeLuminance(c: Rgb): number {
+function relativeLuminance(c: Rgb): number {
   const channel = (v: number): number => {
     const s = v / 255;
     return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
@@ -108,8 +108,8 @@ export function contrastRatio(fg: string, bg: string): number | null {
   return a && b ? contrastOf(a, b) : null;
 }
 
-export const BLACK: Rgb = { r: 0, g: 0, b: 0 };
-export const WHITE: Rgb = { r: 255, g: 255, b: 255 };
+const BLACK: Rgb = { r: 0, g: 0, b: 0 };
+const WHITE: Rgb = { r: 255, g: 255, b: 255 };
 
 /** Blend in gamma-encoded sRGB — the same space `color-mix(in srgb, …)` uses. */
 export function mixRgb(a: Rgb, b: Rgb, t: number): Rgb {
