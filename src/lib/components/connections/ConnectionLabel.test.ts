@@ -19,7 +19,13 @@ beforeEach(() => {
   mockIPC((cmd) => (cmd === "list_connections" ? [profile] : undefined));
 });
 
-afterEach(clearMocks);
+// The store is a module singleton, so the session one case makes active is still
+// active in the next. Without this reset the first case passed only by virtue of
+// running first, and the disconnected reading could not be asserted at all.
+afterEach(() => {
+  clearMocks();
+  connections.setActive(null);
+});
 
 describe("ConnectionLabel", () => {
   // A Postgres profile holds one session per database it has open, and the
@@ -40,6 +46,12 @@ describe("ConnectionLabel", () => {
 
     expect(await screen.findByText("warehouse")).toBeInTheDocument();
     expect(screen.queryByText("Not connected")).not.toBeInTheDocument();
+  });
+
+  it("reads as disconnected when no session is active", async () => {
+    render(ConnectionLabel);
+
+    expect(await screen.findByText("Not connected")).toBeInTheDocument();
   });
 
   // With several databases open under one profile, the name alone no longer says
