@@ -17,7 +17,8 @@
   import DatabaseList from "./DatabaseList.svelte";
   import SessionNode from "./SessionNode.svelte";
   import { hasDatabaseLevel, refreshProfile } from "./tree";
-  import { ENGINE_TAG, ENGINE_ICON, connectionTarget } from "$lib/utils/connectionLabel";
+  import { ENGINE_ICON } from "$lib/components/connections/engineIcon";
+  import { ENGINE_TAG, connectionTarget } from "$lib/utils/connectionLabel";
   import { connections } from "$lib/stores/connections.svelte";
   import { confirm } from "$lib/stores/dialogs.svelte";
   import type { ConnectionProfile, RelationKind } from "$lib/api/types";

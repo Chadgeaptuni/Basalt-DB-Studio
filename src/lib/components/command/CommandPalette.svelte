@@ -19,6 +19,7 @@
   import { theme } from "$lib/stores/theme.svelte";
   import { toast } from "$lib/stores/toasts.svelte";
   import { filterRank, noMatches } from "$lib/utils/filter";
+  import { connectionServer } from "$lib/utils/connectionLabel";
 
   // The single global search surface (DESIGN §6/§7): tables, saved queries,
   // connections and actions in one ranked list.
@@ -108,7 +109,7 @@
     connections.profiles.map((p) => ({
       id: `con:${p.id}`,
       label: p.name,
-      detail: p.engine === "sqlite" ? (p.filePath ?? "") : `${p.host ?? ""}${p.port ? `:${p.port}` : ""}`,
+      detail: p.engine === "sqlite" ? (p.filePath ?? "") : connectionServer(p),
       group: "Connection",
       icon: Database,
       run: () => void connections.activate(p.id),
