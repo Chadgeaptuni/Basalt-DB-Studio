@@ -1,6 +1,5 @@
-//! On-disk locations under the OS config dir (`dirs::config_dir()/basalt`). This
-//! directory *is* the git-sync repo, so it holds only diff-able TOML — never
-//! secrets. Nothing is created here eagerly: the `config` writers `create_dir_all`
+//! On-disk locations under the OS config dir (`dirs::config_dir()/basalt`). It
+//! holds only TOML and saved `.sql` — never secrets. Nothing is created here eagerly: the `config` writers `create_dir_all`
 //! on demand, keeping app startup free of filesystem side effects.
 
 use std::path::PathBuf;
@@ -11,7 +10,7 @@ use crate::{AppError, AppResult};
 pub struct Paths {
     pub config_dir: PathBuf,
     pub connections_dir: PathBuf,
-    /// Saved queries (`.sql` files under nestable folders) — the other git-sync unit.
+    /// Saved queries (`.sql` files under nestable folders).
     pub queries_dir: PathBuf,
     pub settings_file: PathBuf,
 }

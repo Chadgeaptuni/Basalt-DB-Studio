@@ -6,11 +6,11 @@ import { ERROR_KINDS } from "$lib/api/types";
 
 describe("ErrorState", () => {
   it("renders the kind's title, its next step, and the backend message", () => {
-    render(ErrorState, { kind: "gitConflict", message: "CONFLICT in profiles.toml" });
+    render(ErrorState, { kind: "configParse", message: "expected `=` at line 3" });
 
-    expect(screen.getByText("Git conflict")).toBeInTheDocument();
-    expect(screen.getByText(/Resolve the conflicts in your git tool/)).toBeInTheDocument();
-    expect(screen.getByText("CONFLICT in profiles.toml")).toBeInTheDocument();
+    expect(screen.getByText("Config file is malformed")).toBeInTheDocument();
+    expect(screen.getByText(/Fix the TOML by hand/)).toBeInTheDocument();
+    expect(screen.getByText("expected `=` at line 3")).toBeInTheDocument();
   });
 
   // The point of the audit: no kind falls through to a bare heading with no

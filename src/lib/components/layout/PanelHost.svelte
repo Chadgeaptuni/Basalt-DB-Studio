@@ -2,15 +2,14 @@
   import SchemaTree from "$lib/components/schema/SchemaTree.svelte";
   import SavedQueriesPanel from "$lib/components/savedQueries/SavedQueriesPanel.svelte";
   import HistoryPanel from "$lib/components/history/HistoryPanel.svelte";
-  import GitSyncPanel from "$lib/components/gitsync/GitSyncPanel.svelte";
   import ResizeHandle from "$lib/components/ui/ResizeHandle.svelte";
   import { panelIn, panelOut } from "$lib/utils/motion";
   import { panel, PANEL_MAX_W, PANEL_MIN_W } from "$lib/stores/panel.svelte";
   import { zoom } from "$lib/stores/zoom.svelte";
 
   // Renders the rail's active destination and owns the panel's width. Only the
-  // active panel is mounted: a hidden panel that keeps polling (git status, saved
-  // queries) would be doing work nobody can see.
+  // active panel is mounted: a hidden panel that keeps fetching (saved queries)
+  // would be doing work nobody can see.
   let aside = $state<HTMLElement>();
 
   // Measured from the panel's own left edge rather than from a drag origin, so
@@ -55,10 +54,8 @@
         <SchemaTree />
       {:else if panel.active === "queries"}
         <SavedQueriesPanel />
-      {:else if panel.active === "history"}
-        <HistoryPanel />
       {:else}
-        <GitSyncPanel />
+        <HistoryPanel />
       {/if}
     </div>
   </div>

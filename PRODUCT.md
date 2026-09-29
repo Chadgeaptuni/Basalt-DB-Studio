@@ -13,10 +13,6 @@ editor who needs to query, inspect, or fix an application database without
 leaving a keyboard-driven flow. They reach for Basalt instead of a heavyweight
 Java GUI (DBeaver, pgAdmin) or a terminal client.
 
-Small teams are the second-order audience, reached through git-sync — shared
-connection profiles and saved queries in a repo. Team use is an extension of
-individual use, not the entry hook.
-
 ## Product Purpose
 
 An open-source, cross-platform desktop database GUI for PostgreSQL,
@@ -26,17 +22,11 @@ it launches fast, stays out of the way, and never requires the mouse.
 
 ## Positioning
 
-Two claims a neighboring product could not truthfully copy:
-
-1. **A hard 30 MB installed-bundle ceiling, enforced in CI**
-   (`scripts/check-bundle-size.mjs`), while still feeling finished rather than
-   stripped. The constraint can veto features and dependencies.
-2. **Git-sync as the team primitive.** The config directory *is* a plain-file git
-   repo, driven by a real source-control panel in the app — stage, commit,
-   branch, fetch/pull/push, and a commit graph — not a single sync button.
-   Connection profiles carry a `secret_ref` UUID and no password field, so
-   secrets cannot leak into git by construction, not by convention. Git
-   credentials stay with the system's own helper; the app stores none.
+**A hard 30 MB installed-bundle ceiling, enforced in CI**
+(`scripts/check-bundle-size.mjs`), while still feeling finished rather than
+stripped. The constraint can veto features and dependencies. Connection profiles
+carry a `secret_ref` UUID and no password field, so a secret cannot reach a
+config file by construction, not by convention.
 
 ## Operating Context
 
@@ -44,10 +34,9 @@ Two claims a neighboring product could not truthfully copy:
   webkit2gtk 4.1. Single window, no routing.
 - Used alongside an editor and a terminal, often mid-debugging against a local or
   staging database; SSH tunnel / bastion access is part of the real path.
-- Work products that leave the app: CSV/JSON exports, CSV imports, saved queries
-  and connection profiles committed to a team repo.
+- Work products that leave the app: CSV/JSON exports, CSV imports, saved queries.
 - No telemetry of any kind. Outbound network is limited to the user's own
-  database connections, their own git remote, and the signed update check.
+  database connections and the signed update check.
 
 ## Capabilities and Constraints
 
@@ -55,15 +44,15 @@ Shipped and verified: connect + introspect + browse for all three engines;
 SQL editor with schema-aware autocomplete; virtualized results grid with
 per-statement tabs; editable table-data view with transactional commit and
 no-primary-key fallback; DDL generation with preview-before-execute; streaming
-CSV/JSON export and CSV import with per-engine conflict modes; manual git-sync
-of config and saved queries; settings persistence and theme presets.
+CSV/JSON export and CSV import with per-engine conflict modes; saved queries;
+settings persistence and theme presets.
 
 Not yet shipped: the secrets slice (OS keychain + encrypted-file vault,
 auto-prompt on `authFailed`, TLS-ladder and SSH UI), plus pinned-transaction
 connections, query cancellation, and statement timeout.
 
 Terminology: *connection profile* (TOML, no secrets), *secret_ref* (UUID
-pointing at the keychain/vault entry), *session*, *saved query*, *git-sync*.
+pointing at the keychain/vault entry), *session*, *saved query*.
 
 Every user-facing failure mode has a distinct error `kind` the UI switches on —
 there is no generic error path, by design.

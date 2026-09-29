@@ -7,7 +7,6 @@ mod logging;
 // `config::settings`) is part of the crate surface rather than dead code.
 pub mod config;
 pub mod drivers;
-pub mod gitsync;
 pub mod services;
 pub mod sqlgen;
 pub mod state;
@@ -76,26 +75,6 @@ pub fn run() {
             commands::export::export_query,
             commands::export::export_table,
             commands::import::import_csv,
-            commands::gitsync::git_status,
-            commands::gitsync::git_sync,
-            commands::gitsync::git_stage,
-            commands::gitsync::git_unstage,
-            commands::gitsync::git_discard,
-            commands::gitsync::git_commit,
-            commands::gitsync::git_fetch,
-            commands::gitsync::git_pull,
-            commands::gitsync::git_push,
-            commands::gitsync::git_branches,
-            commands::gitsync::git_checkout,
-            commands::gitsync::git_create_branch,
-            commands::gitsync::git_history,
-            commands::gitsync::git_commit_files,
-            commands::gitsync::git_commit_diff,
-            commands::gitsync::git_file_diff,
-            commands::gitsync::git_init,
-            commands::gitsync::git_set_remote,
-            commands::gitsync::github_status,
-            commands::gitsync::github_publish,
             commands::saved_queries::list_saved_queries,
             commands::saved_queries::read_saved_query,
             commands::saved_queries::save_query,

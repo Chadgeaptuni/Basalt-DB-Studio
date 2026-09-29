@@ -75,7 +75,6 @@ could lift `sqlgen/` out and use it in a CLI tomorrow.
 | `drivers/types.rs` | The wire types, mirrored field-for-field in `src/lib/api/types.ts`. |
 | `sqlgen/` | Pure SQL text utilities: statement splitting, classification, identifier quoting. No DB, no Tauri. Heavily tested. |
 | `config/` | TOML profiles and saved queries on disk. |
-| `gitsync/` | Shells out to the system `git` (and `gh`) to version the config dir. |
 | `errors/` | The one `AppError` enum. |
 
 ## The frontend, folder by folder
@@ -118,9 +117,8 @@ is *opinionated* — it complains about things ESLint wouldn't dream of, like
 
 Largest Rust file: 440 lines (`services/grid_service.rs`). Largest frontend file:
 483 (`stores/themeData.ts`). Median well under 150. The repo rule is "split as a
-file approaches 300 lines," and nine files now sit above it — the theme token
-tables, `DataGrid`, `GitSyncPanel`, the wire types on both sides, three services,
-and `gitsync/ops.rs`. It's a rule with named exceptions rather than one held
+file approaches 300 lines," and seven files now sit above it — the theme token
+tables, `DataGrid`, the wire types on both sides, and three services. It's a rule with named exceptions rather than one held
 absolutely. There are still no god objects and no grab-bag `utils.ts`: each of
 those files has one subject, it's just a large one.
 
@@ -1603,7 +1601,7 @@ Component  →  api/*.ts  →  invoke  ║  #[tauri::command]  →  service  →
    └──── ApiError.kind  ←  ErrorResponse JSON  ←  AppError  ←────────────────────────────────┘
 ```
 
-Every feature in this app is that pipe. Grid edits, DDL, CSV import, git sync —
+Every feature in this app is that pipe. Grid edits, DDL, CSV import, export —
 same eleven steps, different service.
 
 ---
@@ -1637,7 +1635,6 @@ same eleven steps, different service.
 - `src/lib/utils/errorPresentation.ts` — one `Record<ErrorKind, …>`. The mechanism behind every error sentence in the app.
 - `src/lib/components/layout/NavRail.svelte` + `src/lib/stores/panel.svelte.ts` — the navigation rail and the single side panel it drives.
 - `src/lib/components/command/CommandPalette.svelte` + `stores/palette.svelte.ts` — `mod+k`, and how one flat action list is filtered.
-- `src/lib/components/gitsync/GitSyncPanel.svelte` + `utils/commitGraph.ts`, `utils/diff.ts` — the source-control client over `src-tauri/src/gitsync/`.
 - `src/lib/stores/themeData.ts`, `utils/contrast.ts`, `utils/motion.ts` — the token tables every theme is built from, the contrast audit that keeps a custom one legible, and the M3 motion curves.
 
 ## Exercises, in difficulty order

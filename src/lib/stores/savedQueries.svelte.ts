@@ -1,9 +1,9 @@
 import { savedQueriesApi, type SavedQuery } from "$lib/api/savedQueries";
 import type { ApiError } from "$lib/api/client";
 
-// The saved-query tree (a git-sync unit). Flat list of folder-relative paths;
-// the panel groups them by folder for display. Mutations refresh the list so the
-// panel and a post-sync pull stay in sync.
+// The saved-query tree. Flat list of folder-relative paths; the panel groups
+// them by folder for display. Mutations refresh the list so the panel always
+// shows what is on disk.
 
 let items = $state<SavedQuery[]>([]);
 let loading = $state(false);

@@ -133,8 +133,8 @@
       />
     </div>
 
-    <!-- Environment travels with the profile through git-sync, so tagging it once
-         warns everyone who pulls it — not just this machine. -->
+    <!-- Environment lives in the profile, so every surface that names the
+         connection can warn from it. -->
     <Field label="Environment" hint="Production connections name themselves in every destructive confirmation.">
       <Select
         label="Environment"

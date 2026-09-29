@@ -1,7 +1,7 @@
 // The one place a backend failure becomes user-facing words (DESIGN §8).
 //
 // Before U6 this lived in three places — a connect-only title map, a second map
-// inside ResultsPane, and an inline conditional in the git panel — so the same
+// inside ResultsPane, and an inline conditional in a third pane — so the same
 // `kind` read differently depending on which pane caught it, and eight of the
 // twenty kinds had no copy at all and fell through to a bare "Error".
 //
@@ -82,38 +82,6 @@ const PRESENTATION: Record<ErrorKind, ErrorPresentation> = {
   configParse: {
     title: "Config file is malformed",
     hint: "Fix the TOML by hand, or move the file aside to start from a clean config.",
-  },
-  gitNotInstalled: {
-    title: "Git is missing or too old",
-    hint: "Install git 2.23 or newer and restart Basalt — profiles and saved queries sync through the system git.",
-  },
-  gitConflict: {
-    title: "Git conflict",
-    hint: "Resolve the conflicts in your git tool, then sync again.",
-  },
-  gitDirty: {
-    title: "A rebase or merge is half-finished",
-    hint: "Finish or abort it in your git tool — running more git on top of one is how a repo gets stuck.",
-  },
-  gitAuthFailed: {
-    title: "Git couldn't authenticate with the remote",
-    hint: "Basalt doesn't hold git credentials — your system does. Sign in with Git Credential Manager or gh, or check that your SSH key is loaded, then try again.",
-  },
-  gitPushRejected: {
-    title: "The remote has commits this copy doesn't",
-    hint: "Pull first — that rebases your work on top of theirs — then push again.",
-  },
-  githubCliUnavailable: {
-    title: "The GitHub CLI isn't ready",
-    hint: "Basalt creates the repository through gh, which keeps its own GitHub sign-in. Install the GitHub CLI and run `gh auth login`, or create the repository on github.com and paste its URL instead.",
-  },
-  githubRepoExists: {
-    title: "That name is taken",
-    hint: "The account already has a repository with this name. Pick a different one, or add the existing repository as a remote instead.",
-  },
-  gitNoRemote: {
-    title: "No remote configured",
-    hint: "Add one in the Git panel to share profiles and saved queries with a team. Everything still works locally without it.",
   },
   importParse: {
     title: "Can't parse the CSV",

@@ -3,8 +3,8 @@
 //! never a stringly-typed fallback. Serialization is camelCase with `None`
 //! options omitted so the TypeScript `?:` optionals line up exactly.
 //!
-//! `ConnectionProfile` deliberately lives in `config/connections.rs` (it is the
-//! git-sync unit), but it reuses `Engine`, `TlsConfig`, and `SshConfig` from
+//! `ConnectionProfile` deliberately lives in `config/connections.rs` (it is a
+//! file format as well as a wire type), but it reuses `Engine`, `TlsConfig`, and `SshConfig` from
 //! here so the connection form and the driver speak one vocabulary.
 
 use serde::{Deserialize, Serialize};

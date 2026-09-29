@@ -7,7 +7,7 @@
 // open sections to shut when they stopped fitting. One panel at a time (DESIGN
 // §5) removes the contention, and with it all of that state.
 
-export const PANELS = ["schema", "queries", "history", "git"] as const;
+export const PANELS = ["schema", "queries", "history"] as const;
 export type PanelId = (typeof PANELS)[number];
 
 const isPanelId = (id: unknown): id is PanelId => PANELS.includes(id as PanelId);

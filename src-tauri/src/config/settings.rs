@@ -1,6 +1,6 @@
 //! App settings TOML (`settings.toml`). `datetime_display` controls how cells
 //! *render*, never the stored/edited value; `default_row_limit` is the fetch cap
-//! the editor passes per run. Lives in the config dir, so it's git-syncable.
+//! the editor passes per run. Lives in the config dir.
 
 use std::fs;
 

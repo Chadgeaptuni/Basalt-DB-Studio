@@ -1,7 +1,7 @@
 //! Connection profiles: one `<id>.toml` file per connection under
 //! `connections/`. The profile has **no password field by construction** — only
-//! a `secret_ref` UUID into the SecretStore — so a leak into git is a type error,
-//! not a review catch. The same struct is the wire type (`invoke` payload) and
+//! a `secret_ref` UUID into the SecretStore — so a secret written to disk is a
+//! type error, not a review catch. The same struct is the wire type (`invoke` payload) and
 //! the file format; `tls`/`ssh` are declared last so their `[tls]`/`[ssh]` tables
 //! never precede a scalar in the emitted TOML.
 
@@ -14,9 +14,8 @@ use crate::config::Paths;
 use crate::drivers::types::{Engine, SshConfig, TlsConfig};
 use crate::{AppError, AppResult};
 
-/// Which deployment a profile points at. Carried in the profile — and therefore
-/// git-synced with it — so a teammate who pulls the shared connection sees the
-/// same `prod` warning without having to re-tag it locally.
+/// Which deployment a profile points at. Carried in the profile, so every
+/// surface that names the connection can show the same `prod` warning.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Environment {
@@ -25,7 +24,7 @@ pub enum Environment {
     Prod,
 }
 
-/// A saved connection. Git-syncable; contains no secret material.
+/// A saved connection. Contains no secret material.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct ConnectionProfile {
@@ -212,8 +211,8 @@ mod tests {
         fs::remove_dir_all(&paths.config_dir).ok();
     }
 
-    // The tag is only useful if it survives the git-sync round trip, which is a
-    // TOML write and re-read — so assert it lands in the file, not just in memory.
+    // The tag is only useful if it survives a TOML write and re-read — so assert
+    // it lands in the file, not just in memory.
     #[test]
     fn environment_is_written_to_the_profile_file() {
         let paths = temp_paths();

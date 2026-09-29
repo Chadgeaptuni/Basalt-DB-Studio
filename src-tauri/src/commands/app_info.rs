@@ -46,9 +46,8 @@ pub struct AppInfo {
     /// True for `tauri dev` builds. Worth stating: a debug build's timings and
     /// bundle size are nothing like the release the user would otherwise assume.
     pub debug: bool,
-    /// Where profiles, saved queries and settings live — and the directory the
-    /// Git panel is a client for. The whole git feature is about a folder the
-    /// user otherwise has no way to find.
+    /// Where profiles, saved queries and settings live — a folder the user
+    /// otherwise has no way to find.
     pub config_dir: String,
 }
 

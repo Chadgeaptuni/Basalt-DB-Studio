@@ -101,10 +101,10 @@ Backend layering — dependencies point one way: `commands → services → ever
 else`. Nothing below `services/` imports `tauri`.
 
 - `src-tauri/src/commands/` — thin `#[tauri::command]` handlers, one file per
-  domain (connections, introspect, query, grid, ddl, history, export, import,
-  gitsync, settings). Deserialize → call service → map error. No logic.
+  domain (connections, introspect, query, grid, ddl, export, import,
+  saved_queries, settings). Deserialize → call service → map error. No logic.
 - `services/` — business logic (connection/session registry, query limits +
-  cancel registry, grid edit→SQL, DDL generation, import/export, history, gitsync).
+  cancel registry, grid edit→SQL, DDL generation, import/export).
 - `drivers/` — `enum Driver { Pg | MySql | Sqlite }` (enum dispatch, no dyn
   traits); `types.rs` holds the wire types (`CellValue`, `ColumnMeta`,
   `QueryResult`, …) mirrored in `src/lib/api/types.ts`; per-engine
@@ -112,11 +112,10 @@ else`. Nothing below `services/` imports `tauri`.
   engine types map to/from `CellValue`.
 - `sqlgen/` — identifier quoting, multi-statement splitting, destructive-statement
   classification (shared, heavily unit-tested).
-- `config/` (TOML profiles + saved queries — the git-sync unit), `secrets/`
+- `config/` (TOML profiles, saved queries, settings), `secrets/`
   (`SecretStore`: OS keychain default, encrypted-file backend opt-in), `tunnel/`
-  (russh), `gitsync/` (shells out to system git), `errors/` (below). Query
-  history is session-only and lives in a frontend rune store — no backend
-  history subsystem, no local DB.
+  (russh), `errors/` (below). Query history is session-only and lives in a
+  frontend rune store — no backend history subsystem, no local DB.
 
 Frontend layout — see DESIGN.md §9 for the import rules:
 
@@ -134,9 +133,8 @@ a distinct `kind` the frontend switches on (`connectionRefused`, `authFailed`,
 `tlsError`, `tunnelError`, `queryError`, `queryCancelled`, `readOnlyViolation`,
 `noPrimaryKey`, `ambiguousRowIdentity`, `confirmationRequired`, `secretNotFound`,
 `keychainUnavailable`, `vaultLocked`, `configIo`, `configParse`,
-`gitNotInstalled`, `gitConflict`, `gitDirty`, `importParse`,
-`internal`). New failure mode ⇒ new variant — never a new string matched in the
-frontend, never a collapsed generic error.
+`importParse`, `internal`). New failure mode ⇒ new variant — never a new string
+matched in the frontend, never a collapsed generic error.
 
 ## Code-quality hard rules
 

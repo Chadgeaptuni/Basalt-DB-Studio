@@ -26,14 +26,6 @@ export const ERROR_KINDS = [
   "vaultLocked",
   "configIo",
   "configParse",
-  "gitNotInstalled",
-  "gitConflict",
-  "gitDirty",
-  "gitAuthFailed",
-  "gitPushRejected",
-  "gitNoRemote",
-  "githubCliUnavailable",
-  "githubRepoExists",
   "importParse",
   "internal",
 ] as const;
@@ -76,9 +68,8 @@ export interface SshConfig {
   keyPath?: string;
 }
 
-/** A saved connection. Git-syncable; contains no secret material. */
-/** Which deployment a profile points at. Lives in the profile (and so git-syncs
- *  with it), and `undefined` means untagged — never assume `local`. */
+/** Which deployment a profile points at. Lives in the profile, and `undefined`
+ *  means untagged — never assume `local`. */
 export type Environment = "local" | "staging" | "prod";
 
 export interface ConnectionProfile {
@@ -315,6 +306,6 @@ export interface AppInfo {
   family: string;
   /** True for `tauri dev` builds. */
   debug: boolean;
-  /** Where profiles, saved queries and settings live — the Git panel's repo. */
+  /** Where profiles, saved queries and settings live. */
   configDir: string;
 }

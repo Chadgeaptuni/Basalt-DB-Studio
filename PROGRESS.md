@@ -26,12 +26,11 @@ view, transactional commit, no-PK fallback + ambiguousRowIdentity (40 lib + 2
 grid_roundtrip + 6 integration). **M4 COMPLETE** — DDL generation, preview-before-
 execute, tree actions. **M5 COMPLETE (backend + frontend) + verified** — streaming
 CSV/JSON export (ipc::Channel), CSV import with per-engine conflict modes + line
-errors. **M6 COMPLETE** — manual git-sync (system git) + saved-queries UI + sync
-bar; leak test (two clones share config, no plaintext secret). **M7 COMPLETE (code)**
+errors. **M6 COMPLETE** — saved queries as `.sql` files + saved-queries panel. **M7 COMPLETE (code)**
 — settings persistence, datetime-display wiring, 4 theme presets + picker, keyboard
 + error-state audits, release workflow scaffold (signing/notarization/real updater
 key are owner+CI steps, unverifiable here). **M0–M7 all done.** Full backend gate
-green: **72 tests** (59 lib + 2 ddl + 1 gitsync + 2 grid + 2 import roundtrip + 6
+green: **71 tests** (59 lib + 2 ddl + 2 grid + 2 import roundtrip + 6
 integration) vs real pg16/mysql8; frontend svelte-check 0/0/0, 36 vitest, build
 clean. **Remaining: the separable M1 secrets slice** (keychain/vault + auto-prompt +
 TLS-ladder/SSH UI) and the deferred M2 backend items (pinned-tx connection,
@@ -301,41 +300,23 @@ toast); multi-row VALUES batching (per-row INSERT in one tx now); CSV header
 auto-mapping / column reorder (needs the fs plugin to read the header); quoted-empty
 vs NULL distinction (empty field → NULL in v1).
 
-## M6 — Git-sync — COMPLETE + verified
+## M6 — Saved queries — COMPLETE + verified
 
-Backend (clippy/fmt clean; +1 gitsync_roundtrip test, runs without Docker):
-- [x] `gitsync/mod.rs` — shells **system git** in the config dir (no git2/gix).
-  `status` (installed/isRepo/hasRemote/branch/dirty/ahead/behind) + `sync`
-  (add -A → commit → pull --rebase → push). Missing git → `gitNotInstalled`;
-  a sync-caused rebase conflict → `gitConflict` (auto `rebase --abort`, tree left
-  clean); a pre-existing unfinished rebase/merge → `gitDirty`. First push skips
-  the pull (upstream ref not born yet).
-- [x] `config/saved_queries.rs` — `.sql` files under nestable folders (the 2nd
-  git-sync unit); path-traversal-safe. `Paths::under()` added (all paths under one
-  dir; tests pass a temp). Commands: `git_status`/`git_sync` (blocking thread) +
-  `list/read/save/delete` saved queries.
-- [x] **Gate met locally**: `gitsync_roundtrip.rs` — bare repo + two clones share
-  profiles + saved queries through sync (A push, B pull); leak test greps BOTH
-  working trees for a sentinel secret (absent — profile has no password field).
+- [x] `config/saved_queries.rs` — `.sql` files under nestable folders;
+  path-traversal-safe. `Paths::under()` (all paths under one dir; tests pass a
+  temp). Commands: `list/read/save/delete` saved queries.
+- [x] `api/savedQueries.ts`, `stores/{savedQueries,saveQuery}.svelte.ts`;
+  `SavedQueriesPanel` (folder-grouped tree, open into a tab, context-menu
+  delete). `Ctrl+S` saves the active tab (bound → overwrite; new →
+  `SaveQueryDialog`). tabs gain `savedPath`.
 
-Frontend (svelte-check 0/0/0; 36 vitest; build clean):
-- [x] `api/{gitsync,savedQueries}.ts`, `stores/{gitsync,savedQueries,saveQuery}.svelte.ts`.
-- [x] Sidebar nests a 3rd section: `SavedQueriesPanel` (folder-grouped tree, open
-  into a tab, context-menu delete) + `GitSyncBar` (branch/dirty/ahead-behind badge,
-  Sync button, inline gitConflict/gitDirty/gitNotInstalled states). `Ctrl+S` saves
-  the active tab (bound → overwrite; new → `SaveQueryDialog`). tabs gain `savedPath`.
-  `IconButton` extended with a `loading` state (reused, not forked).
-
-**Deferred (M6 tail):** no in-app conflict resolution (spec — "resolve in your git
-tool"); no auto/background sync (spec v1 = manual); `git init`/add-remote is a
-user step (v1 assumes the config dir is already a repo with a remote); no
-saved-query rename/move UI (delete + re-save).
+**Deferred (M6 tail):** no saved-query rename/move UI (delete + re-save).
 
 ## M7 — Theming polish + release hardening — COMPLETE (code); release-infra unverifiable here
 
 Backend (clippy/fmt clean; +1 settings test → **59 lib**):
 - [x] `config/settings.rs` load/save + `get_settings`/`save_settings` commands
-  (settings.toml: `defaultRowLimit` + `datetimeDisplay`; git-syncable).
+  (settings.toml: `defaultRowLimit` + `datetimeDisplay`).
 
 Frontend (svelte-check 0/0/0; **36 vitest**; build clean):
 - [x] `stores/settings.svelte.ts` (loads at startup; setters persist optimistically)

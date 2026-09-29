@@ -5,7 +5,6 @@ pub mod app_info;
 pub mod connections;
 pub mod ddl;
 pub mod export;
-pub mod gitsync;
 pub mod grid;
 pub mod import;
 pub mod introspect;

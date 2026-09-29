@@ -1,8 +1,7 @@
 //! Saved queries: one `.sql` file per query under `queries/`, in nestable
-//! folders (subdirectories) for clean git diffs. A query's identity is its
-//! relative path (folder segments joined by `/`, no `.sql` suffix in the wire
-//! form). Pure filesystem — no secrets, so this is a git-sync unit like
-//! `connections/`.
+//! folders (subdirectories), so they stay usable from any editor. A query's
+//! identity is its relative path (folder segments joined by `/`, no `.sql`
+//! suffix in the wire form). Pure filesystem — no secrets.
 
 use std::fs;
 use std::path::{Path, PathBuf};

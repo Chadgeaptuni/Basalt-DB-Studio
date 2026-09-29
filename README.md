@@ -94,10 +94,8 @@ cargo test                                   # Run all unit and integration test
   - Memory-efficient streaming CSV and JSON exports over Tauri IPC channels (`ipc::Channel`).
   - RFC4180-compliant CSV import with per-engine conflict resolution (`ON CONFLICT DO NOTHING/UPDATE`, `INSERT IGNORE`, `INSERT OR IGNORE`) and line-accurate error reporting.
 - **Zero-Trust Secret Hygiene**:
-  - Connection TOML files store only a `secret_ref`. Passwords never touch disk configuration files or Git commits.
+  - Connection TOML files store only a `secret_ref`. Passwords never touch disk configuration files.
   - Memory-only password storage with OS Keychain / encrypted vault support.
-- **Built-In Git Sync**:
-  - Shells system `git` to sync connection profiles and saved queries seamlessly across workstations.
 - **Flat Utilitarian Design System**:
   - Strict flat design with 1px borders, dense data density, zero gradients, zero Dribbble-style bloat.
   - Ships with 4 theme presets: `basalt-dark` (default), `basalt-light`, `basalt-nord`, and `basalt-paper`.
@@ -156,7 +154,6 @@ Basalt-DB-Studio/
 │       │   ├── connections/      # Connection manager & forms
 │       │   ├── ddl/              # Table designer & DDL preview modals
 │       │   ├── editor/           # CodeMirror 6 SQL editor
-│       │   ├── gitsync/          # Git synchronization bar
 │       │   ├── grid/             # Virtualized data grid & CRUD view
 │       │   ├── importExport/     # CSV/JSON import wizard & export runner
 │       │   ├── schema/           # Introspection schema tree
@@ -171,7 +168,6 @@ Basalt-DB-Studio/
 │   │   ├── config/               # TOML profiles, saved queries & settings
 │   │   ├── drivers/              # Engine abstraction, value decode/bind, CRUD
 │   │   ├── errors/               # Unified AppError enum & ErrorResponse mapping
-│   │   ├── gitsync/              # System Git shell wrapper
 │   │   ├── services/             # Core business logic (Connections, Query, Grid, DDL)
 │   │   └── sqlgen/               # SQL lexer, splitter, classifier & DDL generator
 │   └── tests/                    # Integration tests running against live DB containers

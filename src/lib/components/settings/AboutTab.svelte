@@ -109,8 +109,8 @@
       {@render fact("Identifier", info.identifier)}
       {@render fact("Tauri", info.tauriVersion)}
       {@render fact("Webview", info.webviewVersion ?? "unreported")}
-      <!-- The folder the Git panel is a client for. Nothing else in the app
-           says where it is, which makes git-sync hard to reason about. -->
+      <!-- Where profiles, saved queries and settings live. Nothing else in the
+           app says where it is, and it is the first thing a bug report needs. -->
       {@render fact("Config directory", info.configDir)}
     </SettingsGroup>
 

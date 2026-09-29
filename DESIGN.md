@@ -306,7 +306,7 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
 
 - **App shell:** **title bar** (Basalt mark · centred search/command entry ·
   appearance · window controls) · **navigation rail** on the left (Schema ·
-  Queries · History · Git, with Settings in a trailing group) · one **full-height
+  Queries · History, with Settings in a trailing group) · one **full-height
   panel** for the rail's active destination · main workspace (editor tabs above,
   results below, both in a `SplitPane`) · bottom `StatusBar`. All resizable panes
   use the shared `SplitPane` primitive.
@@ -353,50 +353,6 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
   `@container`, not a viewport breakpoint: `mod+b` alone changes this pane's
   width at a fixed window size. A binding the top bar already prints on its own
   control is not repeated here — the catalogue filters it (§7).
-- **The Git destination is a source-control panel over the config repo, and
-  only that repo.** Basalt is a database tool that syncs its own config through
-  git, not a git client that happens to live in one — there is no repo picker and
-  no arbitrary working directory. The panel carries branch, upstream distance,
-  staged/unstaged/conflicted file lists, per-file stage · unstage · discard, a
-  commit box, and fetch · pull · push. History is a modal (graph on the left,
-  the selected commit's files and diff on the right) rather than an editor tab:
-  it is consulted, not worked in, and a tab would mean teaching the workspace
-  model about a third kind of thing with no SQL and no table behind it.
-- **Basalt never holds git credentials.** The system's git does — Git Credential
-  Manager, an ssh agent, `gh`. There is no sign-in form anywhere in the git UI,
-  because the app has nowhere to store the answer (hard constraint 3, and the
-  secrets slice is unbuilt). What the app owes instead is a specific failure:
-  `gitAuthFailed` renders as guidance toward the credential helper,
-  `gitPushRejected` as "pull first", `gitNoRemote` as "add one". A raw git stderr
-  string in the UI is a review failure.
-- **Every subprocess goes through `gitsync/process.rs`**, which owns four things
-  no caller should have to remember. `CREATE_NO_WINDOW` on Windows — a GUI
-  process has no console, so without it every git call flashes a black window and
-  a panel that polls status strobes (invisible in `tauri dev`, which inherits a
-  terminal). A **deadline** with a killed child — 20s local, 120s remote — so an
-  unreachable host or an unnoticed credential window cannot wedge the panel.
-  **`GIT_OPTIONAL_LOCKS=0`**, so status polling never takes `index.lock` out from
-  under the user's own git in a terminal. And a **2 MB output cap**, drained on
-  threads so the child never blocks on a full pipe, with the diff viewer told when
-  its content was cut.
-- **git 2.23 is the floor**, checked once and reported as `gitNotInstalled`.
-  `restore` is what `unstage` and `discard` are built on and it landed there;
-  below it they fail with git's "unknown subcommand", which reads as a bug here.
-- **`git init` creates `main`**, not whatever `init.defaultBranch` says — which is
-  unset on most machines and lands on `master`, while every remote this repo will
-  be pushed to defaults to `main`.
-- **Publishing borrows `gh`'s account, and only when it has one.** `git init`
-  makes a repo here; `git push` needs one *there*, and creating it needs a GitHub
-  account that git does not have. The GitHub CLI does, in its own keychain entry,
-  so the panel shells out to `gh repo create` — Basalt still stores no token and
-  still has no sign-in. The button is gated on `github_status` rather than
-  offered and failed: `gh auth login` is interactive and cannot be run from here.
-  New repos are **private, not as a default but as the only option** — this one
-  maps someone's database hosts, ports and usernames.
-- **Conflicts are listed and not actionable.** Resolving one is text editing,
-  which this app does not do. A stage button on a conflicted file promises a job
-  the panel cannot finish; `pull` aborts a conflicting rebase and says so rather
-  than leaving the user inside one.
 - **A rail destination needs a panel of its own.** Import and export are actions
   on the object in front of you — a table, a result — so they live at that object
   (`TableDataView`, `ResultsPane`), not behind a rail item with nothing to show.
@@ -853,8 +809,6 @@ A blank pane is a bug.
     re-invokes with `confirmed: true` on acceptance.
   - `keychainUnavailable` / `vaultLocked` / `secretNotFound` → password prompt
     flow (memory-only fallback), with one explanatory line.
-  - `gitConflict` / `gitDirty` / `gitNotInstalled` → git panel states with the
-    exact next step ("Resolve conflicts in your git tool, then retry").
   - `readOnlyViolation`, `noPrimaryKey`, `ambiguousRowIdentity` → inline grid/
     toolbar notices explaining *why* editing is blocked.
   - Truly unexpected (`internal`) → error toast, sticky, with a "Copy details"
@@ -882,7 +836,7 @@ components/ui/        →  (props/events only — nothing below)
   (callback props, not dispatchers). Never import stores, api, or domain
   components. Never fetch data. Zero business logic.
 - **`src/lib/components/[domain]/`** — smart containers per domain
-  (`connections`, `schema`, `editor`, `grid`, `ddl`, `importExport`, `gitsync`,
+  (`connections`, `schema`, `editor`, `grid`, `ddl`, `importExport`,
   `settings`, `layout`). They read/write stores, call api modules, compose `ui/`
   primitives.
 - **`src/lib/stores/*.svelte.ts`** — global state as Svelte 5 runes modules

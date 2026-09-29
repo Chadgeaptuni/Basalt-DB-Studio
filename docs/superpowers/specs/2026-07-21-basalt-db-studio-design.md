@@ -26,14 +26,12 @@ questions CLAUDE.md governs; this spec owns architecture and scope.
 3. **Secrets never leak into git.** Connection TOML stores a `secret_ref` (UUID)
    only — the profile struct has no password field, making leakage a type error.
 4. **No telemetry.** No analytics, crash reporting, or usage tracking of any
-   kind. The only outbound network is the user's own DB connections, git-sync to
-   their own remote, and the signed update check — a documented guarantee.
+   kind. The only outbound network is the user's own DB connections and the
+   signed update check — a documented guarantee.
 
 ## Differentiators (where we invest)
 
 - **Polished, fast, keyboard-driven UX** with customizable themes.
-- **Git-sync for teams:** a plain-file config dir that *is* a git repo. Shares
-  connection configs (no secrets) and saved queries/snippets.
 
 ---
 
@@ -65,7 +63,7 @@ calls Tauri commands; Rust owns all data access.
 ```
 Svelte UI ──invoke──▶ commands ──▶ services ──▶ Driver enum (Pg | MySql | Sqlite)
                                       │              └─ sqlx, rustls, russh tunnel
-                                      ├─▶ config dir (TOML)  ◀── git-sync unit
+                                      ├─▶ config dir (TOML)
                                       └─▶ SecretStore        ◀── keychain | encrypted file
 (query history lives in-memory in the Svelte UI, session-scoped)
 ```
@@ -73,7 +71,7 @@ Svelte UI ──invoke──▶ commands ──▶ services ──▶ Driver enu
 ### Backend — `src-tauri/`
 
 Layering rule: **commands → services → (drivers | sqlgen | config | secrets |
-tunnel | gitsync)**. Commands are thin (deserialize → service → map
+tunnel)**. Commands are thin (deserialize → service → map
 error). Nothing below `services/` imports `tauri`.
 
 ```
@@ -85,10 +83,9 @@ src-tauri/
 │   ├── main.rs / lib.rs / state.rs   # builder, tracing→rotating file log, AppState { sessions, config }
 │   ├── errors/mod.rs             # AppError (thiserror) → ErrorResponse { kind, message, detail }
 │   ├── commands/                 # one file per domain: connections, introspect, query,
-│   │                             # grid, ddl, export, import, gitsync, settings
+│   │                             # grid, ddl, export, import, saved_queries, settings
 │   ├── services/                 # connection_service (SessionRegistry), query_service,
-│   │                             # grid_service, ddl_service, export/import_service,
-│   │                             # gitsync_service
+│   │                             # grid_service, ddl_service, export/import_service
 │   ├── drivers/
 │   │   ├── mod.rs                # enum Driver { Pg, MySql, Sqlite } — the ONLY match-dispatch site
 │   │   ├── types.rs              # wire types: ColumnMeta, CellValue, QueryResult, SchemaTree, TxStatus
@@ -98,8 +95,7 @@ src-tauri/
 │   ├── tunnel/mod.rs             # russh local port-forward, owned by Session
 │   ├── config/                   # paths.rs, connections.rs (NO secret fields — secret_ref only),
 │   │                             # saved_queries.rs, settings.rs   (all TOML)
-│   ├── secrets/                  # mod.rs: SecretStore { Keychain (default) | EncryptedFile (opt-in) }
-│   └── gitsync/mod.rs            # shells out to system git
+│   └── secrets/                  # mod.rs: SecretStore { Keychain (default) | EncryptedFile (opt-in) }
 └── tests/                        # integration: common/ harness (env-gated), pg_integration,
                                   # mysql_integration, sqlite_integration, grid_roundtrip
 ```
@@ -121,8 +117,7 @@ Key backend decisions:
   · `readOnlyViolation` · `noPrimaryKey` · `ambiguousRowIdentity` ·
   `confirmationRequired` (detail: classified statements) · `secretNotFound` ·
   `keychainUnavailable` · `vaultLocked` · `configIo` · `configParse` ·
-  `gitNotInstalled` · `gitConflict` · `gitDirty` · `importParse` (detail: line)
-  · `internal`.
+  `importParse` (detail: line) · `internal`.
 
 ### Frontend — `src/`
 
@@ -145,7 +140,7 @@ src/
     │   │                         # Toast/ToastHost, Tabs, Tooltip, ContextMenu, DropdownMenu,
     │   │                         # EmptyState, Spinner, Badge, Kbd, SplitPane, VirtualList, TreeItem
     │   ├── layout/               # AppShell, Sidebar, StatusBar
-    │   ├── connections/ schema/ editor/ grid/ ddl/ importExport/ gitsync/ settings/
+    │   ├── connections/ schema/ editor/ grid/ ddl/ importExport/ savedQueries/ settings/
     └── utils/                    # debounce, cellDisplay, keyboard (single shortcut registry), format
 ```
 
@@ -157,9 +152,9 @@ Global services declared once (DESIGN.md §9): `toast.success|error|info()` and
 ### Storage
 
 - **Config dir** (`~/.config/basalt/` or OS equivalent, via `dirs`): connection
-  profiles + saved queries + app settings as TOML. Human-readable, diff-able,
-  and directly usable as the git-sync repo. Saved queries are organized into
-  **named files under nestable folders** (subdirectories) for clean diffs. TOML
+  profiles + saved queries + app settings as TOML. Human-readable and
+  hand-editable. Saved queries are organized into **named files under nestable
+  folders** (subdirectories), usable from any editor. TOML
   carries no schema-version field in v1 — fields are additive and unknown keys
   are tolerated (forward-compatible by convention); cross-version migration is
   deferred.
@@ -169,7 +164,7 @@ Global services declared once (DESIGN.md §9): `toast.success|error|info()` and
   prune, or sync.
 - **Workspace state** — open editor tabs with their unsaved SQL, and the
   last-active connections — persists per-machine in the config dir
-  (`workspace.toml`, **not** git-synced). On launch, tabs are restored and
+  (`workspace.toml`). On launch, tabs are restored and
   sessions whose secret is available (keychain) are **auto-reconnected**;
   encrypted-vault / prompt-only connections restore as disconnected until
   unlocked.
@@ -295,15 +290,6 @@ timestamptz, naive stays naive); the setting transforms only how a cell is
   to the in-memory history store from the frontend as results return — never on
   the result path's critical section.
 
-### Git-sync
-
-Shell out to **system git** (no `git2`/`gix` — bundle weight, and target users
-have git). Config dir is the repo. Sync is **manual only in v1** (a Sync button;
-no background/auto-sync): `add -A` → `commit` → `pull --rebase` → `push`. Missing
-git → `gitNotInstalled` with an actionable state; conflicts → `gitConflict`
-("resolve in your git tool, then retry") — v1 builds no merge UI. Secrets and the
-per-machine `workspace.toml` are never inside the synced dir.
-
 ### Import / export
 
 - **Export re-runs the query and streams the full result** to CSV/JSON — not
@@ -320,7 +306,7 @@ per-machine `workspace.toml` are never inside the synced dir.
 
 - **Signed, auto-updating builds:** release artifacts are code-signed (macOS
   notarization, Windows Authenticode) and ship the **Tauri updater plugin** for
-  in-app updates. The updater's signed check is the app's only non-DB/non-git
+  in-app updates. The updater's signed check is the app's only non-DB
   outbound call. Plugin + signing weight counts against the 30 MB ceiling
   (tracked from M0).
 - **Logging:** `tracing` writes a **rotating log file** in the OS data/log dir
@@ -396,7 +382,7 @@ per-machine `workspace.toml` are never inside the synced dir.
 | DDL | Create / alter / drop tables & indexes (SQL preview before execute) |
 | Import/Export | Full-result streamed CSV/JSON export; CSV import (insert/upsert/skip) into tables |
 | Safety | Confirm destructive stmts; tx control; auto row-limit; query cancel; configurable statement timeout |
-| Teams | Manual git-sync of connection configs (no secrets) + saved queries (folders) |
+| Saved queries | Named `.sql` files in nestable folders |
 | Theming | Preset color schemes (token-based); datetime display (stored/local/UTC) |
 | Workspace | Restore open tabs + unsaved SQL; auto-reconnect on launch |
 | Privacy | No telemetry; local rotating log file |
@@ -451,10 +437,9 @@ batched inserts in one tx), Tauri file dialogs, progress via `ipc::Channel`.
 freeze; import conflict modes verified per engine; import reports type errors by
 line.*
 
-**M6 — Git-sync.** `gitsync/`, saved-queries UI, sync panel + status badge.
-*Gate: two machines share profiles + saved queries through a repo; leak test
-greps synced dir for plaintext secrets after full workflow; conflict shows
-`gitConflict` state.*
+**M6 — Saved queries.** `config/saved_queries.rs`, saved-queries panel, `mod+s`.
+*Gate: queries persist as `.sql` files in nestable folders; a leak test greps the
+config dir for plaintext secrets after a full save/connect workflow.*
 
 **M7 — Theming polish + release hardening.** Remaining presets, ThemePicker,
 datetime-display setting, keyboard-shortcut audit, empty/error-state audit across
@@ -473,14 +458,13 @@ prior build; v1.0 draft release built from CI.*
 - Plugins/extensions
 - Server monitoring / DBA tooling (roles, vacuum, backups)
 - Row streaming to the grid via `ipc::Channel`; full blob viewing/editing
-- MySQL `DELIMITER` support; in-app git conflict resolution
+- MySQL `DELIMITER` support
 - Server-side data-grid pagination, click-to-sort, and column filters
 - Persistent (cross-session) query history
 - In-app log viewer; opt-in crash reporting
 - Screen-reader / ARIA accessibility pass
 - Localization / i18n (translation catalog)
 - Config-schema versioning + cross-version migration
-- Auto / background git-sync
 
 ## Resolved questions
 
@@ -489,7 +473,6 @@ prior build; v1.0 draft release built from CI.*
    password, git-syncable) opt-in. One `SecretStore` interface.
 2. **Frontend template**: plain Vite + `@sveltejs/vite-plugin-svelte` (not
    SvelteKit) — single window, no routing, smaller.
-3. **Git integration**: system git via subprocess (no libgit2/gix).
 
 ## Risks
 
