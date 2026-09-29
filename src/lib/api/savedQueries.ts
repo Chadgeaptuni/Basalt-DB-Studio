@@ -14,4 +14,5 @@ export const savedQueriesApi = {
   read: (path: string) => invoke<string>("read_saved_query", { path }),
   save: (path: string, sql: string) => invoke<void>("save_query", { path, sql }),
   remove: (path: string) => invoke<void>("delete_saved_query", { path }),
+  rename: (from: string, to: string) => invoke<void>("rename_saved_query", { from, to }),
 };

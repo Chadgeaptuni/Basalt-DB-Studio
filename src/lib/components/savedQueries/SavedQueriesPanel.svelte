@@ -20,6 +20,7 @@
   import { confirm } from "$lib/stores/dialogs.svelte";
   import { toast } from "$lib/stores/toasts.svelte";
   import { keyboard } from "$lib/utils/keyboard";
+  import PromptDialog from "$lib/components/ui/PromptDialog.svelte";
   import type { SavedQuery } from "$lib/api/savedQueries";
 
   $effect(() => void savedQueries.load());
@@ -63,10 +64,24 @@
     if (ok) await savedQueries.remove(q.path);
   }
 
-  function rowMenu(q: SavedQuery): MenuItem[] {
+  let renaming = $state<SavedQuery | null>(null);
+
+  async function rename(from: string, to: string): Promise<void> {
+    if (to === from) return;
+    try {
+      await savedQueries.rename(from, to);
+    } catch (e) {
+      toast.fromError(e, "Couldn't rename the query");
+    }
+  }
+
+  function rowMenu(q: SavedQuery): MenuItem[][] {
     return [
-      { label: "Open", onselect: () => void open(q) },
-      { label: "Delete", danger: true, onselect: () => void remove(q) },
+      [
+        { label: "Open", onselect: () => void open(q) },
+        { label: "Rename or move…", onselect: () => (renaming = q) },
+      ],
+      [{ label: "Delete", danger: true, onselect: () => void remove(q) }],
     ];
   }
 </script>
@@ -121,3 +136,16 @@
     {/if}
   </div>
 </Panel>
+
+{#if renaming}
+  {@const from = renaming.path}
+  <PromptDialog
+    title={`Rename ${renaming.name}`}
+    label="Path"
+    hint="Folders are separated by /; a new folder is created."
+    initial={from}
+    confirmLabel="Rename"
+    onsubmit={(to) => void rename(from, to)}
+    onclose={() => (renaming = null)}
+  />
+{/if}

@@ -26,3 +26,8 @@ pub fn save_query(path: String, sql: String, state: State<AppState>) -> AppResul
 pub fn delete_saved_query(path: String, state: State<AppState>) -> AppResult<()> {
     saved_queries::delete(&state.paths, &path)
 }
+
+#[tauri::command]
+pub fn rename_saved_query(from: String, to: String, state: State<AppState>) -> AppResult<()> {
+    saved_queries::rename(&state.paths, &from, &to)
+}

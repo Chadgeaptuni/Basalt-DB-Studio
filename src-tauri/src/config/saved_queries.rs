@@ -74,6 +74,22 @@ pub fn delete(paths: &Paths, path: &str) -> AppResult<()> {
     Ok(())
 }
 
+/// Renames a query, or moves it into another folder (created as needed). Never
+/// overwrites: a query already at `to` is an error, not a casualty.
+pub fn rename(paths: &Paths, from: &str, to: &str) -> AppResult<()> {
+    let src = query_path(paths, from)?;
+    let dst = query_path(paths, to)?;
+    if dst.exists() {
+        return Err(AppError::ConfigIo(format!(
+            "a saved query '{to}' already exists"
+        )));
+    }
+    if let Some(parent) = dst.parent() {
+        fs::create_dir_all(parent).map_err(io_err)?;
+    }
+    fs::rename(&src, &dst).map_err(io_err)
+}
+
 /// Map a wire path to its `.sql` file, rejecting anything that escapes `queries/`.
 /// Folder segments are allowed; `.`/`..` and absolute/backslash paths are not.
 fn query_path(paths: &Paths, path: &str) -> AppResult<PathBuf> {
@@ -150,5 +166,24 @@ mod tests {
                 "should reject {bad}"
             );
         }
+    }
+
+    #[test]
+    fn rename_moves_into_a_new_folder_and_never_overwrites() {
+        let paths = temp_paths();
+        save(&paths, "daily", "select 1").unwrap();
+        save(&paths, "other", "select 2").unwrap();
+
+        rename(&paths, "daily", "reports/daily").unwrap();
+        assert_eq!(read(&paths, "reports/daily").unwrap(), "select 1");
+        assert!(read(&paths, "daily").is_err());
+
+        assert_eq!(
+            rename(&paths, "other", "reports/daily").unwrap_err().kind(),
+            "configIo"
+        );
+        assert_eq!(read(&paths, "other").unwrap(), "select 2");
+
+        fs::remove_dir_all(&paths.config_dir).ok();
     }
 }

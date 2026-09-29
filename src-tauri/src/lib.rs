@@ -84,6 +84,7 @@ pub fn run() {
             commands::saved_queries::read_saved_query,
             commands::saved_queries::save_query,
             commands::saved_queries::delete_saved_query,
+            commands::saved_queries::rename_saved_query,
             commands::settings::get_settings,
             commands::settings::save_settings,
         ])
