@@ -1,9 +1,10 @@
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
-import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
+import { fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { ConnectionProfile } from "$lib/api/types";
 import { connections } from "$lib/stores/connections.svelte";
 import { toasts } from "$lib/stores/toasts.svelte";
+import { panel } from "$lib/stores/panel.svelte";
 import SchemaTree from "./SchemaTree.svelte";
 
 const profile: ConnectionProfile = {
@@ -44,40 +45,45 @@ function mock(calls: string[]): void {
 }
 
 // The store is a module singleton, so a session opened by one case is still open
-// in the next one — and a root that is already connected does not connect again.
+// in the next one.
 beforeEach(async () => {
   for (const t of [...toasts.items]) toasts.dismiss(t.id);
   mockIPC(() => undefined);
   await connections.disconnect(profile.id);
+  connections.setActive(null);
   clearMocks();
 });
 
 afterEach(clearMocks);
 
-// The panel is the connection list *and* the schema browser — pgAdmin's shape.
-// Every saved profile is a root whether or not it holds a session, and expanding
-// one is what connects it; there is no other connection surface to fall back on.
+/** Connects the profile the way the Connections panel does, then renders. */
+async function renderConnected(calls: string[]): Promise<void> {
+  mock(calls);
+  await connections.load();
+  await connections.connect(profile.id);
+  render(SchemaTree);
+}
+
+// The panel browses the connection the workspace is pointed at; the connections
+// themselves are listed and managed in their own panel.
 describe("SchemaTree", () => {
-  it("roots the tree at every saved connection, connected or not", async () => {
+  it("points at the Connections panel when nothing is open", async () => {
     mock([]);
     render(SchemaTree);
 
-    const root = await screen.findByRole("treeitem", { name: /warehouse/ });
-    expect(root).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByText("No connection open.")).toBeInTheDocument();
+    await fireEvent.click(screen.getByRole("button", { name: "Show connections" }));
+    expect(panel.active).toBe("connections");
   });
 
-  // A Postgres root opens onto the server's *databases*, not its schemas: a pg
-  // connection is bound to the database it opened, so the schemas under it are
-  // only ever one database's worth. The maintenance session discovers the list.
-  it("lists the server's databases when a Postgres root is expanded", async () => {
+  // A Postgres connection opens onto the server's *databases*, not its schemas: a
+  // pg connection is bound to the database it opened, so the schemas under it
+  // are only ever one database's worth. The maintenance session discovers them.
+  it("lists the server's databases for an open Postgres connection", async () => {
     const calls: string[] = [];
-    mock(calls);
-    render(SchemaTree);
-
-    await fireEvent.click(await screen.findByRole("treeitem", { name: /warehouse/ }));
+    await renderConnected(calls);
 
     expect(await screen.findByRole("treeitem", { name: /billing/ })).toBeInTheDocument();
-    expect(calls).toContain("connect");
     expect(calls).toContain("list_databases");
     expect(calls).not.toContain("introspect");
   });
@@ -86,48 +92,26 @@ describe("SchemaTree", () => {
   // the maintenance session cannot see across into it.
   it("opens a database as its own session and introspects that one", async () => {
     const calls: string[] = [];
-    mock(calls);
-    render(SchemaTree);
+    await renderConnected(calls);
 
-    await fireEvent.click(await screen.findByRole("treeitem", { name: /warehouse/ }));
     await fireEvent.click(await screen.findByRole("treeitem", { name: /billing/ }));
 
     expect(await screen.findByRole("treeitem", { name: /public/ })).toBeInTheDocument();
     expect(calls.filter((c) => c === "connect")).toHaveLength(2);
     expect(calls).toContain("introspect");
+    expect(connections.active?.database).toBe("billing");
   });
 
   // The profile's own database is already open on the maintenance session, so
   // expanding its row must reuse it rather than pay for a second pool.
   it("reuses the server session for the database the profile already opened", async () => {
     const calls: string[] = [];
-    mock(calls);
-    render(SchemaTree);
+    await renderConnected(calls);
 
-    await fireEvent.click(await screen.findByRole("treeitem", { name: /warehouse/ }));
     await fireEvent.click(await screen.findByRole("treeitem", { name: /analytics/ }));
 
     expect(await screen.findByRole("treeitem", { name: /public/ })).toBeInTheDocument();
     expect(calls.filter((c) => c === "connect")).toHaveLength(1);
-  });
-
-  // Every grid commit and editor run resolves the *active* session at execute
-  // time. A click on a connected root re-pointed it at the root's own session —
-  // for Postgres, the maintenance database — so collapsing the tree could send a
-  // staged UPDATE to a different database than the one it was staged against.
-  it("leaves the workspace pointed at the database when the root is clicked", async () => {
-    mock([]);
-    render(SchemaTree);
-
-    await fireEvent.click(await screen.findByRole("treeitem", { name: /warehouse/ }));
-    await fireEvent.click(await screen.findByRole("treeitem", { name: /billing/ }));
-    await waitFor(() => expect(connections.active?.database).toBe("billing"));
-
-    // Collapse the root. The maintenance session is `analytics` here, so a
-    // re-pointed workspace is visible in the active session's database.
-    await fireEvent.click(screen.getByRole("treeitem", { name: /warehouse/ }));
-
-    expect(connections.active?.database).toBe("billing");
   });
 
   // The empty branch used to name privileges as the cause. Three filters can
@@ -147,43 +131,12 @@ describe("SchemaTree", () => {
       if (cmd === "list_databases") return [];
       return undefined;
     });
+    await connections.load();
+    await connections.connect(profile.id);
     render(SchemaTree);
-
-    await fireEvent.click(await screen.findByRole("treeitem", { name: /warehouse/ }));
 
     expect(
       await screen.findByText("This server has no database this role can open."),
     ).toBeInTheDocument();
-  });
-
-  it("offers the connection form when there are none saved", async () => {
-    mockIPC((cmd) => (cmd === "list_connections" ? [] : undefined));
-    render(SchemaTree);
-
-    expect(await screen.findByText("No connections yet.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "New connection" })).toBeInTheDocument();
-  });
-
-  // The error used to be pinned under the root it came from, where you have to go
-  // back and find it. It is a toast now — one announcement, wherever the connect
-  // was triggered from — and the root closes rather than sitting open and empty.
-  it("announces a failed connect as a toast, not a row under the root", async () => {
-    mockIPC((cmd) => {
-      if (cmd === "list_connections") return [profile];
-      if (cmd === "connect") throw { kind: "authFailed", message: "password authentication failed" };
-      return undefined;
-    });
-    render(SchemaTree);
-    const root = await screen.findByRole("treeitem", { name: /warehouse/ });
-
-    await fireEvent.click(root);
-
-    await waitFor(() =>
-      expect(toasts.items.at(-1)?.message).toBe("Connect to “warehouse”: Authentication failed"),
-    );
-    expect(screen.queryByText("password authentication failed")).not.toBeInTheDocument();
-    // Eventual, not immediate: the toast is raised inside the connect and the
-    // re-collapse is one await further on, when the failed open returns.
-    await waitFor(() => expect(root).toHaveAttribute("aria-expanded", "false"));
   });
 });

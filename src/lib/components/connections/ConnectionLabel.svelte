@@ -5,7 +5,7 @@
   import { connections } from "$lib/stores/connections.svelte";
 
   // Which database the workspace is pointed at, as a reading rather than a
-  // control: the schema panel owns connecting, disconnecting and editing now
+  // control: the Connections panel owns connecting, disconnecting and editing
   // (DESIGN §5), so a popover here would be a second manager for the same list.
   //
   // It still has to be *visible at all times*, which is what keeps it in the

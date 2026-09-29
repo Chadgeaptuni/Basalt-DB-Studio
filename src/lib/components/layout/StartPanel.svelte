@@ -10,8 +10,8 @@
   // Shortcuts come from the single catalogue, so this pane can never advertise a
   // binding the app doesn't have.
   //
-  // The saved connections are *not* listed here: they are the schema panel's
-  // tree roots, and a second list of the same profiles is a second place to keep
+  // The saved connections are *not* listed here: they are the Connections
+  // panel's, and a second list of the same profiles is a second place to keep
   // in sync. Creating one is still offered, because a user with none and a
   // collapsed panel would otherwise be looking at a dead end.
   import Button from "$lib/components/ui/Button.svelte";
@@ -38,7 +38,7 @@
            the pane outranks it. -->
       <BrandMark size={176} class="text-on-surface opacity-20 select-none" />
       <p class="text-title-sm text-on-surface-variant">
-        Open a connection from the Schema panel to start querying.
+        Open a connection from the Connections panel to start querying.
       </p>
     </div>
 

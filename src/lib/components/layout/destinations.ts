@@ -1,5 +1,6 @@
 // The rail's destinations, in rail order. One catalogue so the rail, the panel
 // header and the keyboard shortcuts can never disagree about what exists.
+import Database from "@lucide/svelte/icons/database";
 import Boxes from "@lucide/svelte/icons/boxes";
 import BookMarked from "@lucide/svelte/icons/bookmark";
 import HistoryIcon from "@lucide/svelte/icons/history";
@@ -13,6 +14,7 @@ export interface Destination {
 }
 
 export const DESTINATIONS: Destination[] = [
+  { id: "connections", label: "Connections", icon: Database },
   { id: "schema", label: "Schema", icon: Boxes },
   { id: "queries", label: "Queries", icon: BookMarked },
   { id: "history", label: "History", icon: HistoryIcon },

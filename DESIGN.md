@@ -305,17 +305,20 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
 ## 5. Layout
 
 - **App shell:** **title bar** (Basalt mark · centred search/command entry ·
-  appearance · window controls) · **navigation rail** on the left (Schema ·
-  Queries · History, with Settings in a trailing group) · one **full-height
+  appearance · window controls) · **navigation rail** on the left (Connections ·
+  Schema · Queries · History, with Settings in a trailing group) · one **full-height
   panel** for the rail's active destination · main workspace (editor tabs above,
   results below, both in a `SplitPane`) · bottom `StatusBar`. All resizable panes
   use the shared `SplitPane` primitive.
-- **Connections live in the Schema panel, and nowhere else.** Every saved profile
-  is a root of that tree — pgAdmin's shape — whether or not it holds a session;
-  expanding one connects it, several can be open at once, and connect,
-  disconnect, edit and delete are on the root's context menu. There is no
-  connection popover and no second list on the start pane: one list means one
-  place for a profile's state to be wrong. The status bar *states* the active
+- **Connections live in the Connections panel, and nowhere else.** It is the
+  rail's first destination: every saved profile is one `ListItem` row carrying
+  its status, engine tag and environment badge; opening one connects it, points
+  the workspace at it and moves the panel to Schema. Several can be open at once,
+  and connect, disconnect, edit and delete are on the row's context menu. The
+  **Schema panel browses the active connection only** — a Postgres profile opens
+  onto its databases, each its own session. There is no connection popover and
+  no second list on the start pane: one list means one place for a profile's
+  state to be wrong. The status bar *states* the active
   session (engine, name, environment, read-only) and manages nothing.
 - **The status bar has three zones, divided by hairlines, and a new item joins
   one of them.** *Leading* — how the workspace is set up (panel toggle, the
@@ -348,7 +351,7 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
   editor: the mark as a watermark at ~20% opacity, one sentence under it, the
   one action it owns ([New connection]), then the keyboard reference — reference
   material, so the quietest thing on the pane. The saved profiles themselves are
-  not repeated here; they are the Schema panel's tree roots (§5). Still no illustration, no headline above
+  not repeated here; they are the Connections panel's (§5). Still no illustration, no headline above
   `text-title-sm`, and nothing present to fill space. It lays out on
   `@container`, not a viewport breakpoint: `mod+b` alone changes this pane's
   width at a fixed window size. A binding the top bar already prints on its own
@@ -799,10 +802,10 @@ A blank pane is a bug.
   - Connection kinds (`connectionRefused`, `authFailed`, `tlsError`,
     `tunnelError`) → inline in the connection *form*, where the fields that
     caused it are; from anywhere else a **toast** via `toast.fromError`, raised
-    once inside `connections.connect()`. The tree, the palette and the start pane
-    all connect, and an error pinned under the tree root is a message you have to
-    go back and find — the root that failed closes again and keeps the error on
-    its glyph (`--error`).
+    once inside `connections.connect()`. The Connections panel, the tree, the
+    palette and the start pane all connect, and an error pinned under a row is a
+    message you have to go back and find — the row keeps the error on its icon
+    (`--error`).
   - `queryError` → inline panel in the results area with the engine's message;
     when a position offset is present, underline the offending token in the editor.
   - `confirmationRequired` → never an error UI; it triggers `confirm()` and

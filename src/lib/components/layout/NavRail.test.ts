@@ -54,10 +54,10 @@ describe("NavRail", () => {
 
   it("wraps focus at both ends", async () => {
     render(NavRail);
-    const schema = screen.getByRole("tab", { name: "Schema" });
-    schema.focus();
+    const first = screen.getByRole("tab", { name: DESTINATIONS[0].label });
+    first.focus();
 
-    await fireEvent.keyDown(schema, { key: "ArrowUp" });
+    await fireEvent.keyDown(first, { key: "ArrowUp" });
     const last = DESTINATIONS[DESTINATIONS.length - 1].label;
     expect(document.activeElement).toBe(screen.getByRole("tab", { name: last }));
   });

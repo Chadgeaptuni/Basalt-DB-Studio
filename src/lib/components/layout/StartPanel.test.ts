@@ -14,12 +14,12 @@ describe("StartPanel", () => {
     render(StartPanel);
 
     expect(
-      screen.getByText("Open a connection from the Schema panel to start querying."),
+      screen.getByText("Open a connection from the Connections panel to start querying."),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New connection" })).toBeInTheDocument();
   });
 
-  // The saved profiles are the schema panel's tree roots. A second list here is a
+  // The saved profiles are the Connections panel's. A second list here is a
   // second place to keep in sync, and it is how this pane ended up loading and
   // rendering connections the panel beside it already had.
   it("lists no connections of its own", () => {

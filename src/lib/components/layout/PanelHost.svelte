@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ConnectionsPanel from "$lib/components/connections/ConnectionsPanel.svelte";
   import SchemaTree from "$lib/components/schema/SchemaTree.svelte";
   import SavedQueriesPanel from "$lib/components/savedQueries/SavedQueriesPanel.svelte";
   import HistoryPanel from "$lib/components/history/HistoryPanel.svelte";
@@ -50,7 +51,9 @@
          which is the honest signal anyway: a fade says "arriving", a spinner
          says "still fetching". -->
     <div class="flex h-full min-h-0 flex-col" style="width:{panel.width}px">
-      {#if panel.active === "schema"}
+      {#if panel.active === "connections"}
+        <ConnectionsPanel />
+      {:else if panel.active === "schema"}
         <SchemaTree />
       {:else if panel.active === "queries"}
         <SavedQueriesPanel />

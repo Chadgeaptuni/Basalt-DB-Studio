@@ -44,8 +44,8 @@ describe("panel store", () => {
 
   // Persisted state written by a build with different destinations must not
   // select an id the rail cannot render.
-  it("falls back to schema for an unknown persisted destination", () => {
-    localStorage.setItem("basalt.panel.active", "connections");
-    expect(PANELS).not.toContain("connections" as never);
+  it("falls back for an unknown persisted destination", () => {
+    localStorage.setItem("basalt.panel.active", "git");
+    expect(PANELS).not.toContain("git" as never);
   });
 });

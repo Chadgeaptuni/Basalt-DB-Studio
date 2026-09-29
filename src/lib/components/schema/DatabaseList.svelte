@@ -18,8 +18,6 @@
   // one therefore *opens* it, as its own session against its own pool. MySQL
   // already sees every database on the server as a namespace of one connection
   // and a SQLite file is the database, so neither draws this level at all.
-  //
-  // Each row is a SessionNode — the same node the connection root above it is.
   interface Props {
     profile: ConnectionProfile;
     /** The server session, opened against the maintenance database. Used to
@@ -30,7 +28,7 @@
   }
   let { profile, sessionId, filter, kind }: Props = $props();
 
-  const DB_DEPTH = 1;
+  const DB_DEPTH = 0;
   const BRANCH_INDENT = branchIndent(DB_DEPTH + 1);
 
   let expanded = $state<Record<string, boolean>>({});
@@ -48,8 +46,8 @@
   const databases = $derived(view?.list ?? []);
 
   /** The maintenance database's row *is* the connection's own session, so it has
-   *  no Disconnect of its own: closing it here would take the database list —
-   *  this row's own parent — down with it. The root offers that close instead. */
+   *  no Disconnect of its own: closing it here would take the database list down
+   *  with it. The Connections panel offers that close instead. */
   function closeFor(database: string, state: ConnState): (() => void) | undefined {
     if (!state.session || state.session.sessionId === sessionId) return undefined;
     return () => void connections.disconnectDatabase(profile.id, database);
