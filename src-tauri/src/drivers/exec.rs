@@ -149,9 +149,10 @@ where
             error: None,
         })
     } else {
-        let result = sqlx::query(AssertSqlSafe(text.to_owned()))
-            .execute(&mut *conn)
-            .await?;
+        // A bare string, not `sqlx::query`: with no arguments sqlx sends it over
+        // the text protocol, and MySQL's prepared protocol refuses `BEGIN`,
+        // `LOCK TABLES` and more. Nothing is decoded here, so nothing is lost.
+        let result = (&mut *conn).execute(AssertSqlSafe(text.to_owned())).await?;
         Ok(StatementResult {
             columns: Vec::new(),
             rows: Vec::new(),

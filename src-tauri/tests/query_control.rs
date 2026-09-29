@@ -70,6 +70,12 @@ async fn mysql_tx_spans_runs_and_cancel_keeps_the_session() {
         eprintln!("BASALT_TEST_MYSQL_URL unset — skipping mysql query-control test");
         return;
     };
-    // Not SLEEP(): an interrupted SLEEP returns 1 instead of failing.
-    tx_and_cancel(&url, "SELECT BENCHMARK(2000000000, SHA2('x', 256))").await;
+    // A real scan, not SLEEP() or BENCHMARK(): both swallow the interrupt and
+    // return a value, where a scan fails with ER_QUERY_INTERRUPTED.
+    tx_and_cancel(
+        &url,
+        "SELECT count(*) FROM information_schema.columns a, information_schema.columns b, \
+         information_schema.columns c",
+    )
+    .await;
 }
