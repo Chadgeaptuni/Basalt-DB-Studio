@@ -9,11 +9,14 @@
   import { connections } from "$lib/stores/connections.svelte";
   import { schema } from "$lib/stores/schema.svelte";
   import { toast } from "$lib/stores/toasts.svelte";
+  import { editorTabs } from "$lib/stores/tabs.svelte";
   import type { DdlRequest, ErrorResponse } from "$lib/api/types";
   import type { ApiError } from "$lib/api/client";
 
   // Every DDL is previewed here before it runs (spec gate). Execution goes through
-  // the normal run path (confirmed), then refreshes the schema cache.
+  // the normal run path (confirmed), then refreshes the schema cache. To change
+  // the SQL first, it opens in an editor tab — the editor is where SQL is edited,
+  // so this modal never grows a second one.
   interface Props {
     request: DdlRequest;
   }
@@ -84,6 +87,18 @@
     {/if}
   {/if}
   {#snippet footer()}
+    <Button
+      variant="text"
+      size="sm"
+      disabled={sql === null}
+      onclick={() => {
+        if (sql !== null) editorTabs.open(sql);
+        ddl.close();
+      }}
+    >
+      Open in editor
+    </Button>
+    <div class="flex-1"></div>
     <Button variant="text" size="sm" onclick={ddl.close}>Cancel</Button>
     <Button variant="filled" size="sm" disabled={sql === null} loading={running} onclick={execute}>
       Execute
