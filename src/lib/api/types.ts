@@ -261,6 +261,7 @@ export type DdlRequest =
   | { kind: "addColumn"; namespace: string; table: string; column: ColumnSpec }
   | { kind: "dropColumn"; namespace: string; table: string; column: string }
   | { kind: "renameColumn"; namespace: string; table: string; from: string; to: string }
+  | { kind: "alterColumn"; namespace: string; table: string; column: ColumnSpec }
   | { kind: "createIndex"; namespace: string; table: string; name: string; columns: string[]; unique: boolean }
   | { kind: "dropIndex"; namespace: string; table: string; name: string };
 

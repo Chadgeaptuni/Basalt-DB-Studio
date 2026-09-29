@@ -12,12 +12,12 @@
 
 {#if active?.type === "newTable"}
   <TableDesigner namespace={active.namespace} />
-{:else if active?.type === "addColumn"}
-  <ColumnDialog namespace={active.namespace} table={active.table} />
+{:else if active?.type === "column"}
+  <ColumnDialog namespace={active.namespace} table={active.table} column={active.column} />
 {:else if active?.type === "createIndex"}
   <IndexDialog namespace={active.namespace} table={active.table} columns={active.columns} />
-{:else if active?.type === "renameTable"}
-  <RenameDialog namespace={active.namespace} table={active.table} />
+{:else if active?.type === "rename"}
+  <RenameDialog namespace={active.namespace} table={active.table} column={active.column} />
 {:else if active?.type === "preview"}
   <DdlPreviewModal request={active.request} />
 {/if}

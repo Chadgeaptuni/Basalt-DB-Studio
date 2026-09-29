@@ -9,19 +9,27 @@
   interface Props {
     namespace: string;
     table: string;
+    /** Renames this column of `table` instead of the table. */
+    column?: string;
   }
-  let { namespace, table }: Props = $props();
+  let { namespace, table, column }: Props = $props();
 
+  const current = $derived(column ?? table);
   // Fresh dialog per open, so the initial value is intentional (not reactive).
-  let newName = $state(untrack(() => table));
-  const valid = $derived(newName.trim().length > 0 && newName.trim() !== table);
+  let newName = $state(untrack(() => column ?? table));
+  const valid = $derived(newName.trim().length > 0 && newName.trim() !== current);
 
   function preview(): void {
-    ddl.preview({ kind: "renameTable", namespace, name: table, newName: newName.trim() });
+    const to = newName.trim();
+    ddl.preview(
+      column
+        ? { kind: "renameColumn", namespace, table, from: column, to }
+        : { kind: "renameTable", namespace, name: table, newName: to },
+    );
   }
 </script>
 
-<Modal open title={`Rename ${table}`} onclose={ddl.close}>
+<Modal open title={`Rename ${current}`} onclose={ddl.close}>
   <Field label="New name">
     <Input bind:value={newName} autofocus />
   </Field>

@@ -368,6 +368,13 @@ pub enum DdlRequest {
         from: String,
         to: String,
     },
+    /// Changes an existing column's type and nullability, and sets its default
+    /// when one is given. `column.name` names the column; it is not renamed.
+    AlterColumn {
+        namespace: String,
+        table: String,
+        column: ColumnSpec,
+    },
     CreateIndex {
         namespace: String,
         table: String,

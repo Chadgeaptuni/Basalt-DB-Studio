@@ -1,5 +1,6 @@
 //! DDL roundtrip against real Postgres + MySQL: generate → execute → introspect
-//! for create table / add column / create index / rename column / drop table.
+//! for create table / add column / create index / rename column / alter column /
+//! drop index / drop table.
 //! Every statement is the exact SQL the preview modal would show. Self-skips when
 //! `BASALT_TEST_*_URL` is unset; SQLite is covered by `ddl_service` unit tests.
 
@@ -101,13 +102,43 @@ async fn ddl_roundtrip(url: &str, namespace: &str) {
     )
     .await;
 
+    run_ddl(
+        sid,
+        &DdlRequest::AlterColumn {
+            namespace: namespace.into(),
+            table: "ddl_rt".into(),
+            column: ColumnSpec {
+                default: Some("0".into()),
+                ..col("amount", "numeric(12,4)", false)
+            },
+        },
+        &reg,
+    )
+    .await;
+    run_ddl(
+        sid,
+        &DdlRequest::DropIndex {
+            namespace: namespace.into(),
+            table: "ddl_rt".into(),
+            name: "ddl_rt_name_idx".into(),
+        },
+        &reg,
+    )
+    .await;
+
     let desc = connection_service::describe_table(sid, namespace, "ddl_rt", &reg)
         .await
         .unwrap();
-    assert!(desc.columns.iter().any(|c| c.name == "amount"));
+    let amount = desc.columns.iter().find(|c| c.name == "amount").unwrap();
+    assert!(!amount.nullable, "altered to NOT NULL");
+    assert!(
+        amount.type_name.to_lowercase().contains("12"),
+        "{}",
+        amount.type_name
+    );
+    assert!(!desc.indexes.iter().any(|i| i.name == "ddl_rt_name_idx"));
     assert!(desc.columns.iter().any(|c| c.name == "label"));
     assert!(!desc.columns.iter().any(|c| c.name == "name"));
-    assert!(desc.indexes.iter().any(|i| i.name == "ddl_rt_name_idx"));
 
     run_ddl(
         sid,

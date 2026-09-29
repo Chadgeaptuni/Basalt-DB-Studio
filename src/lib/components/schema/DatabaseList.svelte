@@ -95,6 +95,7 @@
       {#snippet branch(session)}
         <ConnectionSchema
           sessionId={session.sessionId}
+          engine={profile.engine}
           {filter}
           {kind}
           depth={DB_DEPTH + 1}

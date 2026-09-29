@@ -76,6 +76,44 @@ pub fn generate(engine: Engine, req: &DdlRequest) -> AppResult<String> {
             quote_ident(engine, from),
             quote_ident(engine, to)
         )),
+        DdlRequest::AlterColumn {
+            namespace,
+            table,
+            column,
+        } => {
+            let on = quote_qualified(engine, namespace, table);
+            match engine {
+                // One statement, several actions (postgresql.org/docs/current/sql-altertable.html).
+                // USING casts in place, so a text→int change needs no manual rewrite.
+                Engine::Postgres => {
+                    let col = quote_ident(engine, &column.name);
+                    let ty = &column.type_name;
+                    let mut actions = vec![
+                        format!("ALTER COLUMN {col} TYPE {ty} USING {col}::{ty}"),
+                        format!(
+                            "ALTER COLUMN {col} {} NOT NULL",
+                            if column.nullable { "DROP" } else { "SET" }
+                        ),
+                    ];
+                    if let Some(d) = column.default.as_deref().filter(|d| !d.is_empty()) {
+                        actions.push(format!("ALTER COLUMN {col} SET DEFAULT {d}"));
+                    }
+                    Ok(format!("ALTER TABLE {on} {}", actions.join(", ")))
+                }
+                // MODIFY restates the whole definition; anything left out is reset
+                // (dev.mysql.com/doc/refman/8.0/en/alter-table.html).
+                Engine::MySql => Ok(format!(
+                    "ALTER TABLE {on} MODIFY COLUMN {}",
+                    column_def(engine, column)
+                )),
+                Engine::Sqlite => Err(AppError::QueryError {
+                    message: "SQLite can't change a column in place — its ALTER TABLE only \
+                              renames, adds and drops (sqlite.org/lang_altertable.html)."
+                        .into(),
+                    detail: None,
+                }),
+            }
+        }
         DdlRequest::CreateIndex {
             namespace,
             table,
@@ -259,6 +297,33 @@ mod tests {
         assert_eq!(
             generate(Engine::Sqlite, &req).unwrap(),
             "DROP INDEX \"t_a_idx\""
+        );
+    }
+
+    #[test]
+    fn alter_column_per_engine() {
+        let req = DdlRequest::AlterColumn {
+            namespace: "public".into(),
+            table: "t".into(),
+            column: ColumnSpec {
+                name: "n".into(),
+                type_name: "bigint".into(),
+                nullable: false,
+                default: Some("0".into()),
+            },
+        };
+        assert_eq!(
+            generate(Engine::Postgres, &req).unwrap(),
+            "ALTER TABLE \"public\".\"t\" ALTER COLUMN \"n\" TYPE bigint USING \"n\"::bigint, \
+             ALTER COLUMN \"n\" SET NOT NULL, ALTER COLUMN \"n\" SET DEFAULT 0"
+        );
+        assert_eq!(
+            generate(Engine::MySql, &req).unwrap(),
+            "ALTER TABLE `public`.`t` MODIFY COLUMN `n` bigint NOT NULL DEFAULT 0"
+        );
+        assert_eq!(
+            generate(Engine::Sqlite, &req).unwrap_err().kind(),
+            "queryError"
         );
     }
 }

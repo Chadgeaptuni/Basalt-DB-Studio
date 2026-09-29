@@ -2,16 +2,16 @@
   import Boxes from "@lucide/svelte/icons/boxes";
   import Table from "@lucide/svelte/icons/table";
   import Eye from "@lucide/svelte/icons/eye";
-  import KeyRound from "@lucide/svelte/icons/key-round";
   import TreeItem from "$lib/components/ui/TreeItem.svelte";
   import Spinner from "$lib/components/ui/Spinner.svelte";
   import ErrorState from "$lib/components/ui/ErrorState.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import ContextMenu from "$lib/components/ui/ContextMenu.svelte";
   import type { MenuItem } from "$lib/components/ui/menu";
-  import type { RelationKind } from "$lib/api/types";
+  import type { Engine, RelationKind } from "$lib/api/types";
   import { filterRank, noMatches } from "$lib/utils/filter";
   import { branchIndent } from "./tree";
+  import TableDetail from "./TableDetail.svelte";
   import { schema } from "$lib/stores/schema.svelte";
   import { editorTabs } from "$lib/stores/tabs.svelte";
   import { ddl } from "$lib/stores/ddl.svelte";
@@ -25,6 +25,7 @@
   // is pointed at.
   interface Props {
     sessionId: string;
+    engine: Engine;
     filter: string;
     kind: "all" | RelationKind;
     activate: () => void;
@@ -32,7 +33,7 @@
      *  under a Postgres database node, which adds a level above. */
     depth?: number;
   }
-  let { sessionId, filter, kind, activate, depth = 0 }: Props = $props();
+  let { sessionId, engine, filter, kind, activate, depth = 0 }: Props = $props();
 
   const NS_DEPTH = $derived(depth);
   const REL_DEPTH = $derived(depth + 1);
@@ -120,7 +121,7 @@
         label: "Add column…",
         onselect: () => {
           activate();
-          ddl.open({ type: "addColumn", namespace: ns, table: rel });
+          ddl.open({ type: "column", namespace: ns, table: rel });
         },
       },
       { label: "Create index…", onselect: () => void openIndexDialog(ns, rel) },
@@ -128,7 +129,7 @@
         label: "Rename table…",
         onselect: () => {
           activate();
-          ddl.open({ type: "renameTable", namespace: ns, table: rel });
+          ddl.open({ type: "rename", namespace: ns, table: rel });
         },
       },
       {
@@ -194,32 +195,7 @@
           />
         </ContextMenu>
         {#if expanded[tkey]}
-          {@const desc = schema.describeCached(sessionId, ns.name, rel.name)}
-          {#if desc}
-            {#each desc.columns as col (col.name)}
-              <div
-                class="flex h-7 items-center gap-1.5 text-data text-on-surface-variant"
-                style="padding-left:{COL_INDENT}px"
-                title={`${col.typeName}${col.nullable ? " · nullable" : " · not null"}${col.isPk ? " · primary key" : ""}`}
-              >
-                {#if col.isPk}<KeyRound size={11} class="shrink-0 text-warn" />{/if}
-                <span class="truncate">{col.name}</span>
-                <span class="truncate text-on-surface-muted">{col.typeName}</span>
-              </div>
-            {/each}
-            {#if desc.columns.length === 0}
-              <div class="py-1 text-body-sm text-on-surface-muted" style="padding-left:{COL_INDENT}px">
-                No columns
-              </div>
-            {/if}
-          {:else}
-            <div
-              class="flex items-center gap-2 py-1 text-body-sm text-on-surface-muted"
-              style="padding-left:{COL_INDENT}px"
-            >
-              <Spinner size="sm" /> Loading columns…
-            </div>
-          {/if}
+          <TableDetail {sessionId} namespace={ns.name} table={rel.name} {engine} indent={COL_INDENT} {activate} />
         {/if}
       {/each}
       {#if ns.relations.length === 0}

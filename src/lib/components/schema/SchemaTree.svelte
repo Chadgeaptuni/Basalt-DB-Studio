@@ -60,6 +60,7 @@
         {@const session = connections.active}
         <ConnectionSchema
           sessionId={session.sessionId}
+          engine={profile.engine}
           {filter}
           {kind}
           activate={() => connections.setActive(session)}
