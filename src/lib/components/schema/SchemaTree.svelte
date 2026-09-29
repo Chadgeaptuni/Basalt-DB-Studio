@@ -17,7 +17,6 @@
   import DatabaseList from "./DatabaseList.svelte";
   import SessionNode from "./SessionNode.svelte";
   import { hasDatabaseLevel, refreshProfile } from "./tree";
-  import { ENGINE_ICON } from "$lib/components/connections/engineIcon";
   import { ENGINE_TAG, connectionTarget } from "$lib/utils/connectionLabel";
   import { connections } from "$lib/stores/connections.svelte";
   import { confirm } from "$lib/stores/dialogs.svelte";
@@ -129,7 +128,7 @@
         {#each connections.profiles as p (p.id)}
           <SessionNode
             label={p.name}
-            icon={ENGINE_ICON[p.engine]}
+            icon={Database}
             depth={0}
             title={`${ENGINE_TAG[p.engine]} · ${connectionTarget(p)}`}
             state={connections.statusFor(p.id)}

@@ -1,10 +1,8 @@
 import type { ConnectionProfile, Engine } from "$lib/api/types";
 
 // How a connection profile names itself, declared once: the status bar, the
-// schema tree's roots and the command palette all print the same strings. Data
-// only — the engine *glyph* is `ENGINE_ICON` in
-// components/connections/engineIcon.ts, because it names components and this
-// module sits below them (DESIGN §9).
+// schema tree's roots and the command palette all print the same strings. The
+// engine is named by its tag, never by a logo.
 
 export const ENGINE_TAG: Record<Engine, string> = { postgres: "PG", mysql: "MY", sqlite: "SQ" };
 
