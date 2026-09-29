@@ -175,10 +175,11 @@ async function openSession(
   into: Record<string, ConnState>,
   key: string,
   label: string,
+  ask = true,
 ): Promise<SessionInfo | null> {
   const pending = opening.get(key);
   if (pending) return pending;
-  const attempt = attemptConnect(id, database, into, key, label);
+  const attempt = attemptConnect(id, database, into, key, label, !ask);
   opening.set(key, attempt);
   try {
     return await attempt;
@@ -230,8 +231,10 @@ async function attemptConnect(
   }
 }
 
-async function connect(id: string): Promise<SessionInfo | null> {
-  return openSession(id, undefined, statuses, id, profileName(id));
+/** `ask: false` never prompts for a password — a reconnect nobody asked for
+ *  should not interrupt with a dialog; it fails to a toast instead. */
+async function connect(id: string, ask = true): Promise<SessionInfo | null> {
+  return openSession(id, undefined, statuses, id, profileName(id), ask);
 }
 
 /** Opens one Postgres database on an already-connected server as its own

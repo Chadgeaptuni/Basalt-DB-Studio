@@ -164,11 +164,12 @@ Global services declared once (DESIGN.md §9): `toast.success|error|info()` and
   from each `StatementResult`): searchable and re-runnable within the running
   app, cleared on quit. No local database, no migrations — nothing to persist,
   prune, or sync.
-- **Workspace state** — open editor tabs with their unsaved SQL, and the
-  last-active connections — persists per-machine in the config dir
-  (`workspace.toml`). On launch, tabs are restored and
-  sessions whose secret is available (keychain) are **auto-reconnected**;
-  prompt-only connections restore as disconnected.
+- **Workspace state** — open SQL tabs with their unsaved drafts, and which
+  connections were open — persists per machine in webview localStorage
+  (`basalt.workspace`, beside the theme and zoom), saved debounced as it
+  changes. On launch, tabs are restored and connections that open without
+  asking (SQLite, or a saved keychain password) are **auto-reconnected**;
+  prompt-only connections restore as disconnected, and a launch never prompts.
 - **Secrets — the OS keychain, and only it.**
   - `keyring` 4.2 (service `basalt-db-studio`, account = the profile's
     `secret_ref` UUID, secret = JSON blob: password + SSH secret). Saving is the
