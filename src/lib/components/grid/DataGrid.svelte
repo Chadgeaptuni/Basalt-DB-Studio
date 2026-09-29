@@ -26,6 +26,7 @@
   import { settings } from "$lib/stores/settings.svelte";
   import { sortedOrder, type SortState } from "./gridView";
   import CellInspector from "./CellInspector.svelte";
+  import CopyAsDialog from "./CopyAsDialog.svelte";
   import type { CellValue, ColumnInfo } from "$lib/api/types";
 
   // The one grid: read-only results (no `edit`) and the editable table-data view
@@ -48,6 +49,7 @@
   let sort = $state<SortState | null>(null);
   let hidden = $state<Set<number>>(new Set());
   let inspecting = $state(false);
+  let copyingAs = $state(false);
 
   const visibleCols = $derived(columns.map((c, i) => ({ col: c, i })).filter(({ i }) => !hidden.has(i)));
   // Row *indices*, not rows: edit staging identifies rows by their original index.
@@ -195,6 +197,9 @@
     } else if (edit && (e.key === "Delete" || e.key === "Backspace")) {
       e.preventDefault();
       if (!isReadOnlyCell(r, c)) edit.setNull(rowAt(r), colAt(c));
+    } else if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "c") {
+      e.preventDefault();
+      copyingAs = true;
     } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "c") {
       e.preventDefault();
       const cell = rows[rowAt(r)]?.[colAt(c)];
@@ -382,6 +387,17 @@
     {/snippet}
   </VirtualList>
 </div>
+
+  {#if copyingAs}
+    <CopyAsDialog
+      names={visibleCols.map(({ col }) => col.name)}
+      matrix={order.map((r) => visibleCols.map(({ i }) => rows[r][i]))}
+      onclose={() => {
+        copyingAs = false;
+        grid?.focus();
+      }}
+    />
+  {/if}
 
   {#if inspecting && selectedValue && selectedColumn}
     <CellInspector

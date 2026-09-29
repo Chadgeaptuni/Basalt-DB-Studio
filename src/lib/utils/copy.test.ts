@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { cellToTsv, copyCellsTsv } from "./copy";
+import { cellToTsv, copyCellsTsv, toDelimited } from "./copy";
 
 describe("cellToTsv", () => {
   it("renders NULL as empty, not the literal", () => {
@@ -19,5 +19,30 @@ describe("copyCellsTsv", () => {
     ]);
     expect(writeText).toHaveBeenCalledWith("1\t\nb\tc");
     vi.unstubAllGlobals();
+  });
+});
+
+describe("toDelimited", () => {
+  const rows = [
+    [{ kind: "int", value: 1 }, { kind: "text", value: 'say "hi", twice' }],
+    [{ kind: "int", value: 2 }, { kind: "null" }],
+  ] as const;
+
+  it("quotes only the fields that need it, and writes the header first", () => {
+    const out = toDelimited(["id", "note"], rows.map((r) => [...r]), {
+      delimiter: ",",
+      header: true,
+      nullText: "",
+    });
+    expect(out).toBe('id,note\n1,"say ""hi"", twice"\n2,');
+  });
+
+  it("spells NULL out when asked", () => {
+    const out = toDelimited(["id", "note"], rows.map((r) => [...r]), {
+      delimiter: "\t",
+      header: false,
+      nullText: "NULL",
+    });
+    expect(out).toBe('1\t"say ""hi"", twice"\n2\tNULL');
   });
 });

@@ -30,6 +30,20 @@ function editable(): EditController {
 }
 
 describe("DataGrid", () => {
+  it("copies the shown rows as delimited text from Copy as… (mod+shift+c)", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    render(DataGrid, { columns, rows, label: "Query results" });
+    const grid = screen.getByRole("grid", { name: "Query results" });
+
+    await fireEvent.focus(grid);
+    await fireEvent.keyDown(grid, { key: "c", metaKey: true, shiftKey: true });
+    await fireEvent.click(await screen.findByRole("button", { name: "Comma" }));
+    await fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+
+    expect(writeText).toHaveBeenCalledWith("id,name\n1,Ada\n2,Grace");
+  });
+
   it("supports keyboard selection and copy for read-only query results", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {

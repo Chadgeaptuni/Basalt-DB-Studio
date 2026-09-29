@@ -68,6 +68,7 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { label: "Edit selected cell", combos: ["enter"], icon: Edit3 },
       { label: "Set cell to NULL", combos: ["delete"], icon: Eraser },
       { label: "Copy cell", combos: ["mod+c"], icon: Copy },
+      { label: "Copy rows as…", combos: ["mod+shift+c"], icon: Copy },
       { label: "Inspect cell", combos: ["space"], icon: Maximize2 },
       { label: "Revert cell edit", combos: ["escape"], icon: Undo },
     ],
