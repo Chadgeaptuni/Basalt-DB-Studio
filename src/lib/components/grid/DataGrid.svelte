@@ -110,19 +110,24 @@
   // so one long cell can't blow the layout out; anything past MAX still truncates.
   const CHAR_W = 7.3; // px per char at text-data (~12px)
   const CELL_PAD = 22; // px-2 both sides + border + slack
+  // The header also holds its 24px column-menu button (always laid out, only
+  // faded in on hover), so its name needs that much more room than a cell does.
+  const HEADER_PAD = CELL_PAD + 28;
   const MIN_COL = 64;
   const MAX_COL = 400;
   const SAMPLE = 200; // rows scanned per column; data is already row-limited
   const colWidths = $derived(
     columns.map((col, c) => {
-      let chars = Math.max(col.name.length, col.typeName.length);
+      let chars = 0;
       const n = Math.min(display.length, SAMPLE);
       for (let r = 0; r < n; r++) {
         const cell = display[r]?.[c];
         const len = cell?.isNull ? 4 : (cell?.text?.length ?? 0);
         if (len > chars) chars = len;
       }
-      return Math.min(MAX_COL, Math.max(MIN_COL, Math.round(chars * CHAR_W) + CELL_PAD));
+      const header = Math.max(col.name.length, col.typeName.length) * CHAR_W + HEADER_PAD;
+      const cells = chars * CHAR_W + CELL_PAD;
+      return Math.min(MAX_COL, Math.max(MIN_COL, Math.round(Math.max(header, cells))));
     }),
   );
   const width = $derived(visibleCols.reduce((sum, { i }) => sum + colWidths[i], 0));

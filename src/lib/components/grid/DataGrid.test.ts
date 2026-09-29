@@ -30,6 +30,19 @@ function editable(): EditController {
 }
 
 describe("DataGrid", () => {
+  // A header also holds its column-menu button, so sizing it like a cell cut
+  // the name short: `customer_id` over one-digit values read "custome…".
+  it("sizes a column to show its whole name over short values", () => {
+    render(DataGrid, {
+      columns: [{ name: "customer_id", typeName: "integer", nullable: false, isPk: false }],
+      rows: [[{ kind: "int", value: 1 }]],
+    });
+    const header = screen.getByRole("columnheader");
+    const width = Number.parseFloat(header.style.width);
+    // 11 mono chars at 7.3px, plus the header's padding and 24px menu button.
+    expect(width).toBeGreaterThanOrEqual(11 * 7.3 + 24 + 16);
+  });
+
   it("copies the shown rows as delimited text from Copy as… (mod+shift+c)", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
