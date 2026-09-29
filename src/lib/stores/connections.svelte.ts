@@ -40,6 +40,8 @@ const secrets = new Map<string, Secret>();
 export interface PasswordRequest {
   name: string;
   kind: ErrorKind;
+  /** The server's or the keychain's own words for the failure. */
+  message: string;
   answer: (reply: { password: string; remember: boolean } | null) => void;
 }
 let passwordRequest = $state<PasswordRequest | null>(null);
@@ -119,12 +121,16 @@ function hold(id: string, secret: Secret): void {
   secrets.set(id, { password: secret.password ?? held.password, ssh: secret.ssh ?? held.ssh });
 }
 
-function askPassword(name: string, kind: ErrorKind): Promise<{ password: string; remember: boolean } | null> {
+function askPassword(
+  name: string,
+  { kind, message }: ApiError,
+): Promise<{ password: string; remember: boolean } | null> {
   passwordRequest?.answer(null);
   return new Promise((resolve) => {
     passwordRequest = {
       name,
       kind,
+      message,
       answer: (reply) => {
         passwordRequest = null;
         resolve(reply);
@@ -207,7 +213,7 @@ async function attemptConnect(
     // toast below says so rather than the prompt reappearing in a loop.
     const kind = (e as ApiError).kind;
     if (!asked && WANTS_PASSWORD.has(kind)) {
-      const reply = await askPassword(profileName(id), kind);
+      const reply = await askPassword(profileName(id), e as ApiError);
       if (reply) {
         hold(id, { password: reply.password });
         const session = await attemptConnect(id, database, into, key, label, true);

@@ -37,7 +37,7 @@
       id: "general",
       label: "General",
       icon: Sliders,
-      blurb: "Defaults for how grid data is displayed and fetched.",
+      blurb: "Defaults for how queries run and how their results are shown.",
     },
     {
       id: "appearance",

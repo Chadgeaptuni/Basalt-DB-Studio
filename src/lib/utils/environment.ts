@@ -21,7 +21,12 @@ const TONES: Record<Environment, ChipTone> = {
   prod: "error",
 };
 
+// The badge form: a badge sits beside a connection's name in a 280px panel, and
+// "Production" in capitals there costs the name its last word.
+const TAGS: Record<Environment, string> = { local: "Local", staging: "Stage", prod: "Prod" };
+
 export const envLabel = (env: Environment): string => LABELS[env];
+export const envTag = (env: Environment): string => TAGS[env];
 export const envTone = (env: Environment): ChipTone => TONES[env];
 
 /** True when acting on this connection deserves an extra beat of attention. */

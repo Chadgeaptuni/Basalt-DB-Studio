@@ -18,7 +18,7 @@
   import ConnectionForm from "./ConnectionForm.svelte";
   import { ICON_TONE } from "$lib/components/schema/tree";
   import { ENGINE_TAG, connectionTarget } from "$lib/utils/connectionLabel";
-  import { envLabel, envTone } from "$lib/utils/environment";
+  import { envTag, envTone } from "$lib/utils/environment";
   import { connections } from "$lib/stores/connections.svelte";
   import { confirm } from "$lib/stores/dialogs.svelte";
   import { panel } from "$lib/stores/panel.svelte";
@@ -113,7 +113,7 @@
             {/snippet}
             {#snippet trailing()}
               {#if p.environment}
-                <Badge variant={envTone(p.environment)}>{envLabel(p.environment)}</Badge>
+                <Badge variant={envTone(p.environment)}>{envTag(p.environment)}</Badge>
               {/if}
               {#if status === "connected"}
                 <IconButton

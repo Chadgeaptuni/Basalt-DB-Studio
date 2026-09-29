@@ -18,7 +18,7 @@
   <PromptDialog
     title={`Password for “${request.name}”`}
     label="Password"
-    hint={presentError(request.kind).title}
+    hint={`${presentError(request.kind).title}: ${request.message}`}
     confirmLabel="Connect"
     secret
     onsubmit={(password) => request.answer({ password, remember })}

@@ -1,7 +1,7 @@
 <script lang="ts">
   import Badge from "$lib/components/ui/Badge.svelte";
   import { ENGINE_TAG } from "$lib/utils/connectionLabel";
-  import { envLabel, envTone } from "$lib/utils/environment";
+  import { envTag, envTone } from "$lib/utils/environment";
   import { connections } from "$lib/stores/connections.svelte";
 
   // Which database the workspace is pointed at, as a reading rather than a
@@ -36,7 +36,7 @@
     <!-- Label as well as colour: which database you are pointed at is exactly the
          thing that must not depend on distinguishing red from amber. -->
     {#if profile.environment}
-      <Badge variant={envTone(profile.environment)}>{envLabel(profile.environment)}</Badge>
+      <Badge variant={envTone(profile.environment)}>{envTag(profile.environment)}</Badge>
     {/if}
     {#if connections.active.readOnly}<Badge variant="warn">read-only</Badge>{/if}
   {:else}
