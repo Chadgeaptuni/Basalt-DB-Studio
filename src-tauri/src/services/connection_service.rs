@@ -14,6 +14,7 @@ use crate::config::connections::ConnectionProfile;
 use crate::drivers::types::{Engine, SessionInfo, SslMode};
 use crate::drivers::Driver;
 use crate::services::query_service::{self, Editor};
+use crate::tunnel::{self, Tunnel};
 use crate::{AppError, AppResult};
 
 /// Bounds the initial connect when the profile does not set one (spec: ~10s).
@@ -30,6 +31,8 @@ pub struct Session {
     pub driver: Driver,
     pub read_only: bool,
     pub editor: Arc<Editor>,
+    /// Held for the session's life; the tunnel closes when the session drops it.
+    _tunnel: Option<Tunnel>,
 }
 
 pub type SessionRegistry = Mutex<HashMap<String, Session>>;
@@ -38,16 +41,18 @@ pub type SessionRegistry = Mutex<HashMap<String, Session>>;
 /// Postgres database on the same server is browsed, since a pg connection can
 /// never leave the database it opened. The override is applied to a copy so the
 /// saved profile stays the maintenance database it was configured as.
+/// `ssh_secret` is the tunnel's password or key passphrase, when it has one.
 pub async fn connect(
     profile: &ConnectionProfile,
     password: Option<&str>,
+    ssh_secret: Option<&str>,
     database: Option<&str>,
     registry: &SessionRegistry,
 ) -> AppResult<SessionInfo> {
     let profile = effective_profile(profile, database);
     let profile = profile.as_ref();
 
-    let driver = open_driver(profile, password).await?;
+    let (driver, tunnel) = open(profile, password, ssh_secret).await?;
     let info = SessionInfo {
         session_id: uuid::Uuid::new_v4().to_string(),
         profile_id: profile.id.clone(),
@@ -62,6 +67,7 @@ pub async fn connect(
             driver,
             read_only: profile.read_only,
             editor: Arc::default(),
+            _tunnel: tunnel,
         },
     );
     Ok(info)
@@ -95,10 +101,61 @@ fn effective_profile<'a>(
 /// Opens a throwaway connection, confirms it works, then closes it. Resolves the
 /// same effective profile `connect` would, so Test never passes on a target
 /// Connect would miss.
-pub async fn test_connection(profile: &ConnectionProfile, password: Option<&str>) -> AppResult<()> {
-    let driver = open_driver(effective_profile(profile, None).as_ref(), password).await?;
+pub async fn test_connection(
+    profile: &ConnectionProfile,
+    password: Option<&str>,
+    ssh_secret: Option<&str>,
+) -> AppResult<()> {
+    let (driver, _tunnel) = open(
+        effective_profile(profile, None).as_ref(),
+        password,
+        ssh_secret,
+    )
+    .await?;
     driver.close().await;
     Ok(())
+}
+
+/// Opens the driver — through the profile's SSH tunnel when it has one, by
+/// pointing the driver at the tunnel's local end instead of the server.
+async fn open(
+    profile: &ConnectionProfile,
+    password: Option<&str>,
+    ssh_secret: Option<&str>,
+) -> AppResult<(Driver, Option<Tunnel>)> {
+    let Some(ssh) = profile
+        .ssh
+        .as_ref()
+        .filter(|_| profile.engine != Engine::Sqlite)
+    else {
+        return Ok((open_driver(profile, password).await?, None));
+    };
+    let host = profile
+        .host
+        .as_deref()
+        .ok_or_else(|| AppError::ConfigParse("a tunnelled connection needs a host".into()))?;
+    let port = profile.port.unwrap_or(match profile.engine {
+        Engine::MySql => 3306,
+        _ => 5432,
+    });
+    let timeout = connect_timeout(profile);
+    let tunnel = tokio::time::timeout(timeout, tunnel::open(ssh, ssh_secret, host, port))
+        .await
+        .map_err(|_| {
+            AppError::TunnelError(format!(
+                "SSH to '{}' timed out after {}s",
+                ssh.host,
+                timeout.as_secs()
+            ))
+        })??;
+    // ponytail: TLS verify-full checks the name it dialled, which is now
+    // 127.0.0.1; use verify-ca through a tunnel until sqlx takes a TLS host name.
+    let local = ConnectionProfile {
+        host: Some("127.0.0.1".into()),
+        port: Some(tunnel.local_port),
+        ..profile.clone()
+    };
+    Ok((open_driver(&local, password).await?, Some(tunnel)))
 }
 
 pub async fn disconnect(session_id: &str, registry: &SessionRegistry) -> AppResult<()> {
@@ -475,7 +532,7 @@ mod tests {
         let profile = sqlite_profile(&path);
         let registry: SessionRegistry = Mutex::new(HashMap::new());
 
-        let info = connect(&profile, None, None, &registry).await.unwrap();
+        let info = connect(&profile, None, None, None, &registry).await.unwrap();
         assert!(list_databases(&info.session_id, &registry)
             .await
             .unwrap()
@@ -491,7 +548,7 @@ mod tests {
         let profile = sqlite_profile(&path);
         let registry: SessionRegistry = Mutex::new(HashMap::new());
 
-        let info = connect(&profile, None, None, &registry).await.unwrap();
+        let info = connect(&profile, None, None, None, &registry).await.unwrap();
         assert_eq!(info.engine, Engine::Sqlite);
         assert_eq!(info.profile_id, "conn-test");
 
@@ -516,7 +573,7 @@ mod tests {
     async fn connect_to_missing_file_is_connection_refused() {
         let profile = sqlite_profile("/nonexistent/basalt-missing.db");
         let registry: SessionRegistry = Mutex::new(HashMap::new());
-        let err = connect(&profile, None, None, &registry).await.unwrap_err();
+        let err = connect(&profile, None, None, None, &registry).await.unwrap_err();
         assert_eq!(err.kind(), "connectionRefused");
     }
 
@@ -527,7 +584,7 @@ mod tests {
         let mut profile = sqlite_profile("/tmp/whatever.db");
         profile.engine = Engine::Postgres;
         profile.file_path = None;
-        let err = test_connection(&profile, None).await.unwrap_err();
+        let err = test_connection(&profile, None, None).await.unwrap_err();
         assert_eq!(err.kind(), "configParse");
     }
 }

@@ -51,4 +51,24 @@ describe("ConnectionForm", () => {
     await waitFor(() => expect(saves).toHaveLength(1));
     expect(saves[0]).toMatchObject({ profile: { secretRef: "ref-1" }, secret: {}, remember: true });
   });
+
+  it("saves an SSH tunnel with the profile once its host and user are set", async () => {
+    const saves = captureSaves();
+    render(ConnectionForm, { profile: saved, onclose: () => {} });
+
+    await fireEvent.click(screen.getByLabelText("Connect through an SSH tunnel"));
+    const save = screen.getByRole("button", { name: "Save" });
+    expect(save).toBeDisabled(); // no SSH host or user yet
+
+    await fireEvent.input(screen.getByPlaceholderText("bastion.example.com"), {
+      target: { value: "bastion" },
+    });
+    await fireEvent.input(screen.getByLabelText("SSH user"), { target: { value: "deploy" } });
+    await fireEvent.click(save);
+
+    await waitFor(() => expect(saves).toHaveLength(1));
+    expect(saves[0]).toMatchObject({
+      profile: { ssh: { host: "bastion", port: 22, user: "deploy", authKind: "agent" } },
+    });
+  });
 });

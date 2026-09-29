@@ -20,7 +20,7 @@ async fn run(sid: &str, sql: &str, reg: &SessionRegistry) -> RunResult {
 async fn tx_and_cancel(url: &str, slow: &str) {
     let (profile, password) = profile_from_url(url);
     let reg = registry();
-    let sid = connection_service::connect(&profile, password.as_deref(), None, &reg)
+    let sid = connection_service::connect(&profile, password.as_deref(), None, None, &reg)
         .await
         .unwrap()
         .session_id;

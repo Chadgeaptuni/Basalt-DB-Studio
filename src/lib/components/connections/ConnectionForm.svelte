@@ -5,6 +5,9 @@
   import Select from "$lib/components/ui/Select.svelte";
   import Checkbox from "$lib/components/ui/Checkbox.svelte";
   import Field from "$lib/components/ui/Field.svelte";
+  import PathField from "./PathField.svelte";
+  import TlsFields from "./TlsFields.svelte";
+  import SshFields from "./SshFields.svelte";
   import { ENVIRONMENTS, envLabel } from "$lib/utils/environment";
   import { connections } from "$lib/stores/connections.svelte";
   import { connectionsApi } from "$lib/api/connections";
@@ -43,6 +46,10 @@
   let password = $state("");
   const saved = Boolean(seed?.secretRef);
   let remember = $state(seed ? saved : true);
+  // Copies, so an edit that is cancelled leaves the listed profile untouched.
+  let tls = $state(seed?.tls ? { ...seed.tls } : undefined);
+  let ssh = $state(seed?.ssh ? { ...seed.ssh } : undefined);
+  let sshSecret = $state("");
   let readOnly = $state(seed?.readOnly ?? false);
   // "" is untagged, which is distinct from `local` — see utils/environment.ts.
   let environment = $state<Environment | "">(seed?.environment ?? "");
@@ -57,9 +64,14 @@
   let saving = $state(false);
 
   const isSqlite = $derived(engine === "sqlite");
-  const valid = $derived(
-    name.trim().length > 0 && (isSqlite ? filePath.trim().length > 0 : host.trim().length > 0),
+  const sshValid = $derived(
+    !ssh || (ssh.host.trim() !== "" && ssh.user.trim() !== "" && (ssh.authKind !== "key" || !!ssh.keyPath)),
   );
+  const valid = $derived(
+    name.trim().length > 0 &&
+      (isSqlite ? filePath.trim().length > 0 : host.trim().length > 0 && sshValid),
+  );
+  const secret = $derived({ password: password || undefined, ssh: sshSecret || undefined });
 
   function onEngineChange(v: string): void {
     engine = v as Engine;
@@ -80,6 +92,8 @@
       p.port = portStr ? Number(portStr) : undefined;
       if (database.trim()) p.database = database.trim();
       if (username.trim()) p.username = username.trim();
+      if (tls) p.tls = $state.snapshot(tls);
+      if (ssh) p.ssh = $state.snapshot(ssh);
     }
     return p;
   }
@@ -93,7 +107,7 @@
     testing = true;
     testResult = null;
     try {
-      await connectionsApi.test(toProfile(), password || undefined);
+      await connectionsApi.test(toProfile(), secret);
       testResult = { ok: true, message: "Connection succeeded." };
     } catch (e) {
       testResult = { ok: false, message: (e as ApiError).message };
@@ -105,7 +119,7 @@
   async function save(): Promise<void> {
     saving = true;
     try {
-      await connections.save(toProfile(), { password: password || undefined }, remember);
+      await connections.save(toProfile(), secret, remember);
       toast.success("Connection saved.");
       close();
     } catch (e) {
@@ -137,9 +151,7 @@
     </Field>
 
     {#if isSqlite}
-      <Field label="File path">
-        <Input bind:value={filePath} placeholder="/path/to/database.sqlite" />
-      </Field>
+      <PathField label="Database file" bind:value={filePath} placeholder="/path/to/database.sqlite" />
     {:else}
       <div class="grid grid-cols-3 gap-2">
         <div class="col-span-2">
@@ -162,7 +174,9 @@
       >
         <Input type="password" bind:value={password} />
       </Field>
-      <Checkbox bind:checked={remember} label="Save password in the OS keychain" />
+      <TlsFields bind:tls />
+      <SshFields bind:ssh bind:secret={sshSecret} />
+      <Checkbox bind:checked={remember} label="Save passwords in the OS keychain" />
     {/if}
 
     <Checkbox bind:checked={readOnly} label="Read-only connection" />

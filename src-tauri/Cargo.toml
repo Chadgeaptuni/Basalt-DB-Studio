@@ -64,6 +64,9 @@ uuid = { version = "1", features = ["v4", "serde"] }
 keyring = "4.2"
 # keyring's own store API, so tests can swap in its mock store (already in the tree).
 keyring-core = "1"
+# SSH tunnels (key, password, agent). `ring` shares the crypto sqlx's rustls
+# already links; the default aws-lc-rs would be a second copy.
+russh = { version = "0.63", default-features = false, features = ["ring", "rsa"] }
 
 [dev-dependencies]
 # The integration-test crate (tests/) drives the async service layer; dev-only,

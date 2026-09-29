@@ -213,10 +213,16 @@ timestamptz, naive stays naive); the setting transforms only how a cell is
   `verify-ca` · `verify-full` — plus an optional **custom CA certificate** and
   **client cert/key** (rustls, configured per engine). Certs/keys are file-path
   references in the profile TOML, not secrets. Failures map to `tlsError`.
-- **SSH tunnel** (russh) supports **private key (optional passphrase), password,
-  and ssh-agent** auth. The key passphrase and the SSH password live in the
-  `SecretStore` blob alongside the DB password; the key file itself is a path
-  reference. Failures map to `tunnelError`.
+- **SSH tunnel** (russh, `ring` crypto shared with rustls) supports **private
+  key (optional passphrase), password, and ssh-agent** auth. The key passphrase
+  or SSH password lives in the keychain blob alongside the DB password; the key
+  file itself is a path reference. The tunnel forwards a local 127.0.0.1 port
+  and belongs to the session. Host keys are checked against
+  `~/.ssh/known_hosts`: unknown hosts are learned (OpenSSH's `accept-new`), a
+  changed key is refused. One channel is opened at connect, so a server that
+  will not forward fails as a tunnel error, not as a reset DB connection.
+  Failures map to `tunnelError`. Through a tunnel TLS `verify-full` checks
+  127.0.0.1, so `verify-ca` is the rung to use there.
 - **Connect timeout** bounds the initial connection (configurable, default ~10s
   → fails fast to the matching connection error kind), separate from the
   per-query statement timeout below.

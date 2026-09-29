@@ -32,7 +32,7 @@ async fn run_sql(session_id: &str, sql: &str, registry: &connection_service::Ses
 async fn grid_roundtrip(url: &str, namespace: &str, create: &str) {
     let (profile, password) = profile_from_url(url);
     let reg = registry();
-    let info = connection_service::connect(&profile, password.as_deref(), None, &reg)
+    let info = connection_service::connect(&profile, password.as_deref(), None, None, &reg)
         .await
         .expect("connect");
     let sid = &info.session_id;

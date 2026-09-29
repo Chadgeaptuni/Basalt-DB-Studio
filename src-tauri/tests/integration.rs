@@ -19,7 +19,7 @@ async fn postgres_connect_introspect_describe() {
     let (profile, password) = profile_from_url(&url);
     let reg = registry();
 
-    let info = connection_service::connect(&profile, password.as_deref(), None, &reg)
+    let info = connection_service::connect(&profile, password.as_deref(), None, None, &reg)
         .await
         .expect("connect to postgres");
 
@@ -76,7 +76,7 @@ async fn postgres_lists_databases_and_opens_a_second_session_on_one() {
     let (profile, password) = profile_from_url(&url);
     let reg = registry();
 
-    let info = connection_service::connect(&profile, password.as_deref(), None, &reg)
+    let info = connection_service::connect(&profile, password.as_deref(), None, None, &reg)
         .await
         .expect("connect to postgres");
 
@@ -97,9 +97,10 @@ async fn postgres_lists_databases_and_opens_a_second_session_on_one() {
     );
 
     // The override must not disturb the first session: two pools, two ids.
-    let second = connection_service::connect(&profile, password.as_deref(), Some("postgres"), &reg)
-        .await
-        .expect("connect to the postgres database by override");
+    let second =
+        connection_service::connect(&profile, password.as_deref(), None, Some("postgres"), &reg)
+            .await
+            .expect("connect to the postgres database by override");
     assert_ne!(second.session_id, info.session_id);
     assert_eq!(second.database.as_deref(), Some("postgres"));
     assert_eq!(second.profile_id, info.profile_id);
@@ -127,7 +128,7 @@ async fn postgres_hides_databases_the_role_may_not_open() {
     };
     let (admin_profile, password) = profile_from_url(&url);
     let reg = registry();
-    let admin = connection_service::connect(&admin_profile, password.as_deref(), None, &reg)
+    let admin = connection_service::connect(&admin_profile, password.as_deref(), None, None, &reg)
         .await
         .expect("connect to postgres as the test user");
 
@@ -153,9 +154,10 @@ async fn postgres_hides_databases_the_role_may_not_open() {
     // less than the one that created the database.
     let mut limited_profile = admin_profile.clone();
     limited_profile.username = Some("basalt_limited".into());
-    let limited = connection_service::connect(&limited_profile, Some("basalt_limited"), None, &reg)
-        .await
-        .expect("connect as the limited role");
+    let limited =
+        connection_service::connect(&limited_profile, Some("basalt_limited"), None, None, &reg)
+            .await
+            .expect("connect as the limited role");
 
     let visible = connection_service::list_databases(&limited.session_id, &reg)
         .await
@@ -191,7 +193,7 @@ async fn mysql_connect_introspect_describe() {
     let (profile, password) = profile_from_url(&url);
     let reg = registry();
 
-    let info = connection_service::connect(&profile, password.as_deref(), None, &reg)
+    let info = connection_service::connect(&profile, password.as_deref(), None, None, &reg)
         .await
         .expect("connect to mysql");
 
@@ -247,7 +249,7 @@ async fn postgres_wrong_password_is_auth_failed() {
     };
     let (profile, _) = profile_from_url(&url);
     let reg = registry();
-    let err = connection_service::connect(&profile, Some("wrong-password"), None, &reg)
+    let err = connection_service::connect(&profile, Some("wrong-password"), None, None, &reg)
         .await
         .expect_err("wrong password must fail");
     assert_eq!(err.kind(), "authFailed", "got: {err}");
@@ -261,7 +263,7 @@ async fn mysql_wrong_password_is_auth_failed() {
     };
     let (profile, _) = profile_from_url(&url);
     let reg = registry();
-    let err = connection_service::connect(&profile, Some("wrong-password"), None, &reg)
+    let err = connection_service::connect(&profile, Some("wrong-password"), None, None, &reg)
         .await
         .expect_err("wrong password must fail");
     assert_eq!(err.kind(), "authFailed", "got: {err}");
@@ -275,7 +277,7 @@ async fn postgres_run_query_decodes_edge_types() {
     };
     let (profile, password) = profile_from_url(&url);
     let reg = registry();
-    let info = connection_service::connect(&profile, password.as_deref(), None, &reg)
+    let info = connection_service::connect(&profile, password.as_deref(), None, None, &reg)
         .await
         .unwrap();
 
@@ -331,7 +333,7 @@ async fn mysql_run_query_decodes_edge_types() {
     };
     let (profile, password) = profile_from_url(&url);
     let reg = registry();
-    let info = connection_service::connect(&profile, password.as_deref(), None, &reg)
+    let info = connection_service::connect(&profile, password.as_deref(), None, None, &reg)
         .await
         .unwrap();
 

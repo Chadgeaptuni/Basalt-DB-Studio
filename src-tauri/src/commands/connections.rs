@@ -5,7 +5,7 @@
 use tauri::State;
 
 use crate::config::connections::{self, ConnectionProfile};
-use crate::drivers::types::SessionInfo;
+use crate::drivers::types::{SessionInfo, SshAuthKind};
 use crate::secrets::{self, Secret};
 use crate::services::connection_service;
 use crate::state::AppState;
@@ -35,28 +35,32 @@ pub fn delete_connection(id: String, state: State<AppState>) -> AppResult<()> {
     connections::delete(&state.paths, &id)
 }
 
-/// `password` given (the form's field, a prompt) wins; otherwise the saved one.
+/// A secret given (the form's fields, a prompt) wins; otherwise the saved one.
 #[tauri::command]
 pub async fn test_connection(
     profile: ConnectionProfile,
     password: Option<String>,
+    ssh_secret: Option<String>,
 ) -> AppResult<()> {
-    let password = password_for(&profile, password)?;
-    connection_service::test_connection(&profile, password.as_deref()).await
+    let secret = secret_for(&profile, password, ssh_secret)?;
+    connection_service::test_connection(&profile, secret.password.as_deref(), secret.ssh.as_deref())
+        .await
 }
 
 #[tauri::command]
 pub async fn connect(
     profile_id: String,
     password: Option<String>,
+    ssh_secret: Option<String>,
     database: Option<String>,
     state: State<'_, AppState>,
 ) -> AppResult<SessionInfo> {
     let profile = connections::load_one(&state.paths, &profile_id)?;
-    let password = password_for(&profile, password)?;
+    let secret = secret_for(&profile, password, ssh_secret)?;
     connection_service::connect(
         &profile,
-        password.as_deref(),
+        secret.password.as_deref(),
+        secret.ssh.as_deref(),
         database.as_deref(),
         &state.sessions,
     )
@@ -68,9 +72,22 @@ pub async fn disconnect(session_id: String, state: State<'_, AppState>) -> AppRe
     connection_service::disconnect(&session_id, &state.sessions).await
 }
 
-fn password_for(profile: &ConnectionProfile, given: Option<String>) -> AppResult<Option<String>> {
-    match given {
-        Some(password) => Ok(Some(password)),
-        None => Ok(secrets::load(profile)?.and_then(|s| s.password)),
+/// The keychain is read only for what the caller did not supply.
+fn secret_for(
+    profile: &ConnectionProfile,
+    password: Option<String>,
+    ssh: Option<String>,
+) -> AppResult<Secret> {
+    let needs_ssh = profile
+        .ssh
+        .as_ref()
+        .is_some_and(|s| s.auth_kind != SshAuthKind::Agent);
+    if password.is_some() && (ssh.is_some() || !needs_ssh) {
+        return Ok(Secret { password, ssh });
     }
+    let saved = secrets::load(profile)?.unwrap_or_default();
+    Ok(Secret {
+        password: password.or(saved.password),
+        ssh: ssh.or(saved.ssh),
+    })
 }

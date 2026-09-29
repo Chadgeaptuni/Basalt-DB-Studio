@@ -11,6 +11,7 @@ pub mod secrets;
 pub mod services;
 pub mod sqlgen;
 pub mod state;
+pub mod tunnel;
 
 pub use errors::{AppError, AppResult};
 

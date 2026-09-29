@@ -34,7 +34,7 @@ let txStatuses = $state<Record<string, TxStatus>>({});
 // purpose: secrets must never become observable/serializable UI state. Filled
 // from the form and the password prompt, so a connect never has to go back to
 // the keychain for a password typed a moment ago; dropped on delete and reload.
-const secrets = new Map<string, string>();
+const secrets = new Map<string, Secret>();
 
 /** A connect that failed for want of a password, waiting on the user. */
 export interface PasswordRequest {
@@ -109,8 +109,14 @@ async function save(profile: ConnectionProfile, secret: Secret = {}, remember = 
     await connectionsApi.save(profile, secret, false);
     toast.info("No OS keychain available — the password is kept for this session only.");
   }
-  if (secret.password) secrets.set(profile.id, secret.password);
+  hold(profile.id, secret);
   await load();
+}
+
+/** Keeps what was typed for this session, over what was typed before. */
+function hold(id: string, secret: Secret): void {
+  const held = secrets.get(id) ?? {};
+  secrets.set(id, { password: secret.password ?? held.password, ssh: secret.ssh ?? held.ssh });
 }
 
 function askPassword(name: string, kind: ErrorKind): Promise<{ password: string; remember: boolean } | null> {
@@ -191,7 +197,7 @@ async function attemptConnect(
 ): Promise<SessionInfo | null> {
   into[key] = { status: "connecting" };
   try {
-    const session = await connectionsApi.connect(id, secrets.get(id), database);
+    const session = await connectionsApi.connect(id, secrets.get(id) ?? {}, database);
     into[key] = { status: "connected", session };
     active = session;
     return session;
@@ -202,7 +208,7 @@ async function attemptConnect(
     if (!asked && WANTS_PASSWORD.has(kind)) {
       const reply = await askPassword(profileName(id), kind);
       if (reply) {
-        secrets.set(id, reply.password);
+        hold(id, { password: reply.password });
         const session = await attemptConnect(id, database, into, key, label, true);
         const profile = profiles.find((p) => p.id === id);
         if (session && reply.remember && profile) {
