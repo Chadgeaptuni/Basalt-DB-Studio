@@ -1,6 +1,5 @@
 <script lang="ts">
   import { open } from "@tauri-apps/plugin-dialog";
-  import { untrack } from "svelte";
   import FileText from "@lucide/svelte/icons/file-text";
   import Modal from "$lib/components/ui/Modal.svelte";
   import Field from "$lib/components/ui/Field.svelte";
@@ -15,9 +14,10 @@
   import type { ConflictMode, ErrorResponse } from "$lib/api/types";
   import type { ApiError } from "$lib/api/client";
 
-  // CSV import wizard: pick a file, choose which target columns the CSV maps to (in
-  // order), header + conflict mode, then import. Errors surface with the offending
-  // line (importParse).
+  // CSV import wizard: pick a file, map each of its fields to a column (or skip
+  // it), choose the conflict mode, then import. With a header row, fields map to
+  // the same-named column by default; without one, by position. Errors surface
+  // with the offending line (importParse).
   interface Props {
     namespace: string;
     table: string;
@@ -30,14 +30,26 @@
   let path = $state<string | null>(null);
   let hasHeader = $state(true);
   let conflict = $state("insert");
-  // Fresh wizard per open, so the initial mapping is intentional (not reactive).
-  let picked = $state<Record<string, boolean>>(
-    untrack(() => Object.fromEntries(columns.map((c) => [c, true]))),
-  );
+  /** The CSV's first record: its header, or the first data row. */
+  let fields = $state<string[]>([]);
+  /** Target column per CSV field; null skips the field. */
+  let mapping = $state<(string | null)[]>([]);
+  let imported = $state<number | null>(null);
   let running = $state(false);
   let error = $state<ErrorResponse | null>(null);
 
-  const chosen = $derived(columns.filter((c) => picked[c]));
+  const chosen = $derived(mapping.filter((c): c is string => c !== null));
+  const duplicate = $derived(chosen.find((c, i) => chosen.indexOf(c) !== i));
+  const targetOptions = $derived([
+    { value: "", label: "Skip" },
+    ...columns.map((c) => ({ value: c, label: c })),
+  ]);
+
+  function remap(): void {
+    mapping = hasHeader
+      ? fields.map((f) => columns.find((c) => c.toLowerCase() === f.trim().toLowerCase()) ?? null)
+      : fields.map((_, i) => columns[i] ?? null);
+  }
   const conflictOptions = [
     { value: "insert", label: "Insert (fail on conflict)" },
     { value: "skip", label: "Skip duplicates" },
@@ -56,27 +68,40 @@
   let step = $state(0);
 
   // Gate per step so "Next" can never advance past an unanswered decision.
-  const canAdvance = $derived(step === 0 ? Boolean(path) : step === 1 ? chosen.length > 0 : true);
+  const canAdvance = $derived(
+    step === 0 ? fields.length > 0 : step === 1 ? chosen.length > 0 && !duplicate : true,
+  );
   const onLastStep = $derived(step === STEPS.length - 1);
 
   async function browse(): Promise<void> {
     const file = await open({ filters: [{ name: "CSV", extensions: ["csv"] }], multiple: false });
-    if (typeof file === "string") path = file;
+    if (typeof file !== "string") return;
+    path = file;
+    error = null;
+    try {
+      fields = await ioApi.csvHeader(file);
+      remap();
+    } catch (e) {
+      fields = [];
+      error = e as ApiError;
+    }
   }
 
   async function run(): Promise<void> {
     if (!sess || !path || chosen.length === 0) return;
     running = true;
+    imported = 0;
     error = null;
     try {
       const result = await ioApi.importCsv(
         sess.sessionId,
         namespace,
         table,
-        chosen,
+        mapping,
         hasHeader,
         conflict as ConflictMode,
         path,
+        (rows) => (imported = rows),
       );
       toast.success(`Imported ${result.inserted} rows`);
       onclose();
@@ -88,6 +113,7 @@
       error = { kind: err.kind, message: line ? `Line ${line}: ${err.message}` : err.message };
     } finally {
       running = false;
+      imported = null;
     }
   }
 </script>
@@ -104,22 +130,30 @@
         <span class="truncate text-data {path ? 'text-on-surface-variant' : 'text-on-surface-muted'}">
           {path ?? "No file selected"}
         </span>
+        <Checkbox bind:checked={hasHeader} label="First row is a header" onchange={remap} />
       </div>
     {:else if step === 1}
       <div class="flex flex-col gap-2">
-        <span class="text-overline">
-          Target columns (in CSV order)
-        </span>
-        <div
-          class="flex max-h-64 flex-col gap-1 overflow-auto rounded-sm border border-outline-variant
-            bg-surface p-2"
-        >
-          {#each columns as col (col)}
-            <Checkbox bind:checked={picked[col]} label={col} />
+        <span class="text-overline">CSV field → column</span>
+        <div class="flex max-h-64 flex-col gap-1 overflow-auto rounded-sm border border-outline-variant bg-surface p-2">
+          {#each fields as field, i (i)}
+            <div class="grid grid-cols-2 items-center gap-2">
+              <span class="truncate text-data text-on-surface-variant">
+                {hasHeader ? field : `Field ${i + 1}`}
+              </span>
+              <Select
+                label={`Column for ${hasHeader ? field : `field ${i + 1}`}`}
+                value={mapping[i] ?? ""}
+                options={targetOptions}
+                onchange={(v) => (mapping[i] = v || null)}
+              />
+            </div>
           {/each}
         </div>
-        <span class="text-label-sm text-on-surface-muted tabular-nums">
-          {chosen.length} of {columns.length} selected
+        <span class="text-body-sm {duplicate ? 'text-error' : 'text-on-surface-muted'}">
+          {duplicate
+            ? `“${duplicate}” is mapped twice — each column takes one field.`
+            : `${chosen.length} of ${fields.length} fields mapped`}
         </span>
       </div>
     {:else}
@@ -127,11 +161,14 @@
         <Field label="Conflict mode">
           <Select label="Conflict mode" bind:value={conflict} options={conflictOptions} />
         </Field>
-        <Checkbox bind:checked={hasHeader} label="First row is a header" />
         <p class="text-body-sm text-on-surface-muted">
-          Importing {chosen.length} column{chosen.length === 1 ? "" : "s"} from
-          <span class="text-data">{path?.split(/[\\/]/).pop()}</span> into
-          <span class="text-data">{table}</span>.
+          {#if imported !== null}
+            Importing… {imported.toLocaleString()} rows so far.
+          {:else}
+            Importing {chosen.length} column{chosen.length === 1 ? "" : "s"} from
+            <span class="text-data">{path?.split(/[\\/]/).pop()}</span> into
+            <span class="text-data">{table}</span>.
+          {/if}
         </p>
       </div>
     {/if}

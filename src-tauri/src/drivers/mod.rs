@@ -290,7 +290,8 @@ impl Driver {
     }
 
     /// Imports `rows` into a table with the given conflict handling, in one
-    /// transaction. `first_line` is the CSV line of `rows[0]` (for error reports).
+    /// transaction. `first_line` is the CSV line of `rows[0]` (for error reports);
+    /// `progress` hears the running row count after each batch.
     #[allow(clippy::too_many_arguments)]
     pub async fn import_rows(
         &self,
@@ -302,6 +303,7 @@ impl Driver {
         types_map: &HashMap<String, String>,
         rows: &[Vec<CellValue>],
         first_line: usize,
+        progress: &(dyn Fn(u64) + Send + Sync),
     ) -> AppResult<ImportResult> {
         let plan = import::ImportPlan {
             engine: self.engine(),
@@ -314,13 +316,13 @@ impl Driver {
         };
         let inserted = match self {
             Driver::Postgres(pool) => {
-                import::run(pool, &plan, rows, first_line, pg::bind_cell).await?
+                import::run(pool, &plan, rows, first_line, pg::bind_cell, progress).await?
             }
             Driver::MySql(pool) => {
-                import::run(pool, &plan, rows, first_line, mysql::bind_cell).await?
+                import::run(pool, &plan, rows, first_line, mysql::bind_cell, progress).await?
             }
             Driver::Sqlite(pool) => {
-                import::run(pool, &plan, rows, first_line, sqlite::bind_cell).await?
+                import::run(pool, &plan, rows, first_line, sqlite::bind_cell, progress).await?
             }
         };
         Ok(ImportResult { inserted })

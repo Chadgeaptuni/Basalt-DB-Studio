@@ -1,7 +1,7 @@
-//! CSV import: each parsed row becomes a parameterized INSERT with the engine's
-//! native conflict handling, all inside one transaction. A row the engine rejects
-//! (type mismatch, constraint) rolls the batch back and is reported by line
-//! (`importParse`). Binding reuses each engine's `values.rs` bind (a field is Text,
+//! CSV import: parsed rows become multi-row parameterized INSERTs with the
+//! engine's native conflict handling, all inside one transaction. A row the
+//! engine rejects (type mismatch, constraint) rolls the import back and is
+//! reported by line (`importParse`). Binding reuses each engine's `values.rs` bind (a field is Text,
 //! or NULL when empty).
 
 use std::collections::HashMap;
@@ -23,12 +23,22 @@ pub struct ImportPlan<'a> {
     pub types: &'a HashMap<String, String>,
 }
 
+/// Bind parameters per statement stay under every engine's ceiling (pg and MySQL
+/// 65535, SQLite 32766), and a batch never exceeds this many rows.
+const MAX_PARAMS: usize = 30_000;
+const MAX_ROWS: usize = 500;
+
+/// Inserts `rows` in multi-row batches inside one transaction, reporting the
+/// running count to `progress` after each batch. A batch the engine rejects is
+/// rolled back to its savepoint and replayed one row at a time, so the error
+/// still names the exact line.
 pub async fn run<DB, Bind>(
     pool: &Pool<DB>,
     plan: &ImportPlan<'_>,
     rows: &[Vec<CellValue>],
     first_line: usize,
     bind: Bind,
+    progress: &(dyn Fn(u64) + Send + Sync),
 ) -> AppResult<u64>
 where
     DB: Database,
@@ -37,50 +47,92 @@ where
     DB::Arguments: IntoArguments<DB> + Default,
     Bind: Fn(&mut QueryBuilder<DB>, &CellValue, &str) + Copy,
 {
-    let qualified = quote_qualified(plan.engine, plan.namespace, plan.table);
-    let verb = insert_verb(plan.engine, plan.conflict);
+    let suffix = conflict_suffix(plan)?;
+    let per_batch = (MAX_PARAMS / plan.columns.len().max(1)).clamp(1, MAX_ROWS);
+
+    let mut tx = pool.begin().await.map_err(AppError::internal)?;
+    let mut inserted = 0u64;
+    let mut done = 0usize;
+    for batch in rows.chunks(per_batch) {
+        (&mut *tx)
+            .execute("SAVEPOINT basalt_import")
+            .await
+            .map_err(AppError::internal)?;
+        match insert(plan, batch, &suffix, bind)
+            .build()
+            .execute(&mut *tx)
+            .await
+        {
+            Ok(result) => inserted += result.affected(),
+            Err(_) => {
+                (&mut *tx)
+                    .execute("ROLLBACK TO SAVEPOINT basalt_import")
+                    .await
+                    .map_err(AppError::internal)?;
+                for (i, row) in batch.iter().enumerate() {
+                    let one = std::slice::from_ref(row);
+                    match insert(plan, one, &suffix, bind)
+                        .build()
+                        .execute(&mut *tx)
+                        .await
+                    {
+                        Ok(result) => inserted += result.affected(),
+                        Err(e) => {
+                            tx.rollback().await.ok();
+                            return Err(AppError::ImportParse {
+                                message: match &e {
+                                    sqlx::Error::Database(db) => db.message().to_string(),
+                                    other => other.to_string(),
+                                },
+                                line: first_line + done + i,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        done += batch.len();
+        progress(done as u64);
+    }
+    tx.commit().await.map_err(AppError::internal)?;
+    Ok(inserted)
+}
+
+/// One `INSERT … VALUES (…), (…)` for `rows`, with the conflict clause.
+fn insert<DB, Bind>(
+    plan: &ImportPlan<'_>,
+    rows: &[Vec<CellValue>],
+    suffix: &str,
+    bind: Bind,
+) -> QueryBuilder<DB>
+where
+    DB: Database,
+    Bind: Fn(&mut QueryBuilder<DB>, &CellValue, &str),
+{
     let col_list = plan
         .columns
         .iter()
         .map(|c| quote_ident(plan.engine, c))
         .collect::<Vec<_>>()
         .join(", ");
-    let suffix = conflict_suffix(plan)?;
-
-    let mut tx = pool.begin().await.map_err(AppError::internal)?;
-    let mut inserted = 0u64;
-    for (i, row) in rows.iter().enumerate() {
-        let mut qb: QueryBuilder<DB> = QueryBuilder::new("");
-        qb.push(verb)
-            .push(" INTO ")
-            .push(&qualified)
-            .push(" (")
-            .push(&col_list)
-            .push(") VALUES (");
+    let mut qb: QueryBuilder<DB> = QueryBuilder::new(insert_verb(plan.engine, plan.conflict));
+    qb.push(" INTO ")
+        .push(quote_qualified(plan.engine, plan.namespace, plan.table))
+        .push(" (")
+        .push(col_list)
+        .push(") VALUES ");
+    for (r, row) in rows.iter().enumerate() {
+        qb.push(if r == 0 { "(" } else { ", (" });
         for (j, cell) in row.iter().enumerate() {
             if j > 0 {
                 qb.push(", ");
             }
             bind(&mut qb, cell, type_of(plan, j));
         }
-        qb.push(")").push(&suffix);
-
-        match qb.build().execute(&mut *tx).await {
-            Ok(result) => inserted += result.affected(),
-            Err(e) => {
-                tx.rollback().await.ok();
-                return Err(AppError::ImportParse {
-                    message: match &e {
-                        sqlx::Error::Database(db) => db.message().to_string(),
-                        other => other.to_string(),
-                    },
-                    line: first_line + i,
-                });
-            }
-        }
+        qb.push(")");
     }
-    tx.commit().await.map_err(AppError::internal)?;
-    Ok(inserted)
+    qb.push(suffix);
+    qb
 }
 
 fn type_of<'a>(plan: &'a ImportPlan<'_>, col_index: usize) -> &'a str {

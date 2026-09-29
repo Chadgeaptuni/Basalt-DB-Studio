@@ -31,7 +31,7 @@ async fn import_roundtrip(url: &str, namespace: &str) {
         .await
         .expect("connect");
     let sid = &info.session_id;
-    let cols = vec!["id".to_string(), "name".to_string()];
+    let cols = vec![Some("id".to_string()), Some("name".to_string())];
 
     query_service::run(
         sid,
@@ -66,6 +66,7 @@ async fn import_roundtrip(url: &str, namespace: &str) {
         true,
         ConflictMode::Insert,
         &f,
+        &|_| {},
         &reg,
     )
     .await
@@ -82,6 +83,7 @@ async fn import_roundtrip(url: &str, namespace: &str) {
         true,
         ConflictMode::Skip,
         &f,
+        &|_| {},
         &reg,
     )
     .await
@@ -101,6 +103,7 @@ async fn import_roundtrip(url: &str, namespace: &str) {
         true,
         ConflictMode::Upsert,
         &f,
+        &|_| {},
         &reg,
     )
     .await

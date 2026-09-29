@@ -14,10 +14,11 @@ pub async fn import(
     session_id: &str,
     namespace: &str,
     table: &str,
-    columns: Vec<String>,
+    mapping: Vec<Option<String>>,
     has_header: bool,
     conflict: ConflictMode,
     path: &str,
+    progress: &(dyn Fn(u64) + Send + Sync),
     registry: &SessionRegistry,
 ) -> AppResult<ImportResult> {
     let (driver, read_only) = session_driver(session_id, registry).await?;
@@ -26,9 +27,17 @@ pub async fn import(
             "connection is read-only".into(),
         ));
     }
-    if columns.is_empty() {
+    // Field `j` of each record goes to `mapping[j]`; `None` skips the field.
+    let targets: Vec<(usize, String)> = mapping
+        .into_iter()
+        .enumerate()
+        .filter_map(|(j, c)| c.map(|c| (j, c)))
+        .collect();
+    if targets.is_empty() {
         return Err(AppError::internal("no target columns selected"));
     }
+    let columns: Vec<String> = targets.iter().map(|(_, c)| c.clone()).collect();
+    let needed = targets.iter().map(|(j, _)| j + 1).max().unwrap_or(0);
 
     let text = std::fs::read_to_string(path).map_err(|e| AppError::ImportParse {
         message: format!("cannot read file: {e}"),
@@ -61,14 +70,15 @@ pub async fn import(
     // Each field → Text, or NULL when empty (the common CSV convention in v1).
     let mut rows = Vec::with_capacity(records.len() - start);
     for (idx, rec) in records.iter().enumerate().skip(start) {
-        if rec.len() < columns.len() {
+        if rec.len() < needed {
             return Err(AppError::ImportParse {
-                message: format!("row has {} field(s), expected {}", rec.len(), columns.len()),
+                message: format!("row has {} field(s), expected {needed}", rec.len()),
                 line: idx + 1,
             });
         }
-        let cells = (0..columns.len())
-            .map(|j| {
+        let cells = targets
+            .iter()
+            .map(|&(j, _)| {
                 if rec[j].is_empty() {
                     CellValue::Null
                 } else {
@@ -83,9 +93,25 @@ pub async fn import(
     let first_line = start + 1;
     driver
         .import_rows(
-            namespace, table, &columns, &pk, conflict, &types, &rows, first_line,
+            namespace, table, &columns, &pk, conflict, &types, &rows, first_line, progress,
         )
         .await
+}
+
+/// The fields of a CSV's first record — the header, when it has one — for the
+/// wizard's column mapping.
+// ponytail: reads the first 64 KiB; a header longer than that is truncated.
+pub fn header(path: &str) -> AppResult<Vec<String>> {
+    use std::io::Read;
+    let mut head = Vec::new();
+    std::fs::File::open(path)
+        .and_then(|f| f.take(64 * 1024).read_to_end(&mut head))
+        .map_err(|e| AppError::ImportParse {
+            message: format!("cannot read file: {e}"),
+            line: 0,
+        })?;
+    let text = String::from_utf8_lossy(&head);
+    Ok(parse_csv(&text).into_iter().next().unwrap_or_default())
 }
 
 /// A minimal RFC4180 CSV reader → records of fields. Handles quoted fields with
@@ -227,7 +253,7 @@ mod tests {
             "INSERT INTO t VALUES (1, 'orig')",
         ])
         .await;
-        let cols = vec!["id".to_string(), "name".to_string()];
+        let cols = vec![Some("id".to_string()), Some("name".to_string())];
 
         // insert: adds id=2.
         let f = write_csv("id,name\n2,two\n");
@@ -239,6 +265,7 @@ mod tests {
             true,
             ConflictMode::Insert,
             &f,
+            &|_| {},
             &reg,
         )
         .await
@@ -255,6 +282,7 @@ mod tests {
             true,
             ConflictMode::Skip,
             &f,
+            &|_| {},
             &reg,
         )
         .await
@@ -283,6 +311,7 @@ mod tests {
             true,
             ConflictMode::Upsert,
             &f,
+            &|_| {},
             &reg,
         )
         .await
@@ -311,10 +340,11 @@ mod tests {
             &sid,
             "main",
             "t",
-            vec!["id".into(), "name".into()],
+            vec![Some("id".into()), Some("name".into())],
             true,
             ConflictMode::Insert,
             &f,
+            &|_| {},
             &reg,
         )
         .await
@@ -323,5 +353,65 @@ mod tests {
         assert_eq!(err.detail().unwrap()["line"], 3);
         // Whole batch rolled back — not even the valid first row survives.
         assert_eq!(scalar_count(&sid, "SELECT count(*) FROM t", &reg).await, 0);
+    }
+
+    // 1,200 two-column rows are three batches of at most 500, and progress hears
+    // the running count after each.
+    #[tokio::test]
+    async fn imports_in_batches_and_reports_progress() {
+        let (sid, reg) = session(&["CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)"]).await;
+        let body: String = (1..=1200).map(|i| format!("{i},n{i}\n")).collect();
+        let f = write_csv(&format!("id,name\n{body}"));
+        let seen = std::sync::Mutex::new(Vec::new());
+        let out = import(
+            &sid,
+            "main",
+            "t",
+            vec![Some("id".into()), Some("name".into())],
+            true,
+            ConflictMode::Insert,
+            &f,
+            &|n| seen.lock().unwrap().push(n),
+            &reg,
+        )
+        .await
+        .unwrap();
+        assert_eq!(out.inserted, 1200);
+        assert_eq!(*seen.lock().unwrap(), [500, 1000, 1200]);
+        assert_eq!(
+            scalar_count(&sid, "SELECT count(*) FROM t", &reg).await,
+            1200
+        );
+    }
+
+    // Fields map by position to a target or to nothing: here the CSV's middle
+    // field is skipped and the others land in swapped column order.
+    #[tokio::test]
+    async fn maps_fields_to_columns_and_skips_the_unmapped() {
+        let (sid, reg) = session(&["CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT)"]).await;
+        let f = write_csv("label,junk,key\nada,x,1\n");
+        assert_eq!(header(&f).unwrap(), ["label", "junk", "key"]);
+        import(
+            &sid,
+            "main",
+            "t",
+            vec![Some("name".into()), None, Some("id".into())],
+            true,
+            ConflictMode::Insert,
+            &f,
+            &|_| {},
+            &reg,
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            scalar_count(
+                &sid,
+                "SELECT count(*) FROM t WHERE id = 1 AND name = 'ada'",
+                &reg
+            )
+            .await,
+            1
+        );
     }
 }

@@ -32,4 +32,11 @@ describe("toasts", () => {
     vi.advanceTimersByTime(60_000);
     expect(toasts.items).toHaveLength(1);
   });
+
+  it("rewrites a sticky toast in place, for a running count", () => {
+    const id = toast.info("Exporting…", { sticky: true });
+    toasts.update(id, "Exporting… 1,000 rows");
+    expect(toasts.items.find((t) => t.id === id)?.message).toBe("Exporting… 1,000 rows");
+    toasts.dismiss(id);
+  });
 });

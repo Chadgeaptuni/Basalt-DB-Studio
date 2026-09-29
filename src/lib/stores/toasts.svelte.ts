@@ -46,11 +46,18 @@ function push(kind: ToastKind, message: string, opts: ToastOpts = {}): number {
   return id;
 }
 
+/** Rewrites a toast in place — a sticky progress toast counting up. */
+function update(id: number, message: string): void {
+  const toast = items.find((t) => t.id === id);
+  if (toast) toast.message = message;
+}
+
 export const toasts = {
   get items() {
     return items;
   },
   dismiss,
+  update,
 };
 
 /**

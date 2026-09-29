@@ -2,16 +2,22 @@ import { Channel } from "@tauri-apps/api/core";
 import { invoke } from "./client";
 import type { ConflictMode, ExportFormat, ExportProgress, ImportResult } from "./types";
 
-// The export commands require a progress channel, but no caller renders progress
-// yet. Building the sink here keeps @tauri-apps out of the component layer
-// (DESIGN §9) — callers pass a path, not IPC plumbing.
-const progressSink = (): Channel<ExportProgress> => new Channel<ExportProgress>();
+// Progress arrives over an ipc::Channel. Building it here keeps @tauri-apps out of
+// the component layer (DESIGN §9): callers pass a callback, not IPC plumbing.
+export type OnRows = (rows: number) => void;
 
-// Import/export commands — the ONLY invoke site for this domain. Export streams
-// progress over an ipc::Channel; the returned number is the total row count.
+function channel<T>(read: (message: T) => number, onRows?: OnRows): Channel<T> {
+  const c = new Channel<T>();
+  if (onRows) c.onmessage = (message) => onRows(read(message));
+  return c;
+}
+const exportChannel = (onRows?: OnRows) => channel<ExportProgress>((p) => p.rows, onRows);
+
+// Import/export commands — the ONLY invoke site for this domain. The returned
+// number is the total row count.
 export const ioApi = {
-  exportQuery: (sessionId: string, sql: string, format: ExportFormat, path: string) =>
-    invoke<number>("export_query", { sessionId, sql, format, path, onProgress: progressSink() }),
+  exportQuery: (sessionId: string, sql: string, format: ExportFormat, path: string, onRows?: OnRows) =>
+    invoke<number>("export_query", { sessionId, sql, format, path, onProgress: exportChannel(onRows) }),
 
   exportTable: (
     sessionId: string,
@@ -19,6 +25,7 @@ export const ioApi = {
     table: string,
     format: ExportFormat,
     path: string,
+    onRows?: OnRows,
   ) =>
     invoke<number>("export_table", {
       sessionId,
@@ -26,16 +33,31 @@ export const ioApi = {
       table,
       format,
       path,
-      onProgress: progressSink(),
+      onProgress: exportChannel(onRows),
     }),
 
+  /** The CSV's first record, for mapping its fields to columns. */
+  csvHeader: (path: string) => invoke<string[]>("csv_header", { path }),
+
+  /** `mapping[i]` is the column CSV field `i` goes to; null skips it. */
   importCsv: (
     sessionId: string,
     namespace: string,
     table: string,
-    columns: string[],
+    mapping: (string | null)[],
     hasHeader: boolean,
     conflict: ConflictMode,
     path: string,
-  ) => invoke<ImportResult>("import_csv", { sessionId, namespace, table, columns, hasHeader, conflict, path }),
+    onRows?: OnRows,
+  ) =>
+    invoke<ImportResult>("import_csv", {
+      sessionId,
+      namespace,
+      table,
+      mapping,
+      hasHeader,
+      conflict,
+      path,
+      onProgress: channel<number>((n) => n, onRows),
+    }),
 };

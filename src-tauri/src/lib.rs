@@ -79,6 +79,7 @@ pub fn run() {
             commands::export::export_query,
             commands::export::export_table,
             commands::import::import_csv,
+            commands::import::csv_header,
             commands::saved_queries::list_saved_queries,
             commands::saved_queries::read_saved_query,
             commands::saved_queries::save_query,
