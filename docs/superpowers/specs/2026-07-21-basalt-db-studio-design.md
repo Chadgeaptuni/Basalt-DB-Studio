@@ -93,7 +93,7 @@ src-tauri/
 │   ├── sqlgen/                   # quote.rs (per-engine identifiers), split.rs (multi-statement),
 │   │                             # classify.rs (destructive detection)
 │   ├── tunnel/mod.rs             # russh local port-forward, owned by Session
-│   ├── config/                   # paths.rs, connections.rs (NO secret fields — secret_ref only),
+│   ├── config/                   # paths.rs, connections.rs (connections.toml; NO secret fields),
 │   │                             # saved_queries.rs, settings.rs   (all TOML)
 │   └── secrets/                  # mod.rs: SecretStore { Keychain (default) | EncryptedFile (opt-in) }
 └── tests/                        # integration: common/ harness (env-gated), pg_integration,
@@ -151,9 +151,10 @@ Global services declared once (DESIGN.md §9): `toast.success|error|info()` and
 
 ### Storage
 
-- **Config dir** (`~/.config/basalt/` or OS equivalent, via `dirs`): connection
-  profiles + saved queries + app settings as TOML. Human-readable and
-  hand-editable. Saved queries are organized into **named files under nestable
+- **Config dir** — Tauri's `app_config_dir()`, `<OS config dir>/app.basalt.studio/`
+  (beside the app's logs and webview data): `connections.toml` (every profile as
+  a `[[connection]]` table, written atomically), `queries/`, `settings.toml`.
+  Human-readable and hand-editable. Saved queries are organized into **named files under nestable
   folders** (subdirectories), usable from any editor. TOML
   carries no schema-version field in v1 — fields are additive and unknown keys
   are tolerated (forward-compatible by convention); cross-version migration is

@@ -57,7 +57,6 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
 # Stream `.next()` for the fetch-side row limit (buffered query results).
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
 toml = "0.8"
-dirs = "6"
 uuid = { version = "1", features = ["v4", "serde"] }
 
 # keyring, russh land in later M1 slices.

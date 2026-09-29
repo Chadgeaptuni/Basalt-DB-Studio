@@ -17,10 +17,11 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new() -> AppResult<Self> {
+    pub fn new(paths: Paths) -> AppResult<Self> {
+        paths.adopt_legacy_dir()?;
         Ok(Self {
             sessions: Mutex::new(HashMap::new()),
-            paths: Paths::resolve()?,
+            paths,
         })
     }
 }

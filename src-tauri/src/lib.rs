@@ -52,7 +52,7 @@ pub fn run() {
                 }
                 Err(e) => eprintln!("basalt: file logging unavailable: {e}"),
             }
-            app.manage(AppState::new()?);
+            app.manage(AppState::new(config::Paths::under(app.path().app_config_dir()?))?);
             drop_native_titlebar(app.handle());
             tracing::info!("Basalt DB Studio starting");
             Ok(())
