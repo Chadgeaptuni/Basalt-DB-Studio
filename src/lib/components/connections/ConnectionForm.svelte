@@ -118,20 +118,12 @@
 
 <Modal bind:open title={profile ? "Edit connection" : "New connection"} size="lg" onclose={close}>
   <div class="flex flex-col gap-3">
-    <div>
-      <label for="conn-name" class="mb-1 block text-body-sm text-on-surface-muted">Name</label>
-      <Input id="conn-name" bind:value={name} placeholder="My database" autofocus />
-    </div>
-    <div>
-      <label for="conn-engine" class="mb-1 block text-body-sm text-on-surface-muted">Engine</label>
-      <Select
-        id="conn-engine"
-        label="Engine"
-        value={engine}
-        options={engineOptions}
-        onchange={onEngineChange}
-      />
-    </div>
+    <Field label="Name">
+      <Input bind:value={name} placeholder="My database" autofocus />
+    </Field>
+    <Field label="Engine">
+      <Select label="Engine" value={engine} options={engineOptions} onchange={onEngineChange} />
+    </Field>
 
     <!-- Environment lives in the profile, so every surface that names the
          connection can warn from it. -->
@@ -145,53 +137,28 @@
     </Field>
 
     {#if isSqlite}
-      <div>
-        <label for="conn-file" class="mb-1 block text-body-sm text-on-surface-muted">File path</label>
-        <Input id="conn-file" bind:value={filePath} placeholder="/path/to/database.sqlite" />
-      </div>
+      <Field label="File path">
+        <Input bind:value={filePath} placeholder="/path/to/database.sqlite" />
+      </Field>
     {:else}
       <div class="grid grid-cols-3 gap-2">
         <div class="col-span-2">
-          <label for="conn-host" class="mb-1 block text-body-sm text-on-surface-muted">Host</label>
-          <Input id="conn-host" bind:value={host} placeholder="localhost" />
+          <Field label="Host"><Input bind:value={host} placeholder="localhost" /></Field>
         </div>
-        <div>
-          <label for="conn-port" class="mb-1 block text-body-sm text-on-surface-muted">Port</label>
-          <Input id="conn-port" type="number" bind:value={portStr} />
-        </div>
+        <Field label="Port"><Input type="number" bind:value={portStr} /></Field>
       </div>
-      <div>
-        <!-- Postgres cannot leave the database it connects to, so this field is
-             the one the *server* is discovered over, not the one you are stuck
-             with: the tree lists the rest and opens whichever you pick. Blank
-             means `postgres`, which every stock server has. MySQL browses every
-             database on one connection, so there the field genuinely is optional. -->
-        <label for="conn-db" class="mb-1 block text-body-sm text-on-surface-muted">
-          {engine === "postgres" ? "Maintenance database" : "Database"}
-        </label>
-        <Input
-          id="conn-db"
-          bind:value={database}
-          placeholder={engine === "postgres" ? "postgres" : "All databases"}
-        />
-      </div>
-      <div>
-        <label for="conn-user" class="mb-1 block text-body-sm text-on-surface-muted">Username</label>
-        <Input id="conn-user" bind:value={username} />
-      </div>
-      <div>
-        <label for="conn-pass" class="mb-1 block text-body-sm text-on-surface-muted">Password</label>
-        <Input
-          id="conn-pass"
-          type="password"
-          bind:value={password}
-          placeholder="Kept in memory for this session only"
-        />
-      </div>
-      <p class="text-body-sm text-on-surface-muted">
-        The password is held in memory only, never written to disk. TLS and SSH
-        tunnel options arrive with the secrets/tunnel slice.
-      </p>
+      <!-- Postgres cannot leave the database it connects to, so this field is the
+           one the *server* is discovered over, not the one you are stuck with: the
+           tree lists the rest and opens whichever you pick. Blank means
+           `postgres`, which every stock server has. MySQL browses every database
+           on one connection, so there the field genuinely is optional. -->
+      <Field label={engine === "postgres" ? "Maintenance database" : "Database"}>
+        <Input bind:value={database} placeholder={engine === "postgres" ? "postgres" : "All databases"} />
+      </Field>
+      <Field label="Username"><Input bind:value={username} /></Field>
+      <Field label="Password" hint="Held in memory for this session only, never written to disk.">
+        <Input type="password" bind:value={password} />
+      </Field>
     {/if}
 
     <Checkbox bind:checked={readOnly} label="Read-only connection" />

@@ -40,7 +40,7 @@
       <Input bind:value={name} autofocus />
     </Field>
     <div class="flex flex-col gap-1">
-      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Columns</span>
+      <span class="text-overline">Columns</span>
       <div class="flex flex-col gap-1 rounded-md border border-outline-variant bg-surface p-2">
         {#each columns as col (col)}
           <Checkbox bind:checked={picked[col]} label={col} />

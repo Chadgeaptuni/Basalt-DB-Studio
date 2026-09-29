@@ -32,7 +32,7 @@
   <header
     class="flex h-10 shrink-0 items-center gap-2 border-b border-outline-variant pr-1 pl-3"
   >
-    <h2 class="min-w-0 flex-1 truncate text-title-sm text-on-surface">{title}</h2>
+    <h2 class="min-w-0 flex-1 truncate text-title-md text-on-surface">{title}</h2>
     <IconButton icon={X} title="Close inspector" size="sm" onclick={onclose} />
   </header>
 

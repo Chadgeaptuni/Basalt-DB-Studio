@@ -345,7 +345,7 @@
             aria-colindex={ci + 1}
             aria-selected={selected}
             class="relative flex h-7 shrink-0 items-center border-r border-b border-outline-variant px-2
-              text-data {cell.numeric ? 'justify-end tabular-nums' : ''}
+              text-data {cell.numeric ? 'justify-end' : ''}
               {dirty ? 'bg-grid-edited' : ''}
               {selected ? 'outline outline-1 -outline-offset-1 outline-primary' : ''}
               {edit?.rowState(r) === 'deleted' ? 'text-on-surface-muted line-through' : 'text-on-surface-variant'}"

@@ -107,7 +107,7 @@
       </div>
     {:else if step === 1}
       <div class="flex flex-col gap-2">
-        <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">
+        <span class="text-overline">
           Target columns (in CSV order)
         </span>
         <div

@@ -61,7 +61,7 @@
   {#each items as item (item.id)}
     <div
       transition:uiSlide={{ axis: "x" }}
-      class="group relative flex h-full items-center text-data whitespace-nowrap
+      class="group relative flex h-full items-center text-title-sm whitespace-nowrap
         transition-colors duration-200 ease-standard {stateLayer}
         {item.id === activeId ? 'text-on-surface' : 'text-on-surface-muted'}"
     >

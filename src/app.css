@@ -120,6 +120,13 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The overline (DESIGN §4): panel groups, form sections, list headings. One
+   class, because the four-utility combination was restated at a dozen sites and
+   each restatement was a chance to drop the colour or the tracking. */
+@utility text-overline {
+  @apply text-label-sm tracking-wider text-on-surface-muted uppercase;
+}
+
 /* The app's own zoom (stores/zoom.svelte.ts), for the roots that are not #app.
    Every portalled overlay is mounted on <body> beside #app, so each one has to
    opt in or it renders at 100% while the app scales around it.

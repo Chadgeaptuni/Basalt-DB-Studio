@@ -54,7 +54,7 @@
     </Field>
 
     <div class="flex flex-col gap-1">
-      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Columns</span>
+      <span class="text-overline">Columns</span>
       <div class="flex flex-col gap-1.5">
         {#each cols as col, i (i)}
           <div class="flex items-center gap-2">

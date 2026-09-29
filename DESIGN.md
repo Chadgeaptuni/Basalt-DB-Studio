@@ -297,8 +297,8 @@ size. This is what stops `text-[11px]` and `text-[10px]` from reappearing.
 - **All data is mono**, no exceptions: cell values, row counts, durations,
   connection hosts/ports, SQL text, keyboard shortcuts (`Kbd`), history entries.
   `text-data` carries `font-mono` + `tabular-nums` so call sites don't restate it.
-- **Overline labels** (panel groups, form sections) are `text-label-sm uppercase
-  tracking-wider` `--on-surface-muted`.
+- **Overline labels** (panel groups, form sections) are `text-overline` —
+  `text-label-sm uppercase tracking-wider` in `--on-surface-muted`, as one utility.
 - No hero headings anywhere — this is a tool. Largest UI text is `text-title-lg`
   (dialog headlines).
 

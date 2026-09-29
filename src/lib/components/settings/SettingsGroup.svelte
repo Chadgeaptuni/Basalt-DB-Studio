@@ -17,7 +17,7 @@
 
 <section class="flex flex-col gap-2">
   {#if title}
-    <h3 class="text-label-sm tracking-wider text-on-surface-muted uppercase">{title}</h3>
+    <h3 class="text-overline">{title}</h3>
   {/if}
   <div
     class="flex flex-col divide-y divide-outline-variant overflow-hidden rounded-sm border

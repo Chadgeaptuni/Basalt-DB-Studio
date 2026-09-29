@@ -84,7 +84,7 @@
       class="flex w-56 shrink-0 flex-col border-r border-outline-variant bg-surface-container py-2"
       aria-label="Settings sections"
     >
-      <span class="px-3 pb-2 text-label-sm tracking-wider text-on-surface-muted uppercase">
+      <span class="px-3 pb-2 text-overline">
         Settings
       </span>
 
@@ -164,7 +164,7 @@
           <section class="flex flex-col gap-3">
             <div class="flex items-center justify-between gap-3">
               <div class="min-w-0">
-                <h3 class="text-label-sm tracking-wider text-on-surface-muted uppercase">
+                <h3 class="text-overline">
                   Themes &amp; Variants
                 </h3>
                 <p class="text-body-sm text-on-surface-muted">Choose a color palette and display mode.</p>

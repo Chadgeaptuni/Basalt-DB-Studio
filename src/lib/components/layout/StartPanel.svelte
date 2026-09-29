@@ -50,10 +50,7 @@
     <div class="grid w-full grid-cols-1 gap-x-8 gap-y-6 @2xl:grid-cols-2">
       {#each STARTUP_SHORTCUT_GROUPS as group (group.title)}
         <section>
-          <h2
-            class="flex items-center gap-3 pb-1 text-label-sm tracking-wider text-on-surface-muted
-              uppercase"
-          >
+          <h2 class="flex items-center gap-3 pb-1 text-overline">
             {group.title}
             <span class="h-px flex-1 bg-outline-variant"></span>
           </h2>

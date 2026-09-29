@@ -58,7 +58,7 @@
       bg-surface/60 p-3"
   >
     <div class="flex items-center gap-2">
-      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Variant:</span>
+      <span class="text-overline">Variant:</span>
       <SegmentedButton
         label="Theme variant"
         segments={VARIANT_SEGMENTS}
@@ -76,7 +76,7 @@
   <!-- Custom themes first: they are the user's own, and there are few of them. -->
   {#if theme.customThemes.length > 0}
     <section class="flex flex-col gap-1">
-      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Custom Themes</span>
+      <span class="text-overline">Custom Themes</span>
       <div class="divide-y divide-outline-variant border-y border-outline-variant">
         {#each theme.customThemes as custom (custom.id)}
           <ListItem
@@ -112,7 +112,7 @@
   <!-- A palette per row rather than a card grid: 22 cards is a wall, and the only
        thing that distinguishes them is the swatch, which a row carries just as well. -->
   <section class="flex flex-col gap-1">
-    <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Presets</span>
+    <span class="text-overline">Presets</span>
     <div class="divide-y divide-outline-variant border-y border-outline-variant">
       {#each THEME_DEFINITIONS as preset (preset.id)}
         <ListItem

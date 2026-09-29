@@ -119,7 +119,7 @@
     </div>
 
     <div class="flex flex-col gap-2 rounded-md border border-outline-variant p-3">
-      <span class="text-label-sm tracking-wider text-on-surface-muted uppercase">Readability</span>
+      <span class="text-overline">Readability</span>
       {#each checks as c (c.label)}
         <div class="flex items-center gap-2 text-body-sm text-on-surface-variant">
           <Badge variant={c.ok ? "ok" : "warn"}>{c.ok ? "AA" : "low"}</Badge>

@@ -90,7 +90,7 @@
       />
     </div>
 
-    <div class="flex items-center gap-2 text-label-sm text-on-surface-muted tabular-nums">
+    <div class="flex items-center gap-2 text-data text-on-surface-muted">
       <span>{rendered.size ?? `${chars.toLocaleString()} chars`}</span>
       {#if truncated}
         <span class="text-warn">· showing the first {MAX_CHARS.toLocaleString()}</span>

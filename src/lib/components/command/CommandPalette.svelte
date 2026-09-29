@@ -191,7 +191,7 @@
           </div>
         {/each}
         {#if hidden > 0}
-          <p class="px-3 py-2 text-label-sm text-on-surface-muted">
+          <p class="px-3 py-2 text-body-sm text-on-surface-muted">
             {hidden} more — keep typing to narrow.
           </p>
         {/if}
