@@ -23,7 +23,6 @@ export const ERROR_KINDS = [
   "confirmationRequired",
   "secretNotFound",
   "keychainUnavailable",
-  "vaultLocked",
   "configIo",
   "configParse",
   "importParse",
@@ -70,6 +69,14 @@ export interface SshConfig {
 
 /** Which deployment a profile points at. Lives in the profile, and `undefined`
  *  means untagged — never assume `local`. */
+/** What the OS keychain holds for a profile — never part of the profile itself.
+ *  Mirrors `secrets::Secret`; an absent field keeps whatever is stored. */
+export interface Secret {
+  password?: string;
+  /** The SSH key passphrase, or the SSH password. */
+  ssh?: string;
+}
+
 export type Environment = "local" | "staging" | "prod";
 
 export interface ConnectionProfile {

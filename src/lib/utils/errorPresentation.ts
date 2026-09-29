@@ -64,16 +64,12 @@ const PRESENTATION: Record<ErrorKind, ErrorPresentation> = {
     hint: "This statement needs confirming before it runs. If you're seeing this, the confirm step was skipped — please report it.",
   },
   secretNotFound: {
-    title: "No stored password",
-    hint: "Edit the connection and enter the password again to store it.",
+    title: "No saved password",
+    hint: "Enter it when asked, and tick “Save in the OS keychain” to keep it.",
   },
   keychainUnavailable: {
     title: "OS keychain unavailable",
-    hint: "Unlock your login keychain, or switch the secret store to the encrypted file backend in Settings.",
-  },
-  vaultLocked: {
-    title: "Secret vault is locked",
-    hint: "Unlock the encrypted secret file to use this connection.",
+    hint: "Unlock your login keychain (on Linux, start a Secret Service). Until then Basalt asks for the password on each connect.",
   },
   configIo: {
     title: "Can't read the config directory",

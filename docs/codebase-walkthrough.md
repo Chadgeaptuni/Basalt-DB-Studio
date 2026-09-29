@@ -267,19 +267,19 @@ dependencies and the effect doesn't re-trigger itself. Add one synchronous
 reactive read to `load()` and it becomes an infinite loop. It also double-fetches
 with `ConnectionList` on startup. Works, but fragile.
 
-**e) Passwords live in a plain in-memory Map.**
+**e) Passwords: the OS keychain, with a session cache in front.**
 
 ```ts
-// Per-connection passwords, in memory only. A plain Map (not `$state`) on
+// Per-connection passwords for this session. A plain Map (not `$state`) on
 // purpose: secrets must never become observable/serializable UI state.
 const secrets = new Map<string, string>();
 ```
-`stores/connections.svelte.ts:20`
+`stores/connections.svelte.ts`
 
-The OS-keychain backend isn't built yet (`src-tauri/Cargo.toml:63` says as much).
-This is a documented interim, not a lie — and note the deliberate choice *not* to use
-`$state`, so secrets can never end up in a devtools reactive-state dump. Good
-instinct.
+Saved passwords live in the OS keychain (`src-tauri/src/secrets.rs`); the Map only
+spares a connect the keychain round trip for a password typed a moment ago. Note
+the deliberate choice *not* to use `$state`, so secrets can never end up in a
+devtools reactive-state dump. Good instinct.
 
 ---
 

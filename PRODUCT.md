@@ -52,7 +52,7 @@ auto-prompt on `authFailed`, TLS-ladder and SSH UI), plus pinned-transaction
 connections, query cancellation, and statement timeout.
 
 Terminology: *connection profile* (TOML, no secrets), *secret_ref* (UUID
-pointing at the keychain/vault entry), *session*, *saved query*.
+pointing at the keychain entry), *session*, *saved query*.
 
 Every user-facing failure mode has a distinct error `kind` the UI switches on —
 there is no generic error path, by design.

@@ -35,9 +35,9 @@ guess). Concretely, these v1-era facts already differ from common model memory:
   `runtime-tokio-native-tls`-style features were deleted; query functions take
   `impl SqlSafeStr`, so user-supplied SQL needs `AssertSqlSafe` — central to this
   app. MSRV 1.94.
-- **keyring 4.x**: per-platform stores are feature flags —
-  `windows-native-keyring-store` and `zbus-secret-service-keyring-store` are
-  defaults, **`apple-native-keyring-store` must be enabled explicitly**.
+- **keyring 4.2**: the default `v1` feature selects all three platform stores
+  (Apple keychain, Windows, zbus Secret Service). Use `keyring_core::Entry`, not
+  `keyring::Entry` — v1's constructor ignores a test's mock store.
 - **Tauri 2**: high-throughput data to the frontend uses `tauri::ipc::Channel` —
   events are officially unsuitable for streaming. Permissions live in
   `src-tauri/capabilities/*.json`; enable `build.removeUnusedCommands`.
@@ -112,8 +112,8 @@ else`. Nothing below `services/` imports `tauri`.
   engine types map to/from `CellValue`.
 - `sqlgen/` — identifier quoting, multi-statement splitting, destructive-statement
   classification (shared, heavily unit-tested).
-- `config/` (TOML profiles, saved queries, settings), `secrets/`
-  (`SecretStore`: OS keychain default, encrypted-file backend opt-in), `tunnel/`
+- `config/` (TOML profiles, saved queries, settings), `secrets.rs` (the OS
+  keychain entry per profile), `tunnel/`
   (russh), `errors/` (below). Query history is session-only and lives in a
   frontend rune store — no backend history subsystem, no local DB.
 
@@ -132,7 +132,7 @@ as `ErrorResponse { kind, message, detail }`. Every user-facing failure mode has
 a distinct `kind` the frontend switches on (`connectionRefused`, `authFailed`,
 `tlsError`, `tunnelError`, `queryError`, `queryCancelled`, `readOnlyViolation`,
 `noPrimaryKey`, `ambiguousRowIdentity`, `confirmationRequired`, `secretNotFound`,
-`keychainUnavailable`, `vaultLocked`, `configIo`, `configParse`,
+`keychainUnavailable`, `configIo`, `configParse`,
 `importParse`, `internal`). New failure mode ⇒ new variant — never a new string
 matched in the frontend, never a collapsed generic error.
 

@@ -55,18 +55,42 @@ describe("ConnectionsPanel", () => {
     expect(connections.active?.sessionId).toBe("s1");
   });
 
-  it("stays put and announces a failed connect as a toast", async () => {
+  // A rejected password is fixed by typing one, so it asks rather than only
+  // announcing — and declining falls back to the announcement.
+  it("asks for a password on authFailed and toasts when declined", async () => {
     mock(() => {
       throw { kind: "authFailed", message: "password authentication failed" };
     });
     render(ConnectionsPanel);
 
     await fireEvent.click(await screen.findByRole("button", { name: /warehouse/ }));
+    await waitFor(() => expect(connections.passwordRequest?.kind).toBe("authFailed"));
+    connections.passwordRequest?.answer(null);
 
     await waitFor(() =>
       expect(toasts.items.at(-1)?.message).toBe("Connect to “warehouse”: Authentication failed"),
     );
     expect(panel.active).toBe("connections");
+  });
+
+  it("retries with the typed password", async () => {
+    const passwords: unknown[] = [];
+    mockIPC((cmd, args) => {
+      if (cmd === "list_connections") return [profile];
+      if (cmd !== "connect") return undefined;
+      const password = (args as { password?: string }).password;
+      passwords.push(password);
+      if (password !== "hunter2") throw { kind: "authFailed", message: "denied" };
+      return session();
+    });
+    render(ConnectionsPanel);
+
+    await fireEvent.click(await screen.findByRole("button", { name: /warehouse/ }));
+    await waitFor(() => expect(connections.passwordRequest).not.toBeNull());
+    connections.passwordRequest?.answer({ password: "hunter2", remember: false });
+
+    await waitFor(() => expect(panel.active).toBe("schema"));
+    expect(passwords).toEqual([undefined, "hunter2"]);
   });
 
   it("offers a disconnect on a connected row", async () => {

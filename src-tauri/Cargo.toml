@@ -59,7 +59,11 @@ futures-util = { version = "0.3", default-features = false, features = ["std"] }
 toml = "0.8"
 uuid = { version = "1", features = ["v4", "serde"] }
 
-# keyring, russh land in later M1 slices.
+# Saved passwords, in the OS store (macOS Keychain, Windows Credential Manager,
+# Secret Service): the default `v1` feature selects all three.
+keyring = "4.2"
+# keyring's own store API, so tests can swap in its mock store (already in the tree).
+keyring-core = "1"
 
 [dev-dependencies]
 # The integration-test crate (tests/) drives the async service layer; dev-only,

@@ -39,9 +39,10 @@
   let database = $state(seed?.database ?? "");
   let username = $state(seed?.username ?? "");
   let filePath = $state(seed?.filePath ?? "");
-  // Memory-only: never seeded from a saved profile (it holds no password) and
-  // never written back. Blank on save leaves any existing stashed password.
+  // Never seeded: the profile holds no password. Blank on save keeps a saved one.
   let password = $state("");
+  const saved = Boolean(seed?.secretRef);
+  let remember = $state(seed ? saved : true);
   let readOnly = $state(seed?.readOnly ?? false);
   // "" is untagged, which is distinct from `local` — see utils/environment.ts.
   let environment = $state<Environment | "">(seed?.environment ?? "");
@@ -69,7 +70,7 @@
   }
 
   function toProfile(): ConnectionProfile {
-    const p: ConnectionProfile = { id, name: name.trim(), engine, readOnly };
+    const p: ConnectionProfile = { id, name: name.trim(), engine, readOnly, secretRef: seed?.secretRef };
     // Omitted rather than sent as "" — the profile TOML has no key for untagged.
     if (environment) p.environment = environment;
     if (isSqlite) {
@@ -104,8 +105,7 @@
   async function save(): Promise<void> {
     saving = true;
     try {
-      await connections.save(toProfile());
-      if (password) connections.setSecret(id, password);
+      await connections.save(toProfile(), { password: password || undefined }, remember);
       toast.success("Connection saved.");
       close();
     } catch (e) {
@@ -156,9 +156,13 @@
         <Input bind:value={database} placeholder={engine === "postgres" ? "postgres" : "All databases"} />
       </Field>
       <Field label="Username"><Input bind:value={username} /></Field>
-      <Field label="Password" hint="Held in memory for this session only, never written to disk.">
+      <Field
+        label="Password"
+        hint={saved && remember ? "Saved in the OS keychain. Leave blank to keep it." : undefined}
+      >
         <Input type="password" bind:value={password} />
       </Field>
+      <Checkbox bind:checked={remember} label="Save password in the OS keychain" />
     {/if}
 
     <Checkbox bind:checked={readOnly} label="Read-only connection" />

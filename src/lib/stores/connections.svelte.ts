@@ -3,7 +3,7 @@ import type { ApiError } from "$lib/api/client";
 import { toast } from "./toasts.svelte";
 import { schema } from "./schema.svelte";
 import { confirm } from "./dialogs.svelte";
-import type { ConnectionProfile, SessionInfo, TxStatus } from "$lib/api/types";
+import type { ConnectionProfile, ErrorKind, Secret, SessionInfo, TxStatus } from "$lib/api/types";
 
 export type ConnStatus = "disconnected" | "connecting" | "connected" | "error";
 
@@ -30,11 +30,21 @@ let active = $state<SessionInfo | null>(null);
 // connection, so a COMMIT in one tab closes the transaction the others see.
 let txStatuses = $state<Record<string, TxStatus>>({});
 
-// Per-connection passwords, in memory only. A plain Map (not `$state`) on
-// purpose: secrets must never become observable/serializable UI state. Set from
-// the connection form, consumed at connect time, dropped on delete and on
-// reload. The keychain/vault backend replaces this in the secrets slice.
+// Per-connection passwords for this session. A plain Map (not `$state`) on
+// purpose: secrets must never become observable/serializable UI state. Filled
+// from the form and the password prompt, so a connect never has to go back to
+// the keychain for a password typed a moment ago; dropped on delete and reload.
 const secrets = new Map<string, string>();
+
+/** A connect that failed for want of a password, waiting on the user. */
+export interface PasswordRequest {
+  name: string;
+  kind: ErrorKind;
+  answer: (reply: { password: string; remember: boolean } | null) => void;
+}
+let passwordRequest = $state<PasswordRequest | null>(null);
+/** The failures a typed password can fix. */
+const WANTS_PASSWORD = new Set<string>(["authFailed", "secretNotFound", "keychainUnavailable"]);
 
 // Connects in flight, keyed as the state maps are. A second caller for the same
 // key awaits the first rather than opening a second pool: the tree, the command
@@ -88,9 +98,33 @@ async function load(): Promise<void> {
   }
 }
 
-async function save(profile: ConnectionProfile): Promise<void> {
-  await connectionsApi.save(profile);
+/** Saves the profile; with `remember`, its secret goes to the OS keychain. With
+ *  no keychain the profile is saved anyway and the password kept for this
+ *  session, because failing the whole save over it would lose the form. */
+async function save(profile: ConnectionProfile, secret: Secret = {}, remember = false): Promise<void> {
+  try {
+    await connectionsApi.save(profile, secret, remember);
+  } catch (e) {
+    if (!remember || (e as ApiError).kind !== "keychainUnavailable") throw e;
+    await connectionsApi.save(profile, secret, false);
+    toast.info("No OS keychain available — the password is kept for this session only.");
+  }
+  if (secret.password) secrets.set(profile.id, secret.password);
   await load();
+}
+
+function askPassword(name: string, kind: ErrorKind): Promise<{ password: string; remember: boolean } | null> {
+  passwordRequest?.answer(null);
+  return new Promise((resolve) => {
+    passwordRequest = {
+      name,
+      kind,
+      answer: (reply) => {
+        passwordRequest = null;
+        resolve(reply);
+      },
+    };
+  });
 }
 
 async function remove(id: string): Promise<void> {
@@ -100,12 +134,6 @@ async function remove(id: string): Promise<void> {
   secrets.delete(id);
   delete statuses[id];
   await load();
-}
-
-/** Stash a connection's password in memory (empty clears it). Never persisted. */
-function setSecret(id: string, password: string): void {
-  if (password) secrets.set(id, password);
-  else secrets.delete(id);
 }
 
 function profileName(id: string): string {
@@ -159,6 +187,7 @@ async function attemptConnect(
   into: Record<string, ConnState>,
   key: string,
   label: string,
+  asked = false,
 ): Promise<SessionInfo | null> {
   into[key] = { status: "connecting" };
   try {
@@ -167,6 +196,23 @@ async function attemptConnect(
     active = session;
     return session;
   } catch (e) {
+    // Asked once per attempt: a second rejection is a wrong password, and the
+    // toast below says so rather than the prompt reappearing in a loop.
+    const kind = (e as ApiError).kind;
+    if (!asked && WANTS_PASSWORD.has(kind)) {
+      const reply = await askPassword(profileName(id), kind);
+      if (reply) {
+        secrets.set(id, reply.password);
+        const session = await attemptConnect(id, database, into, key, label, true);
+        const profile = profiles.find((p) => p.id === id);
+        if (session && reply.remember && profile) {
+          await save(profile, { password: reply.password }, true).catch((err) =>
+            toast.fromError(err, "Couldn't save the password"),
+          );
+        }
+        return session;
+      }
+    }
     into[key] = { status: "error", error: e as ApiError };
     // A failed connect is announced once, here, rather than rendered wherever the
     // click came from: the Connections panel, the schema tree, the command palette
@@ -299,13 +345,15 @@ export const connections = {
   get active() {
     return active;
   },
+  get passwordRequest() {
+    return passwordRequest;
+  },
   statusFor,
   databaseStateFor,
   sessionsFor,
   load,
   save,
   remove,
-  setSecret,
   connect,
   connectDatabase,
   disconnect,

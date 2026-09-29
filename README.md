@@ -95,7 +95,7 @@ cargo test                                   # Run all unit and integration test
   - RFC4180-compliant CSV import with per-engine conflict resolution (`ON CONFLICT DO NOTHING/UPDATE`, `INSERT IGNORE`, `INSERT OR IGNORE`) and line-accurate error reporting.
 - **Zero-Trust Secret Hygiene**:
   - Connection TOML files store only a `secret_ref`. Passwords never touch disk configuration files.
-  - Memory-only password storage with OS Keychain / encrypted vault support.
+  - Passwords saved in the OS keychain (macOS Keychain, Windows Credential Manager, Secret Service), or held in memory for the session.
 - **Flat Utilitarian Design System**:
   - Strict flat design with 1px borders, dense data density, zero gradients, zero Dribbble-style bloat.
   - Ships with 4 theme presets: `basalt-dark` (default), `basalt-light`, `basalt-nord`, and `basalt-paper`.

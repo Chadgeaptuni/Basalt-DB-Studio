@@ -49,7 +49,7 @@ registry when in doubt — never implement from memory.
 | Tailwind | 4.3.x, **CSS-first**: `@tailwindcss/vite` plugin, `@import "tailwindcss"`, tokens via `@theme`. No `tailwind.config.js`, no PostCSS config, no `content` array. |
 | CodeMirror | `@codemirror/lang-sql` 6.10 has schema-aware autocomplete built in: `sql({ schema, dialect, defaultTable })`, fed from our schema store. |
 | sqlx | **0.9** (breaking vs 0.8): features `postgres` + `mysql` + `sqlite` + `runtime-tokio` + `tls-rustls-ring-webpki` (combined runtime-TLS features deleted). Query fns take `impl SqlSafeStr` → user-supplied SQL wrapped in `AssertSqlSafe`. MySQL text columns infer `String`. `#[sqlx::test]` gives per-test isolated DBs. **MSRV 1.94.** |
-| keyring | **4.x** re-architecture: stores are feature-flagged crates — `windows-native-keyring-store` (default), `zbus-secret-service-keyring-store` (default), `apple-native-keyring-store` (**must enable explicitly**). |
+| keyring | **4.2**: the default `v1` feature selects all three platform stores (Apple keychain, Windows Credential Manager, zbus Secret Service); entries go through `keyring-core`, whose `mock` store backs the tests. |
 | russh | 0.62.x (SSH tunnel / bastion support). |
 | Toolchain | Windows: MSVC + WebView2. Linux: webkit2gtk 4.1. Release profile per official size guide: `codegen-units=1, lto=true, opt-level="s", panic="abort", strip=true` (measure `"s"` vs `"z"`). |
 
@@ -64,7 +64,7 @@ calls Tauri commands; Rust owns all data access.
 Svelte UI ──invoke──▶ commands ──▶ services ──▶ Driver enum (Pg | MySql | Sqlite)
                                       │              └─ sqlx, rustls, russh tunnel
                                       ├─▶ config dir (TOML)
-                                      └─▶ SecretStore        ◀── keychain | encrypted file
+                                      └─▶ secrets            ◀── OS keychain
 (query history lives in-memory in the Svelte UI, session-scoped)
 ```
 
@@ -95,7 +95,7 @@ src-tauri/
 │   ├── tunnel/mod.rs             # russh local port-forward, owned by Session
 │   ├── config/                   # paths.rs, connections.rs (connections.toml; NO secret fields),
 │   │                             # saved_queries.rs, settings.rs   (all TOML)
-│   └── secrets/                  # mod.rs: SecretStore { Keychain (default) | EncryptedFile (opt-in) }
+│   └── secrets.rs                # OS keychain entry per profile (keyring-core)
 └── tests/                        # integration: common/ harness (env-gated), pg_integration,
                                   # mysql_integration, sqlite_integration, grid_roundtrip
 ```
@@ -117,7 +117,7 @@ Key backend decisions:
   (detail: engine code + error position for editor underline) · `queryCancelled`
   · `readOnlyViolation` · `noPrimaryKey` · `ambiguousRowIdentity` ·
   `confirmationRequired` (detail: classified statements) · `secretNotFound` ·
-  `keychainUnavailable` · `vaultLocked` · `configIo` · `configParse` ·
+  `keychainUnavailable` · `configIo` · `configParse` ·
   `importParse` (detail: line) · `internal`.
 
 ### Frontend — `src/`
@@ -168,22 +168,17 @@ Global services declared once (DESIGN.md §9): `toast.success|error|info()` and
   last-active connections — persists per-machine in the config dir
   (`workspace.toml`). On launch, tabs are restored and
   sessions whose secret is available (keychain) are **auto-reconnected**;
-  encrypted-vault / prompt-only connections restore as disconnected until
-  unlocked.
-- **Secrets — decided (was v1's open question): both backends behind one
-  `SecretStore` interface.**
-  - **Default: OS keychain** via `keyring` 4.x (service `basalt-db-studio`,
-    account = connection UUID, secret = JSON blob: password + SSH passphrase).
-    Secrets never exist as files; git-sync cannot leak them structurally.
-  - **Opt-in: encrypted vault file** for teams that want syncable secrets:
-    argon2id KDF + ChaCha20-Poly1305, master password unlocks per session;
-    ciphertext lives in the config dir and MAY be git-synced. Wrong password /
-    locked vault → `vaultLocked`.
-  - `keychainUnavailable` (e.g. headless Linux) → per-connect password prompt,
-    held in memory only — an explanatory state, not a crash.
-  - Deleting a connection deletes its secret in the active backend. An M6 test
-    greps the entire synced dir for known plaintext test secrets after a full
-    save/connect/sync cycle.
+  prompt-only connections restore as disconnected.
+- **Secrets — the OS keychain, and only it.**
+  - `keyring` 4.2 (service `basalt-db-studio`, account = the profile's
+    `secret_ref` UUID, secret = JSON blob: password + SSH secret). Saving is the
+    form's "Save password in the OS keychain" option; off, the password is held
+    in memory for the session. Secrets never exist as files.
+  - `authFailed`, `secretNotFound` and `keychainUnavailable` (e.g. headless
+    Linux) on connect → one password prompt, then a retry; the prompt can save
+    what it was given. An explanatory state, not a crash.
+  - Deleting a connection deletes its keychain entry. A unit test saves a
+    remembered password and greps the config dir for it.
 
 ---
 
@@ -475,9 +470,9 @@ prior build; v1.0 draft release built from CI.*
 
 ## Resolved questions
 
-1. **Secret storage** *(was the v1 blocker)*: **both** — OS keychain default
-   (`keyring` 4.x), encrypted vault file (argon2id + ChaCha20-Poly1305, master
-   password, git-syncable) opt-in. One `SecretStore` interface.
+1. **Secret storage** *(was the v1 blocker)*: the OS keychain (`keyring` 4.2),
+   with a per-connect prompt where there is none. An encrypted vault file existed
+   only to make secrets syncable; with no sync there is nothing for it to do.
 2. **Frontend template**: plain Vite + `@sveltejs/vite-plugin-svelte` (not
    SvelteKit) — single window, no routing, smaller.
 

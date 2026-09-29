@@ -1,13 +1,14 @@
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { untrack, type Snippet } from "svelte";
   import Modal from "./Modal.svelte";
   import Button from "./Button.svelte";
   import Field from "./Field.svelte";
   import Input from "./Input.svelte";
 
   // A dialog that asks for one value. `ConfirmDialog` covers yes/no; this covers
-  // the next case up — a branch name, a remote URL — without every caller
-  // hand-rolling a Modal with a field in it.
+  // the next case up — a name, a password — without every caller hand-rolling a
+  // Modal with a field in it. `secret` masks the field and keeps the value
+  // untrimmed, since a password's spaces are part of it.
   //
   // Submitting is blocked on an empty value rather than accepted and rejected
   // later: there is nothing a caller could do with "" that it could not do with
@@ -19,6 +20,9 @@
     placeholder?: string;
     initial?: string;
     confirmLabel?: string;
+    secret?: boolean;
+    /** Controls under the field, e.g. a "remember" checkbox. */
+    children?: Snippet;
     onsubmit: (value: string) => void;
     onclose: () => void;
   }
@@ -29,6 +33,8 @@
     placeholder,
     initial = "",
     confirmLabel = "Save",
+    secret = false,
+    children,
     onsubmit,
     onclose,
   }: Props = $props();
@@ -39,7 +45,7 @@
 
   function submit(): void {
     if (!valid) return;
-    onsubmit(value.trim());
+    onsubmit(secret ? value : value.trim());
     onclose();
   }
 </script>
@@ -49,8 +55,15 @@
        what the key means, and reaching for the button would be the slow path. -->
   <div class="flex flex-col gap-4">
     <Field {label} {hint}>
-      <Input bind:value {placeholder} autofocus onkeydown={(e) => e.key === "Enter" && submit()} />
+      <Input
+        bind:value
+        type={secret ? "password" : "text"}
+        {placeholder}
+        autofocus
+        onkeydown={(e) => e.key === "Enter" && submit()}
+      />
     </Field>
+    {@render children?.()}
   </div>
 
   {#snippet footer()}

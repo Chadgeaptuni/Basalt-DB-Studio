@@ -58,9 +58,6 @@ pub enum AppError {
     KeychainUnavailable(String),
 
     #[error("{0}")]
-    VaultLocked(String),
-
-    #[error("{0}")]
     ConfigIo(String),
 
     #[error("{0}")]
@@ -91,7 +88,6 @@ impl AppError {
             AppError::ConfirmationRequired { .. } => "confirmationRequired",
             AppError::SecretNotFound(_) => "secretNotFound",
             AppError::KeychainUnavailable(_) => "keychainUnavailable",
-            AppError::VaultLocked(_) => "vaultLocked",
             AppError::ConfigIo(_) => "configIo",
             AppError::ConfigParse(_) => "configParse",
             AppError::ImportParse { .. } => "importParse",

@@ -4,6 +4,7 @@
   import ConfirmDialogHost from "$lib/components/layout/ConfirmDialogHost.svelte";
   import DdlHost from "$lib/components/ddl/DdlHost.svelte";
   import SaveQueryDialog from "$lib/components/savedQueries/SaveQueryDialog.svelte";
+  import PasswordPromptHost from "$lib/components/connections/PasswordPromptHost.svelte";
   import { saveQuery } from "$lib/stores/saveQuery.svelte";
 </script>
 
@@ -11,4 +12,5 @@
 <ToastHost />
 <ConfirmDialogHost />
 <DdlHost />
+<PasswordPromptHost />
 {#if saveQuery.promptOpen}<SaveQueryDialog />{/if}

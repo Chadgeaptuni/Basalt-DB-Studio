@@ -7,6 +7,7 @@ mod logging;
 // `config::settings`) is part of the crate surface rather than dead code.
 pub mod config;
 pub mod drivers;
+pub mod secrets;
 pub mod services;
 pub mod sqlgen;
 pub mod state;
@@ -52,6 +53,7 @@ pub fn run() {
                 }
                 Err(e) => eprintln!("basalt: file logging unavailable: {e}"),
             }
+            secrets::init();
             app.manage(AppState::new(config::Paths::under(app.path().app_config_dir()?))?);
             drop_native_titlebar(app.handle());
             tracing::info!("Basalt DB Studio starting");

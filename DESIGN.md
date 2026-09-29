@@ -810,8 +810,9 @@ A blank pane is a bug.
     when a position offset is present, underline the offending token in the editor.
   - `confirmationRequired` → never an error UI; it triggers `confirm()` and
     re-invokes with `confirmed: true` on acceptance.
-  - `keychainUnavailable` / `vaultLocked` / `secretNotFound` → password prompt
-    flow (memory-only fallback), with one explanatory line.
+  - `authFailed` / `keychainUnavailable` / `secretNotFound` on connect → one
+    password prompt (`PasswordPromptHost`) naming the cause, with a "Save in the
+    OS keychain" option; declined, the failure toasts.
   - `readOnlyViolation`, `noPrimaryKey`, `ambiguousRowIdentity` → inline grid/
     toolbar notices explaining *why* editing is blocked.
   - Truly unexpected (`internal`) → error toast, sticky, with a "Copy details"
