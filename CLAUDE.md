@@ -113,9 +113,9 @@ else`. Nothing below `services/` imports `tauri`.
 - `sqlgen/` — identifier quoting, multi-statement splitting, destructive-statement
   classification (shared, heavily unit-tested).
 - `config/` (TOML profiles, saved queries, settings), `secrets.rs` (the OS
-  keychain entry per profile), `tunnel/`
-  (russh), `errors/` (below). Query history is session-only and lives in a
-  frontend rune store — no backend history subsystem, no local DB.
+  keychain entry per profile), `tunnel.rs` (russh), `errors/` (below). Query
+  history is session-only and lives in a frontend rune store — no backend
+  history subsystem, no local DB.
 
 Frontend layout — see DESIGN.md §9 for the import rules:
 

@@ -92,7 +92,7 @@ src-tauri/
 │   │   └── pg/ mysql/ sqlite/    # each: mod.rs, introspect.rs, values.rs, ddl.rs
 │   ├── sqlgen/                   # quote.rs (per-engine identifiers), split.rs (multi-statement),
 │   │                             # classify.rs (destructive detection)
-│   ├── tunnel/mod.rs             # russh local port-forward, owned by Session
+│   ├── tunnel.rs                 # russh local port-forward, owned by Session
 │   ├── config/                   # paths.rs, connections.rs (connections.toml; NO secret fields),
 │   │                             # saved_queries.rs, settings.rs   (all TOML)
 │   └── secrets.rs                # OS keychain entry per profile (keyring-core)
@@ -408,8 +408,8 @@ VirtualList, SplitPane, Kbd), updater plugin + code-sign/notarize config,
 `tracing`→rotating file log, CI jobs, size-check script, docker-compose.test.yml.
 *Gate: CI green on all 3 OSes; empty-app bundle measured < 30 MB.*
 
-**M1 — Connect + introspect + schema browse.** `config/`, `secrets/` (both
-backends), `tunnel/` (key/passphrase/password/agent), `drivers/` enum +
+**M1 — Connect + introspect + schema browse.** `config/`, `secrets.rs` (OS
+keychain), `tunnel.rs` (key/passphrase/password/agent), `drivers/` enum +
 per-engine `introspect.rs`, `connection_service`, TLS ladder (disable→verify-full
 + custom CA/client cert), connect timeout, workspace-state restore +
 auto-reconnect, connections + schema tree UI, read-only toggle, Test button with

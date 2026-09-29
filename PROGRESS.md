@@ -6,56 +6,51 @@
 
 ## Current position
 
-**M0 COMPLETE + M1 all three engines (SQLite · Postgres · MySQL) connect →
-introspect → browse COMPLETE — verified against real engines.**
-Both sides green: frontend `pnpm check` (svelte-check 0/0/0, 12 vitest) + `pnpm
-build`; backend `cargo fmt --check` / `cargo clippy --all-targets -D warnings` /
-`cargo test` — **14 unit + 4 integration** passing. Integration ran live against
-`postgres:16` + `mysql:8` from `docker-compose.test.yml` (connect, introspect,
-describe_table type/PK/index assertions, and wrong-password → `authFailed` per
-engine). Credential path: **memory-only password** (transient command arg; the
-profile still has no password field), wired form → in-memory stash → connect.
+**M0–M7 COMPLETE, the M1 secrets/TLS/SSH slice and the deferred M2 query items
+COMPLETE — verified against real engines.** What remains is owner + CI work
+only: code-signing, notarization, the real updater key/endpoint, and CI green
+on three OSes (see M7).
 
-**M2 COMPLETE (backend + frontend) + verified.** Backend: types, `sqlgen/`,
-per-engine `values.rs` decode, generic batch exec, `query_service::run` +
-`run_query` (34 lib + 6 integration tests, real pg16/mysql8). Frontend: CM6 editor
-(schema autocomplete, run keymap, lazy format), virtualized results grid +
-per-statement tabs, session tabs/history stores (svelte-check 0/0/0, 23 vitest,
-build clean). **M3 COMPLETE (backend + frontend) + verified** — editable table-data
-view, transactional commit, no-PK fallback + ambiguousRowIdentity (40 lib + 2
-grid_roundtrip + 6 integration). **M4 COMPLETE** — DDL generation, preview-before-
-execute, tree actions. **M5 COMPLETE (backend + frontend) + verified** — streaming
-CSV/JSON export (ipc::Channel), CSV import with per-engine conflict modes + line
-errors. **M6 COMPLETE** — saved queries as `.sql` files + saved-queries panel. **M7 COMPLETE (code)**
-— settings persistence, datetime-display wiring, 4 theme presets + picker, keyboard
-+ error-state audits, release workflow scaffold (signing/notarization/real updater
-key are owner+CI steps, unverifiable here). **M0–M7 all done.** Full backend gate
-green: **71 tests** (59 lib + 2 ddl + 2 grid + 2 import roundtrip + 6
-integration) vs real pg16/mysql8; frontend svelte-check 0/0/0, 36 vitest, build
-clean. **Remaining: the separable M1 secrets slice** (keychain/vault + auto-prompt +
-TLS-ladder/SSH UI) and the deferred M2 backend items (pinned-tx connection,
-cancellation, statement timeout). GUI (`pnpm tauri dev`) still wants a manual pass.
+Gates (2026-09-30): frontend `svelte-check` 0/0/0, **374 vitest**, both design
+checks clean; backend `cargo clippy --all-targets -D warnings` clean, **86 lib**
+tests plus the integration suites, all run live against `postgres:16`,
+`mysql:8` and an `alpine` sshd bastion from `docker-compose.test.yml`
+(`BASALT_TEST_PG_URL`, `BASALT_TEST_MYSQL_URL`, `BASALT_TEST_SSH`; suites
+self-skip when unset). Release DMG (macOS aarch64) **4.71 MB**, binary 9.6 MB.
 
-**UI restructure (post-M7, frontend only):** the Schema panel is the object
-explorer *and* the connection list — every saved profile is a tree root and
-expanding one connects it (pgAdmin's shape), several sessions open at once,
-connect/disconnect/edit/delete on the root's context menu. The status-bar
-switcher is now a label (`ConnectionLabel`) and the start pane no longer lists
-profiles; `ConnectionSwitcher` and `ConnectionRow` are deleted. Rail panel swaps
-are an instant cut (the fade-through helpers are gone — the incoming panel laid
-out inside the animation), the rail item keeps its state layer in both states (a
-click used to flash pale before the tonal pill arrived), and rows inside a
-divided list take the new `stateLayerFlush` full-bleed wash. GUI pass still
-owed.
+State of the product:
+- **Layout** — rail: Connections · Schema · Queries · History (+ Settings).
+  The Connections panel lists and manages profiles; opening one connects it and
+  moves to Schema, which browses the active connection only (a Postgres profile
+  opens onto its databases, each its own session). Engine logos are gone — the
+  PG/MY/SQ tag names the engine.
+- **Storage** — `app_config_dir()` (`<OS config>/app.basalt.studio/`):
+  `connections.toml` (one `[[connection]]` per profile, written atomically),
+  `queries/`, `settings.toml`. A pre-0.2 `<OS config>/basalt/` dir is renamed
+  into place on first launch and its `connections/` folder folded into the file.
+  Workspace (open SQL tabs + drafts, connected profiles) lives in localStorage.
+- **Secrets** — OS keychain via `keyring` 4.2 (`secrets.rs`, entries through
+  `keyring_core` so tests use its mock store); no encrypted vault. authFailed /
+  secretNotFound / keychainUnavailable on connect → one password prompt, then a
+  retry.
+- **Tunnels** — `tunnel.rs` (russh 0.63, `ring`): key/passphrase, password,
+  agent; known_hosts accept-new, changed key refused; forwarding probed at open.
+- **Queries** — one pinned editor connection per session; tx status by
+  classification; cancel (pg_cancel_backend / KILL QUERY / SQLite progress
+  interrupt) on Esc or Cancel; statement timeout setting; statements without
+  rows go over the text protocol (MySQL's prepared protocol refuses BEGIN).
+- **Git sync is removed** entirely (backend, panel, error kinds, docs).
 
-**Secrets slice (separable M1 tail):**
-- `secrets/` — Keychain default + EncryptedFile vault (argon2id + ChaCha20), so
-  passwords survive restart. Replaces the in-memory stash; keeps the no-field
-  invariant (profile stores a `secretRef` only).
-- Auto-prompt on `authFailed` at connect time (nicer than edit→save→connect).
-- TLS ladder **UI** (mode + custom CA / client cert paths) — backend mapping is
-  already done and honored by the pg/mysql openers.
-- `tunnel/` (russh), workspace restore + auto-reconnect, SQLite file-picker.
+Known ceilings (marked `ponytail:` in code): tx status is keyword
+classification; TLS `verify-full` through a tunnel checks 127.0.0.1; the CSV
+header read is capped at 64 KiB; the legacy config-dir migrations; SSH host
+certificates are refused. MySQL `SLEEP()`/`BENCHMARK()` swallow a cancel and
+return a value (engine behaviour).
+
+Release builds on macOS 27: dyld rejects `strip = true` proc-macro dylibs
+("mis-aligned LINKEDIT string pool"). Build with
+`CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_STRIP=false` (host build deps only; the
+shipped binary is still stripped).
 
 ### Verification commands (all pass locally as of M0)
 - `pnpm check` — svelte-check + vitest
@@ -110,8 +105,8 @@ owed.
 
 ## M1 — Connect + introspect + schema browse
 
-**In progress. All three engines now connect → introspect → browse.** TLS-UI /
-SSH / secrets-vault / workspace are the NEXT M1 increments.
+**COMPLETE.** All three engines connect → introspect → browse, with keychain
+passwords, TLS options, SSH tunnels and workspace restore.
 
 Frontend (DONE, verified — svelte-check 0/0/0, build clean):
 - [x] api/types.ts — connection + schema wire contract (Engine, TLS, SSH, ConnectionProfile, SessionInfo, SchemaTree, ColumnInfo, TableDescription)
@@ -154,12 +149,12 @@ Backend (all three engines — DONE, verified: fmt/clippy clean, 14 unit + 4 int
   columns; exercise the `authFailed`/empty/error states.
 
 Deferred to next M1 increments:
-- [~] password form section — memory-only DONE; keychain/vault persistence remains
-- [ ] secrets/ (Keychain default + EncryptedFile vault argon2id+ChaCha20); auto-prompt on authFailed
-- [ ] tunnel/ (russh: key/passphrase/password/agent)
-- [~] TLS ladder — backend mapping (mode + CA/client-cert paths) DONE & honored; **form UI** remains
-- [ ] workspace restore + auto-reconnect (workspace.toml, not git-synced)
-- [ ] file-picker for SQLite path (tauri-plugin-dialog); saved_queries config
+- [x] password form section — keychain persistence (`secrets.rs`), session-only fallback
+- [x] `secrets.rs` (OS keychain); auto-prompt on authFailed / secretNotFound / keychainUnavailable
+- [x] `tunnel.rs` (russh: key/passphrase/password/agent), verified against an sshd bastion
+- [x] TLS ladder — backend mapping + form UI (mode, CA and client cert/key paths)
+- [x] workspace restore + auto-reconnect (localStorage; quiet reconnect only)
+- [x] file-picker for SQLite path, certificates and SSH key (tauri-plugin-dialog)
 
 ## M2 — SQL editor + run + history
 
@@ -184,13 +179,14 @@ whole run path works on all three engines against real `postgres:16`/`mysql:8`.
   (`ConfirmationRequired{detail}`) → batch on one pooled connection → per-statement
   `StatementResult`, stop at first error. `run_query` command + `api/query.ts`.
 
-**Deferred within M2 (backend, next-next):** per-session *pinned* connection for
-cross-run transactions (current slice is batch-scoped; `tx_status` is always
-`Idle`); **cancellation** (capture pg `pg_backend_pid()` / mysql `CONNECTION_ID()`
-at connect; cancel via side pool `pg_cancel_backend` / `KILL QUERY`; SQLite
-drop+reopen) + cancel registry; **statement timeout** (auto-cancel →
-`queryCancelled`). Also: columns are taken from the first row, so an empty result
-set has no column headers (revisit if it matters).
+**M2 query control — DONE + verified (pg16/mysql8/SQLite):** the editor pins one
+connection per session, so transactions span runs; `tx_status` is classified per
+statement and tracked per session in the frontend (confirm before disconnecting
+an open tx). Cancel: `pg_cancel_backend` / `KILL QUERY` over another pooled
+connection, SQLite through a progress-handler interrupt — each maps to
+`queryCancelled` and keeps the connection. Statement timeout (settings, 0 = off)
+cancels through the same path. Empty results keep headers (`prepare()`).
+Statements without rows run over the text protocol.
 
 **M2 frontend — DONE + verified** (svelte-check 0/0/0, 23 vitest, `pnpm build`
 clean; CM6 in main chunk, `sql-formatter` lazy-split):
@@ -245,8 +241,8 @@ Frontend (svelte-check 0/0/0; 32 vitest; build clean):
 - [x] Tabs gain kind (sql|table) + ref; tab bar moved to Workspace, which routes
   sql→editor/results, table→TableDataView. Double-click a tree relation opens it.
 
-**Deferred (M3 tail):** Advanced Copy modal (⌘⇧C: header/delimiter/quoting);
-SQLite `rowid` fallback (all-columns fallback covers it now); grid keyboard nav is
+**M3 tail:** Copy rows as… (⌘⇧C: delimiter, header, NULL spelling) — DONE.
+**Deferred:** SQLite `rowid` fallback (all-columns fallback covers it now); grid keyboard nav is
 grid-local (role=grid), not the global registry (justified like the CM keymap).
 
 ## M4 — DDL — COMPLETE + verified
@@ -271,8 +267,10 @@ Frontend (svelte-check 0/0/0; 32 vitest; build clean):
   right-click → Open data / Add column / Create index / Rename / Drop; header
   'New table'.
 
-**Deferred (M4 tail):** full ALTER COLUMN type-change, drop-index UI, editable
-preview SQL, namespace picker in the designer (uses the first namespace / the
+**M4 tail:** ALTER COLUMN (type, nullability, default; pg USING / MySQL MODIFY;
+SQLite refused), rename/drop column and drop index from the tree, "Open in
+editor" from the preview — DONE, verified on pg16/mysql8. **Deferred:** namespace
+picker in the designer (uses the first namespace / the
 right-clicked one). Drop uses the preview modal as its confirmation.
 
 ## M5 — Import / export — COMPLETE + verified
@@ -295,10 +293,10 @@ Frontend (svelte-check 0/0/0; 32 vitest; build clean):
 - [x] `ImportWizard`: open dialog, target-column mapping, header + conflict mode;
   errors surface with the offending line.
 
-**Deferred (M5 tail):** live progress bar (Channel wired, currently a sticky
-toast); multi-row VALUES batching (per-row INSERT in one tx now); CSV header
-auto-mapping / column reorder (needs the fs plugin to read the header); quoted-empty
-vs NULL distinction (empty field → NULL in v1).
+**M5 tail:** live row counts for export (sticky toast) and import (wizard);
+multi-row VALUES batches with a savepoint row-by-row replay for the error line;
+per-field CSV → column mapping from the header (`csv_header`) — DONE.
+**Deferred:** quoted-empty vs NULL distinction (empty field → NULL in v1).
 
 ## M6 — Saved queries — COMPLETE + verified
 
@@ -310,7 +308,7 @@ vs NULL distinction (empty field → NULL in v1).
   delete). `Ctrl+S` saves the active tab (bound → overwrite; new →
   `SaveQueryDialog`). tabs gain `savedPath`.
 
-**Deferred (M6 tail):** no saved-query rename/move UI (delete + re-save).
+**M6 tail:** rename / move saved queries (open tabs follow) — DONE.
 
 ## M7 — Theming polish + release hardening — COMPLETE (code); release-infra unverifiable here
 
@@ -344,8 +342,7 @@ Frontend (svelte-check 0/0/0; **36 vitest**; build clean):
 endpoint** (still the M0 throwaway key; `releases.basalt.studio` is a placeholder),
 per-OS install test on macOS 13 / Win 11 / webkit2gtk-4.1, automated WCAG contrast
 check on presets (chosen for clear contrast by hand), and a v1.0 draft release from
-CI. The secrets slice (keychain/vault) also remains — the connect path is still
-memory-only, so `secretNotFound`/`keychainUnavailable`/`vaultLocked` can't yet fire.
+CI.
 
 ## Notes / decisions log
 - (append notable deviations, gotchas, doc findings here as work proceeds)

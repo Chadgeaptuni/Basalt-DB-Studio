@@ -41,15 +41,16 @@ config file by construction, not by convention.
 ## Capabilities and Constraints
 
 Shipped and verified: connect + introspect + browse for all three engines;
-SQL editor with schema-aware autocomplete; virtualized results grid with
+SQL editor with schema-aware autocomplete; transactions that span runs,
+cancellation and a statement timeout; virtualized results grid with
 per-statement tabs; editable table-data view with transactional commit and
 no-primary-key fallback; DDL generation with preview-before-execute; streaming
-CSV/JSON export and CSV import with per-engine conflict modes; saved queries;
-settings persistence and theme presets.
+CSV/JSON export and batched CSV import with field mapping and per-engine
+conflict modes; saved queries; passwords in the OS keychain with a prompt on
+`authFailed`; TLS options and SSH tunnels; workspace restore; settings
+persistence and theme presets.
 
-Not yet shipped: the secrets slice (OS keychain + encrypted-file vault,
-auto-prompt on `authFailed`, TLS-ladder and SSH UI), plus pinned-transaction
-connections, query cancellation, and statement timeout.
+Not yet shipped: code-signed, notarized release builds with a real updater key.
 
 Terminology: *connection profile* (TOML, no secrets), *secret_ref* (UUID
 pointing at the keychain entry), *session*, *saved query*.
