@@ -21,6 +21,7 @@
   import { runExport } from "$lib/components/importExport/runExport";
   import { parseCell } from "./tableEdits";
   import { tableData } from "$lib/stores/tableData.svelte";
+  import { editorTabs } from "$lib/stores/tabs.svelte";
   import { connections } from "$lib/stores/connections.svelte";
   import { confirm } from "$lib/stores/dialogs.svelte";
   import { envConfirmTitle } from "$lib/utils/environment";
@@ -77,7 +78,7 @@
   // Seed the editor with the browse SQL once it's known. Only when the buffer is
   // still empty — a reload must never overwrite what the user is editing.
   $effect(() => {
-    if (canonicalSql && !tab.sql) tab.sql = canonicalSql;
+    if (canonicalSql && !tab.sql) editorTabs.setSql(tab.id, canonicalSql);
   });
 
   const NULL: CellValue = { kind: "null" };

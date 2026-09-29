@@ -121,6 +121,13 @@ function select(id: string): void {
   if (find(id)) activeId = id;
 }
 
+/** Writes a tab's SQL from outside the editor — here, where the tab is owned,
+ *  rather than through a component prop. */
+function setSql(id: string, sql: string): void {
+  const tab = find(id);
+  if (tab) tab.sql = sql;
+}
+
 export const editorTabs = {
   get list() {
     return tabs;
@@ -134,5 +141,6 @@ export const editorTabs = {
   markSaved,
   close,
   select,
+  setSql,
   find,
 };
