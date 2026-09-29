@@ -15,12 +15,17 @@ mod pg;
 mod sqlite;
 pub mod types;
 
-use std::collections::HashMap;
+pub use exec::Batch;
 
-use sqlx::{MySqlPool, PgPool, SqlitePool};
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+
+use sqlx::pool::PoolConnection;
+use sqlx::{AssertSqlSafe, MySql, MySqlPool, PgPool, Postgres, Sqlite, SqlitePool};
 
 use crate::sqlgen::Statement;
-use crate::AppResult;
+use crate::{AppError, AppResult};
 use types::{
     CellValue, ConflictMode, Engine, GridCommitResult, GridEdit, ImportResult, SchemaTree,
     StatementResult, TableDescription,
@@ -31,6 +36,112 @@ pub enum Driver {
     Postgres(PgPool),
     MySql(MySqlPool),
     Sqlite(SqlitePool),
+}
+
+/// The session's editor connection, held across runs so a `BEGIN` in one run and
+/// the `COMMIT` in the next share it — the tx boundary the status bar reports.
+pub enum PinnedConn {
+    Postgres(PoolConnection<Postgres>),
+    MySql(PoolConnection<MySql>),
+    Sqlite(PoolConnection<Sqlite>),
+}
+
+/// What stops a pinned connection's running statement.
+#[derive(Clone)]
+pub enum CancelTarget {
+    Backend(u64),
+    Interrupt(Arc<AtomicBool>),
+}
+
+impl CancelTarget {
+    /// Clears a raised interrupt so the next run is not born cancelled.
+    pub fn arm(&self) {
+        if let CancelTarget::Interrupt(flag) = self {
+            flag.store(false, Ordering::Relaxed);
+        }
+    }
+}
+
+impl PinnedConn {
+    /// Runs a pre-split batch, buffering up to `limit` rows per statement. Stops at
+    /// the first failure (carried on that statement's result). The confirmation
+    /// and read-only gates run in the query service before this is called.
+    pub async fn run(&mut self, statements: &[Statement], limit: usize) -> Batch {
+        match self {
+            PinnedConn::Postgres(c) => {
+                exec::run_batch::<Postgres, _, _>(
+                    &mut **c,
+                    statements,
+                    limit,
+                    pg::columns,
+                    pg::decode_row,
+                )
+                .await
+            }
+            PinnedConn::MySql(c) => {
+                exec::run_batch::<MySql, _, _>(
+                    &mut **c,
+                    statements,
+                    limit,
+                    mysql::columns,
+                    mysql::decode_row,
+                )
+                .await
+            }
+            PinnedConn::Sqlite(c) => {
+                exec::run_batch::<Sqlite, _, _>(
+                    &mut **c,
+                    statements,
+                    limit,
+                    sqlite::columns,
+                    sqlite::decode_row,
+                )
+                .await
+            }
+        }
+    }
+
+    /// What stops this connection's running statement: the server-side id for
+    /// Postgres/MySQL, an interrupt flag for SQLite.
+    async fn cancel_target(&mut self) -> AppResult<CancelTarget> {
+        match self {
+            PinnedConn::Postgres(c) => {
+                let pid: i32 = sqlx::query_scalar("SELECT pg_backend_pid()")
+                    .fetch_one(&mut **c)
+                    .await
+                    .map_err(unpooled)?;
+                Ok(CancelTarget::Backend(pid as u64))
+            }
+            PinnedConn::MySql(c) => {
+                let id: u64 = sqlx::query_scalar("SELECT CONNECTION_ID()")
+                    .fetch_one(&mut **c)
+                    .await
+                    .map_err(unpooled)?;
+                Ok(CancelTarget::Backend(id))
+            }
+            PinnedConn::Sqlite(c) => {
+                let flag = Arc::new(AtomicBool::new(false));
+                let raised = flag.clone();
+                // Checked every ~10k VM steps; returning false interrupts the
+                // statement with SQLITE_INTERRUPT (sqlite.org/c3ref/progress_handler.html).
+                c.lock_handle()
+                    .await
+                    .map_err(unpooled)?
+                    .set_progress_handler(10_000, move || !raised.load(Ordering::Relaxed));
+                Ok(CancelTarget::Interrupt(flag))
+            }
+        }
+    }
+
+    /// Closes the connection rather than returning it to the pool — for one whose
+    /// state is unknown after a dropped run.
+    pub fn discard(mut self) {
+        match &mut self {
+            PinnedConn::Postgres(c) => c.close_on_drop(),
+            PinnedConn::MySql(c) => c.close_on_drop(),
+            PinnedConn::Sqlite(c) => c.close_on_drop(),
+        }
+    }
 }
 
 impl Driver {
@@ -69,26 +180,58 @@ impl Driver {
         }
     }
 
-    /// Runs a pre-split batch of statements on one pooled connection, buffering
-    /// up to `limit` rows per statement. Stops at the first failure (its error is
-    /// carried on that statement's result). Confirmation and read-only gates are
-    /// applied by the query service before this is called.
+    /// A connection of its own, out of the pool.
+    async fn acquire(&self) -> AppResult<PinnedConn> {
+        Ok(match self {
+            Driver::Postgres(pool) => PinnedConn::Postgres(pool.acquire().await.map_err(unpooled)?),
+            Driver::MySql(pool) => PinnedConn::MySql(pool.acquire().await.map_err(unpooled)?),
+            Driver::Sqlite(pool) => PinnedConn::Sqlite(pool.acquire().await.map_err(unpooled)?),
+        })
+    }
+
+    /// Takes the editor's connection out of the pool, with what a cancel reaches.
+    pub async fn pin(&self) -> AppResult<(PinnedConn, CancelTarget)> {
+        let mut conn = self.acquire().await?;
+        let target = conn.cancel_target().await?;
+        Ok((conn, target))
+    }
+
+    /// Runs a batch on any pooled connection rather than the editor's, for reads
+    /// that must not queue behind a running editor query (the table view).
     pub async fn run(
         &self,
         statements: &[Statement],
         limit: usize,
     ) -> AppResult<Vec<StatementResult>> {
-        match self {
-            Driver::Postgres(pool) => {
-                exec::run_batch(pool, statements, limit, pg::columns, pg::decode_row).await
+        Ok(self.acquire().await?.run(statements, limit).await.results)
+    }
+
+    /// Stops whatever the pinned connection is running; the statement then fails
+    /// with the engine's own cancel error and the connection stays usable. The
+    /// server is asked over another pooled connection.
+    pub async fn cancel(&self, target: &CancelTarget) -> AppResult<()> {
+        let result = match (self, target) {
+            (_, CancelTarget::Interrupt(flag)) => {
+                flag.store(true, Ordering::Relaxed);
+                Ok(())
             }
-            Driver::MySql(pool) => {
-                exec::run_batch(pool, statements, limit, mysql::columns, mysql::decode_row).await
+            (Driver::Postgres(pool), CancelTarget::Backend(pid)) => {
+                sqlx::query("SELECT pg_cancel_backend($1)")
+                    .bind(*pid as i32)
+                    .execute(pool)
+                    .await
+                    .map(drop)
             }
-            Driver::Sqlite(pool) => {
-                exec::run_batch(pool, statements, limit, sqlite::columns, sqlite::decode_row).await
+            // KILL takes no bind parameter; the id is a number we read ourselves.
+            (Driver::MySql(pool), CancelTarget::Backend(id)) => {
+                sqlx::query(AssertSqlSafe(format!("KILL QUERY {id}")))
+                    .execute(pool)
+                    .await
+                    .map(drop)
             }
-        }
+            (Driver::Sqlite(_), CancelTarget::Backend(_)) => Ok(()),
+        };
+        result.map_err(AppError::internal)
     }
 
     /// The engine this driver speaks (for quoting/dialect decisions in services).
@@ -191,5 +334,14 @@ impl Driver {
             Driver::MySql(pool) => pool.close().await,
             Driver::Sqlite(pool) => pool.close().await,
         }
+    }
+}
+
+/// A connection that could not be had or set up is the user's to see — the
+/// server refused it, or its pool is closed — not a bug in Basalt.
+fn unpooled(e: sqlx::Error) -> AppError {
+    AppError::QueryError {
+        message: e.to_string(),
+        detail: None,
     }
 }

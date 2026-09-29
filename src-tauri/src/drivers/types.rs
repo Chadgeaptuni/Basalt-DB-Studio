@@ -228,11 +228,13 @@ pub struct StatementResult {
     pub error: Option<StatementError>,
 }
 
-/// Session transaction state for the status bar. Pg reads it from connection
-/// status; MySQL/SQLite infer it from statement classification.
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+/// Session transaction state for the status bar, inferred from statement
+/// classification (`sqlgen::tx_effect`) — sqlx keeps the server's own status
+/// private.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum TxStatus {
+    #[default]
     Idle,
     InTx,
     Error,

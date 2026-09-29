@@ -98,8 +98,6 @@
         <CircleCheck size={16} strokeWidth={2} class="shrink-0 text-ok" />
         {current.rowsAffected} row{current.rowsAffected === 1 ? "" : "s"} affected.
       </div>
-    {:else if current && current.rows.length === 0}
-      <EmptyState icon={Play} message="0 rows returned." />
     {:else if current}
       <DataGrid
         label="Query results"

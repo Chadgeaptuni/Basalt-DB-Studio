@@ -68,7 +68,7 @@ mod tests {
     }
 
     async fn run(sid: &str, sql: &str, reg: &SessionRegistry) {
-        let out = query_service::run(sid, sql, None, true, None, reg)
+        let out = query_service::run(sid, sql, None, true, None, None, reg)
             .await
             .unwrap();
         for s in &out.statements {

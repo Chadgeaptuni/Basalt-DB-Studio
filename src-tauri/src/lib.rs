@@ -69,6 +69,7 @@ pub fn run() {
             commands::introspect::list_databases,
             commands::introspect::describe_table,
             commands::query::run_query,
+            commands::query::cancel_query,
             commands::grid::grid_browse,
             commands::grid::grid_commit,
             commands::ddl::ddl_generate,

@@ -11,6 +11,7 @@
   import { keyboard } from "$lib/utils/keyboard";
   import { editorTabs } from "$lib/stores/tabs.svelte";
   import { panel } from "$lib/stores/panel.svelte";
+  import { connections } from "$lib/stores/connections.svelte";
 
   // Run state, all of it: which database the workspace points at, whether a
   // transaction is open, what the last statement cost. The top bar is navigation;
@@ -34,7 +35,7 @@
   // Query stats for the active editor tab's shown statement.
   const tab = $derived(editorTabs.active);
   const stmt = $derived(tab && tab.result ? tab.result.statements[tab.activeStatement] : undefined);
-  const tx = $derived(tab?.result?.txStatus ?? "idle");
+  const tx = $derived(connections.active ? connections.txFor(connections.active.sessionId) : "idle");
   const stats = $derived(stmt && !stmt.error ? stmt : undefined);
 </script>
 

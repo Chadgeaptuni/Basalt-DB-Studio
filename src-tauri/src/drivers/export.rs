@@ -4,7 +4,7 @@
 //! UI (progress flows over an `ipc::Channel`).
 
 use futures_util::StreamExt;
-use sqlx::{AssertSqlSafe, Database, Executor, IntoArguments};
+use sqlx::{AssertSqlSafe, Database, Executor, IntoArguments, Row};
 
 use super::exec::map_query_error;
 use crate::drivers::types::{CellValue, ColumnInfo};
@@ -27,7 +27,7 @@ where
     DB: Database,
     for<'c> &'c mut DB::Connection: Executor<'c, Database = DB>,
     DB::Arguments: IntoArguments<DB> + Default,
-    FC: Fn(&DB::Row) -> Vec<ColumnInfo>,
+    FC: Fn(&[DB::Column]) -> Vec<ColumnInfo>,
     FR: Fn(&DB::Row) -> Vec<CellValue>,
 {
     let mut conn = pool.acquire().await.map_err(AppError::internal)?;
@@ -37,7 +37,7 @@ where
     while let Some(item) = rows.next().await {
         let row = item.map_err(map_query_error)?;
         if !sent_header {
-            sink.header(&columns_of(&row))?;
+            sink.header(&columns_of(row.columns()))?;
             sent_header = true;
         }
         sink.row(&decode(&row))?;

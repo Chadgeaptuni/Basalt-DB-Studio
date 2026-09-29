@@ -102,9 +102,10 @@ src-tauri/
 
 Key backend decisions:
 
-- **Session model:** one connected DB tab = a `Session` holding a dedicated sqlx
-  connection for user queries (so `BEGIN`, temp tables, `SET` persist) plus a
-  small side pool (max 2) for introspection and cancellation. No cross-session
+- **Session model:** one connected DB tab = a `Session` over a pool of 4. The
+  editor pins one of them on its first run and keeps it (so `BEGIN`, temp tables,
+  `SET` persist across runs); introspection, the table view, export and cancel
+  use the others. No cross-session
   pool sharing. Lazy connect; explicit disconnect frees the connection and any
   SSH tunnel task.
 - **Enum dispatch, no dyn traits.** Engine differences live in `pg/ mysql/
@@ -260,21 +261,26 @@ timestamptz, naive stays naive); the setting transforms only how a cell is
   `truncated: true` and stop polling. UI shows "first 500 rows" + one-click
   re-run higher. Streaming rows to the UI is deliberately out of v1; if it ever
   lands, it uses `tauri::ipc::Channel`, not events.
-- **Cancellation** (`query_service` keeps `QueryId → CancelHandle`):
-  Pg → capture `pg_backend_pid()` at connect, cancel via
-  `SELECT pg_cancel_backend($1)` on the side pool. MySQL → `CONNECTION_ID()` +
-  `KILL QUERY <id>`. SQLite → abort the task and drop+reopen the connection
-  (cheap); an open explicit tx is reported lost via `queryCancelled` detail.
-- **Statement timeout:** a configurable per-connection timeout, **default off**.
-  When set, a query exceeding it is auto-cancelled through the same cancel path
-  and surfaced as `queryCancelled`; manual `Escape`/cancel is always available.
+- **Cancellation** (per session — its editor runs one statement at a time):
+  Pg → capture `pg_backend_pid()` when the editor connection is pinned, cancel
+  via `SELECT pg_cancel_backend($1)` on another pooled connection. MySQL →
+  `CONNECTION_ID()` + `KILL QUERY <id>`. SQLite → a progress handler on the
+  pinned connection checks an interrupt flag and aborts with `SQLITE_INTERRUPT`.
+  Every engine's cancel error maps to `queryCancelled`; the connection and its
+  transaction survive.
+- **Statement timeout:** an app setting (`statementTimeoutSecs`, **default off**)
+  passed with every run. A query exceeding it is cancelled through the same path
+  and surfaced as `queryCancelled`; manual `Escape`/Cancel is always available.
 - **Result presentation:** a multi-statement run returns `Vec<StatementResult>`;
   the UI renders **one result tab per statement** (Result 1…n), the failing
   statement's tab carrying its `queryError`.
-- **Transactions / autocommit:** the session's dedicated connection is the tx
-  boundary. `TxStatus { idle | inTx | error }` tracked per session (Pg from
-  connection status; MySQL/SQLite by statement classification). Status bar shows
-  tx state; disconnect with open tx prompts via `confirm()`.
+- **Transactions / autocommit:** the session's pinned editor connection is the
+  tx boundary. `TxStatus { idle | inTx | error }` is tracked per session by
+  statement classification (`sqlgen::tx_effect`: BEGIN opens, COMMIT/ROLLBACK and
+  MySQL DDL close, a failure inside a pg tx aborts it) — sqlx keeps the
+  protocol's own status private. Status bar shows tx state; disconnect with an
+  open tx prompts via `confirm()`. Empty results still carry column headers
+  (the statement is prepared for its column list).
 - **Multi-statement scripts:** `sqlgen/split.rs` splits on `;` respecting
   quotes, `--` and `/* */` comments, Pg `$$` dollar-quoting, MySQL backticks.
   (No `DELIMITER` support in v1 — documented limitation.) Statements run

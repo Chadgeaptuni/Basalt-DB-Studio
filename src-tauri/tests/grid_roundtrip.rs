@@ -21,7 +21,7 @@ fn change(column: &str, value: CellValue) -> CellChange {
 /// Runs `sql` through the query service (confirmed, so DROP/DDL passes the gate)
 /// and asserts every statement succeeded.
 async fn run_sql(session_id: &str, sql: &str, registry: &connection_service::SessionRegistry) {
-    let out = query_service::run(session_id, sql, None, true, None, registry)
+    let out = query_service::run(session_id, sql, None, true, None, None, registry)
         .await
         .unwrap();
     for s in &out.statements {

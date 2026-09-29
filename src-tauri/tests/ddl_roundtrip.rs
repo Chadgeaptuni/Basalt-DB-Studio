@@ -22,7 +22,7 @@ async fn run_ddl(sid: &str, req: &DdlRequest, reg: &connection_service::SessionR
     let sql = ddl_service::generate(sid, req, reg)
         .await
         .expect("generate ddl");
-    let out = query_service::run(sid, &sql, None, true, None, reg)
+    let out = query_service::run(sid, &sql, None, true, None, None, reg)
         .await
         .expect("run ddl");
     for s in &out.statements {
@@ -39,9 +39,17 @@ async fn ddl_roundtrip(url: &str, namespace: &str) {
     let sid = &info.session_id;
 
     // Clean slate.
-    query_service::run(sid, "DROP TABLE IF EXISTS ddl_rt", None, true, None, &reg)
-        .await
-        .unwrap();
+    query_service::run(
+        sid,
+        "DROP TABLE IF EXISTS ddl_rt",
+        None,
+        true,
+        None,
+        None,
+        &reg,
+    )
+    .await
+    .unwrap();
 
     run_ddl(
         sid,

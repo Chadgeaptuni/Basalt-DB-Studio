@@ -211,7 +211,7 @@ mod tests {
     }
 
     async fn scalar_count(sid: &str, sql: &str, reg: &SessionRegistry) -> i64 {
-        let out = query_service::run(sid, sql, None, false, None, reg)
+        let out = query_service::run(sid, sql, None, false, None, None, reg)
             .await
             .unwrap();
         match &out.statements[0].rows[0][0] {
@@ -266,6 +266,7 @@ mod tests {
             None,
             false,
             None,
+            None,
             &reg,
         )
         .await
@@ -291,6 +292,7 @@ mod tests {
             "SELECT name FROM t WHERE id=1",
             None,
             false,
+            None,
             None,
             &reg,
         )

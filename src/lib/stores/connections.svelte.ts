@@ -2,7 +2,8 @@ import { connectionsApi } from "$lib/api/connections";
 import type { ApiError } from "$lib/api/client";
 import { toast } from "./toasts.svelte";
 import { schema } from "./schema.svelte";
-import type { ConnectionProfile, SessionInfo } from "$lib/api/types";
+import { confirm } from "./dialogs.svelte";
+import type { ConnectionProfile, SessionInfo, TxStatus } from "$lib/api/types";
 
 export type ConnStatus = "disconnected" | "connecting" | "connected" | "error";
 
@@ -25,6 +26,9 @@ let loaded = $state(false);
 let loadError = $state<ApiError | null>(null);
 /** The session whose schema/editor the main area is showing. */
 let active = $state<SessionInfo | null>(null);
+// Per session, not per tab: every tab on a session runs on its one pinned
+// connection, so a COMMIT in one tab closes the transaction the others see.
+let txStatuses = $state<Record<string, TxStatus>>({});
 
 // Per-connection passwords, in memory only. A plain Map (not `$state`) on
 // purpose: secrets must never become observable/serializable UI state. Set from
@@ -115,6 +119,7 @@ function profileName(id: string): string {
  *  opened, now that a profile can hold many. */
 async function closeSession(sessionId: string): Promise<void> {
   schema.clear(sessionId);
+  delete txStatuses[sessionId];
   await connectionsApi.disconnect(sessionId).catch(() => undefined);
 }
 
@@ -198,7 +203,34 @@ async function connectDatabase(
   );
 }
 
+function txFor(sessionId: string): TxStatus {
+  return txStatuses[sessionId] ?? "idle";
+}
+
+/** Record the tx state a run on `sessionId` left behind. */
+function noteTx(sessionId: string, status: TxStatus): void {
+  txStatuses[sessionId] = status;
+}
+
+/** Asks before closing sessions that hold an open transaction: closing rolls
+ *  it back, and nothing else on screen says so. */
+async function confirmTxLoss(sessions: (SessionInfo | undefined)[]): Promise<boolean> {
+  if (!sessions.some((s) => s && txFor(s.sessionId) !== "idle")) return true;
+  return confirm({
+    title: "Disconnect with an open transaction?",
+    message: "Its uncommitted changes will be rolled back.",
+    confirmLabel: "Disconnect",
+    variant: "danger",
+  });
+}
+
 async function disconnectDatabase(profileId: string, database: string): Promise<void> {
+  if (await confirmTxLoss([dbStatuses[dbKey(profileId, database)]?.session])) {
+    await closeDatabase(profileId, database);
+  }
+}
+
+async function closeDatabase(profileId: string, database: string): Promise<void> {
   const key = dbKey(profileId, database);
   const session = dbStatuses[key]?.session;
   delete dbStatuses[key];
@@ -218,11 +250,12 @@ async function disconnectDatabases(profileId: string): Promise<void> {
   await Promise.all(
     Object.keys(dbStatuses)
       .filter((key) => key.startsWith(prefix))
-      .map((key) => disconnectDatabase(profileId, key.slice(prefix.length))),
+      .map((key) => closeDatabase(profileId, key.slice(prefix.length))),
   );
 }
 
 async function disconnect(id: string): Promise<void> {
+  if (!(await confirmTxLoss(sessionsFor(id)))) return;
   await disconnectDatabases(id);
   await closeServerSession(id);
   statuses[id] = { status: "disconnected" };
@@ -277,6 +310,8 @@ export const connections = {
   connectDatabase,
   disconnect,
   disconnectDatabase,
+  txFor,
+  noteTx,
   setActive,
   activate,
 };

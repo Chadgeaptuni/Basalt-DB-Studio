@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { mockIPC, clearMocks } from "@tauri-apps/api/mocks";
 import { connections } from "./connections.svelte";
 import { schema } from "./schema.svelte";
+import { dialogs } from "./dialogs.svelte";
 import type { ConnectionProfile } from "$lib/api/types";
 
 const sqliteProfile: ConnectionProfile = {
@@ -180,5 +181,43 @@ describe("connections store", () => {
     expect(connections.active).toBeNull();
     expect(connections.sessionsFor("p-closed")).toHaveLength(0);
     expect(schema.get(server!.sessionId)).toBeUndefined();
+  });
+
+  // Closing the session rolls an open transaction back, and nothing else on
+  // screen would say so.
+  it("asks before disconnecting a session with an open transaction", async () => {
+    const calls: string[] = [];
+    mockIPC((cmd) => {
+      calls.push(cmd);
+      if (cmd === "connect") return { sessionId: "tx1", profileId: "p1", engine: "sqlite", readOnly: false };
+      return undefined;
+    });
+    await connections.connect("p1");
+    connections.noteTx("tx1", "inTx");
+
+    const declined = connections.disconnect("p1");
+    await Promise.resolve();
+    expect(dialogs.active?.title).toBe("Disconnect with an open transaction?");
+    dialogs.cancel();
+    await declined;
+    expect(calls).not.toContain("disconnect");
+    expect(connections.statusFor("p1").status).toBe("connected");
+
+    const accepted = connections.disconnect("p1");
+    await Promise.resolve();
+    dialogs.accept();
+    await accepted;
+    expect(calls).toContain("disconnect");
+    expect(connections.txFor("tx1")).toBe("idle");
+  });
+
+  it("disconnects an idle session without asking", async () => {
+    mockIPC((cmd) =>
+      cmd === "connect" ? { sessionId: "tx2", profileId: "p1", engine: "sqlite", readOnly: false } : undefined,
+    );
+    await connections.connect("p1");
+    await connections.disconnect("p1");
+    expect(dialogs.active).toBeNull();
+    expect(connections.statusFor("p1").status).toBe("disconnected");
   });
 });

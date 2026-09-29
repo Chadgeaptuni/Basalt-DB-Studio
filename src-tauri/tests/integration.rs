@@ -140,7 +140,7 @@ async fn postgres_hides_databases_the_role_may_not_open() {
         "REVOKE CONNECT ON DATABASE basalt_private FROM PUBLIC",
     ];
     for sql in fixture {
-        let out = query_service::run(&admin.session_id, sql, None, true, None, &reg)
+        let out = query_service::run(&admin.session_id, sql, None, true, None, None, &reg)
             .await
             .expect("run the privilege fixture");
         for s in &out.statements {
@@ -173,7 +173,7 @@ async fn postgres_hides_databases_the_role_may_not_open() {
         .await
         .unwrap();
     for sql in ["DROP DATABASE basalt_private", "DROP ROLE basalt_limited"] {
-        query_service::run(&admin.session_id, sql, None, true, None, &reg)
+        query_service::run(&admin.session_id, sql, None, true, None, None, &reg)
             .await
             .expect("tear down the privilege fixture");
     }
@@ -285,6 +285,7 @@ async fn postgres_run_query_decodes_edge_types() {
         None,
         false,
         None,
+        None,
         &reg,
     )
     .await
@@ -314,6 +315,7 @@ async fn postgres_run_query_decodes_edge_types() {
         None,
         false,
         None,
+        None,
         &reg,
     )
     .await
@@ -338,6 +340,7 @@ async fn mysql_run_query_decodes_edge_types() {
         "SELECT id, amount, flag, feeling FROM edge_types WHERE id = 1",
         None,
         false,
+        None,
         None,
         &reg,
     )

@@ -5,6 +5,7 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::sync::Mutex;
@@ -12,6 +13,7 @@ use tokio::sync::Mutex;
 use crate::config::connections::ConnectionProfile;
 use crate::drivers::types::{Engine, SessionInfo, SslMode};
 use crate::drivers::Driver;
+use crate::services::query_service::{self, Editor};
 use crate::{AppError, AppResult};
 
 /// Bounds the initial connect when the profile does not set one (spec: ~10s).
@@ -27,6 +29,7 @@ pub struct Session {
     pub info: SessionInfo,
     pub driver: Driver,
     pub read_only: bool,
+    pub editor: Arc<Editor>,
 }
 
 pub type SessionRegistry = Mutex<HashMap<String, Session>>;
@@ -58,6 +61,7 @@ pub async fn connect(
             info: info.clone(),
             driver,
             read_only: profile.read_only,
+            editor: Arc::default(),
         },
     );
     Ok(info)
@@ -76,9 +80,7 @@ fn effective_profile<'a>(
     let resolved = database
         .map(str::to_owned)
         .or_else(|| profile.database.clone())
-        .or_else(|| {
-            (profile.engine == Engine::Postgres).then(|| PG_MAINTENANCE_DB.to_owned())
-        });
+        .or_else(|| (profile.engine == Engine::Postgres).then(|| PG_MAINTENANCE_DB.to_owned()));
 
     if resolved == profile.database {
         Cow::Borrowed(profile)
@@ -100,10 +102,14 @@ pub async fn test_connection(profile: &ConnectionProfile, password: Option<&str>
 }
 
 pub async fn disconnect(session_id: &str, registry: &SessionRegistry) -> AppResult<()> {
-    // Remove under the lock, then close outside it (close awaits the pool).
+    // Remove under the lock, then close outside it (close awaits the pool). A
+    // running statement is stopped first: closing waits for every connection to
+    // come back, and the editor's does not while a run holds it.
     let session = registry.lock().await.remove(session_id);
-    if let Some(session) = session {
-        session.driver.close().await;
+    if let Some(Session { driver, editor, .. }) = session {
+        let _ = query_service::stop(&driver, &editor).await;
+        drop(editor);
+        driver.close().await;
     }
     Ok(())
 }
@@ -115,8 +121,14 @@ pub async fn introspect(
     driver_for(session_id, registry).await?.introspect().await
 }
 
-pub async fn list_databases(session_id: &str, registry: &SessionRegistry) -> AppResult<Vec<String>> {
-    driver_for(session_id, registry).await?.list_databases().await
+pub async fn list_databases(
+    session_id: &str,
+    registry: &SessionRegistry,
+) -> AppResult<Vec<String>> {
+    driver_for(session_id, registry)
+        .await?
+        .list_databases()
+        .await
 }
 
 pub async fn describe_table(
@@ -147,6 +159,19 @@ pub async fn session_driver(
         .await
         .get(session_id)
         .map(|s| (s.driver.clone(), s.read_only))
+        .ok_or_else(|| AppError::Internal(format!("no active session '{session_id}'")))
+}
+
+/// The session's driver, read-only flag and editor, cloned out under a short lock.
+pub async fn session_editor(
+    session_id: &str,
+    registry: &SessionRegistry,
+) -> AppResult<(Driver, bool, Arc<Editor>)> {
+    registry
+        .lock()
+        .await
+        .get(session_id)
+        .map(|s| (s.driver.clone(), s.read_only, s.editor.clone()))
         .ok_or_else(|| AppError::Internal(format!("no active session '{session_id}'")))
 }
 
@@ -421,7 +446,11 @@ mod tests {
                 .as_deref(),
             Some("reporting")
         );
-        assert_eq!(profile.database.as_deref(), Some("app"), "profile untouched");
+        assert_eq!(
+            profile.database.as_deref(),
+            Some("app"),
+            "profile untouched"
+        );
     }
 
     // SQLite has no database name and MySQL browses every database over one

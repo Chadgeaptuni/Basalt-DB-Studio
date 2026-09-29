@@ -1,6 +1,7 @@
 //! App settings TOML (`settings.toml`). `datetime_display` controls how cells
 //! *render*, never the stored/edited value; `default_row_limit` is the fetch cap
-//! the editor passes per run. Lives in the config dir.
+//! and `statement_timeout_secs` (0 = off) the cancel deadline the editor passes
+//! per run. Lives in the config dir.
 
 use std::fs;
 
@@ -18,11 +19,13 @@ pub enum DatetimeDisplay {
     Utc,
 }
 
+/// `default` so a settings file written before a field existed still loads.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", default)]
 pub struct AppSettings {
     pub default_row_limit: u32,
     pub datetime_display: DatetimeDisplay,
+    pub statement_timeout_secs: u32,
 }
 
 impl Default for AppSettings {
@@ -30,6 +33,7 @@ impl Default for AppSettings {
         Self {
             default_row_limit: 500,
             datetime_display: DatetimeDisplay::Stored,
+            statement_timeout_secs: 0,
         }
     }
 }
@@ -72,6 +76,7 @@ mod tests {
         let custom = AppSettings {
             default_row_limit: 2000,
             datetime_display: DatetimeDisplay::Local,
+            statement_timeout_secs: 30,
         };
         save(&paths, &custom).unwrap();
         assert_eq!(load(&paths).unwrap(), custom);
@@ -82,10 +87,18 @@ mod tests {
     #[test]
     fn datetime_display_serializes_lowercase() {
         let settings = AppSettings {
-            default_row_limit: 1000,
             datetime_display: DatetimeDisplay::Utc,
+            ..AppSettings::default()
         };
         let text = toml::to_string(&settings).unwrap();
         assert!(text.contains("datetimeDisplay = \"utc\""), "got:\n{text}");
+    }
+
+    #[test]
+    fn a_file_from_before_the_timeout_setting_still_loads() {
+        let parsed: AppSettings =
+            toml::from_str("defaultRowLimit = 100\ndatetimeDisplay = \"local\"\n").unwrap();
+        assert_eq!(parsed.default_row_limit, 100);
+        assert_eq!(parsed.statement_timeout_secs, 0);
     }
 }

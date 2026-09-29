@@ -10,12 +10,11 @@
 use std::time::Instant;
 
 use futures_util::StreamExt;
-use sqlx::pool::PoolConnection;
-use sqlx::{AssertSqlSafe, Database, Executor, IntoArguments};
+use sqlx::{AssertSqlSafe, Database, Executor, IntoArguments, Row, SqlSafeStr, Statement as _};
 
 use crate::drivers::types::{CellValue, ColumnInfo, StatementError, StatementResult};
 use crate::sqlgen::{self, Statement};
-use crate::{AppError, AppResult};
+use crate::AppError;
 
 /// Bridges the per-engine `rows_affected` (no generic `QueryResult` trait exists).
 pub trait Affected {
@@ -38,31 +37,40 @@ impl Affected for sqlx::sqlite::SqliteQueryResult {
     }
 }
 
-/// Runs every statement on a single pooled connection (so a `BEGIN`/`COMMIT` in
-/// the batch shares one connection). Stops at the first failing statement,
-/// carrying its error on that statement's result.
+/// What a batch produced, and whether the connection it ran on is still usable.
+pub struct Batch {
+    pub results: Vec<StatementResult>,
+    /// A failure below the SQL layer (socket, protocol, worker): the connection
+    /// cannot be trusted with the next run.
+    pub broken: bool,
+}
+
+/// Runs every statement on one connection (so a `BEGIN`/`COMMIT` in the batch
+/// shares it). Stops at the first failing statement, carrying its error on that
+/// statement's result.
 pub async fn run_batch<DB, FC, FR>(
-    pool: &sqlx::Pool<DB>,
+    conn: &mut DB::Connection,
     statements: &[Statement],
     limit: usize,
     columns_of: FC,
     decode: FR,
-) -> AppResult<Vec<StatementResult>>
+) -> Batch
 where
     DB: Database,
     DB::QueryResult: Affected,
     for<'c> &'c mut DB::Connection: Executor<'c, Database = DB>,
     DB::Arguments: IntoArguments<DB> + Default,
-    FC: Fn(&DB::Row) -> Vec<ColumnInfo>,
+    FC: Fn(&[DB::Column]) -> Vec<ColumnInfo>,
     FR: Fn(&DB::Row) -> Vec<CellValue>,
 {
-    let mut conn = pool.acquire().await.map_err(AppError::internal)?;
-    let mut out = Vec::with_capacity(statements.len());
+    let mut results = Vec::with_capacity(statements.len());
     for stmt in statements {
-        match run_one::<DB, _, _>(&mut conn, &stmt.text, limit, &columns_of, &decode).await {
-            Ok(result) => out.push(result),
+        match run_one::<DB, _, _>(conn, &stmt.text, limit, &columns_of, &decode).await {
+            Ok(result) => results.push(result),
             Err(e) => {
-                out.push(StatementResult {
+                let broken = !matches!(e, sqlx::Error::Database(_));
+                let e = map_query_error(e);
+                results.push(StatementResult {
                     columns: Vec::new(),
                     rows: Vec::new(),
                     rows_affected: 0,
@@ -74,26 +82,29 @@ where
                         detail: e.detail(),
                     }),
                 });
-                break;
+                return Batch { results, broken };
             }
         }
     }
-    Ok(out)
+    Batch {
+        results,
+        broken: false,
+    }
 }
 
 async fn run_one<DB, FC, FR>(
-    conn: &mut PoolConnection<DB>,
+    conn: &mut DB::Connection,
     text: &str,
     limit: usize,
     columns_of: &FC,
     decode: &FR,
-) -> AppResult<StatementResult>
+) -> Result<StatementResult, sqlx::Error>
 where
     DB: Database,
     DB::QueryResult: Affected,
     for<'c> &'c mut DB::Connection: Executor<'c, Database = DB>,
     DB::Arguments: IntoArguments<DB> + Default,
-    FC: Fn(&DB::Row) -> Vec<ColumnInfo>,
+    FC: Fn(&[DB::Column]) -> Vec<ColumnInfo>,
     FR: Fn(&DB::Row) -> Vec<CellValue>,
 {
     let start = Instant::now();
@@ -103,11 +114,11 @@ where
         let mut rows = Vec::new();
         let mut truncated = false;
         {
-            let mut stream = sqlx::query(AssertSqlSafe(text.to_owned())).fetch(&mut **conn);
+            let mut stream = sqlx::query(AssertSqlSafe(text.to_owned())).fetch(&mut *conn);
             while let Some(item) = stream.next().await {
-                let row = item.map_err(map_query_error)?;
+                let row = item?;
                 if columns.is_empty() {
-                    columns = columns_of(&row);
+                    columns = columns_of(row.columns());
                 }
                 if rows.len() < limit {
                     rows.push(decode(&row));
@@ -115,6 +126,17 @@ where
                     truncated = true;
                     break;
                 }
+            }
+        }
+        // No row, no row description: prepare the statement for its column list so
+        // an empty result still shows its headers. Best effort — a statement the
+        // engine will not prepare simply stays headerless.
+        if columns.is_empty() {
+            if let Ok(prepared) = (&mut *conn)
+                .prepare(AssertSqlSafe(text.to_owned()).into_sql_str())
+                .await
+            {
+                columns = columns_of(prepared.columns());
             }
         }
         let rows_affected = rows.len() as u64;
@@ -128,9 +150,8 @@ where
         })
     } else {
         let result = sqlx::query(AssertSqlSafe(text.to_owned()))
-            .execute(&mut **conn)
-            .await
-            .map_err(map_query_error)?;
+            .execute(&mut *conn)
+            .await?;
         Ok(StatementResult {
             columns: Vec::new(),
             rows: Vec::new(),
@@ -147,6 +168,13 @@ where
 /// with the grid-commit loop (`super::grid`).
 pub(super) fn map_query_error(e: sqlx::Error) -> AppError {
     match &e {
+        // pg `57014 query_canceled`; MySQL `ER_QUERY_INTERRUPTED` (1317) → `70100`;
+        // SQLite `SQLITE_INTERRUPT` (9), raised by the pinned connection's handler.
+        sqlx::Error::Database(db)
+            if matches!(db.code().as_deref(), Some("57014" | "70100" | "9")) =>
+        {
+            AppError::QueryCancelled(db.message().to_string())
+        }
         sqlx::Error::Database(db) => AppError::QueryError {
             message: db.message().to_string(),
             detail: db

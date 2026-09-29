@@ -3,10 +3,14 @@ import type { AppSettings, DatetimeDisplay } from "$lib/api/types";
 import { toast } from "./toasts.svelte";
 
 // App settings (persisted to settings.toml). `datetimeDisplay` drives cell
-// rendering; `defaultRowLimit` is the fetch cap the editor passes per run. Loaded
+// rendering; `defaultRowLimit` and `statementTimeoutSecs` go with every run. Loaded
 // once at startup; every setter persists immediately (optimistic — DESIGN §8).
 
-const DEFAULTS: AppSettings = { defaultRowLimit: 500, datetimeDisplay: "stored" };
+const DEFAULTS: AppSettings = {
+  defaultRowLimit: 500,
+  datetimeDisplay: "stored",
+  statementTimeoutSecs: 0,
+};
 
 let current = $state<AppSettings>({ ...DEFAULTS });
 
@@ -28,6 +32,9 @@ export const settings = {
   get defaultRowLimit() {
     return current.defaultRowLimit;
   },
+  get statementTimeoutSecs() {
+    return current.statementTimeoutSecs;
+  },
   /** Load persisted settings at startup; stays on defaults if the read fails. */
   async load(): Promise<void> {
     try {
@@ -42,6 +49,10 @@ export const settings = {
   },
   setDefaultRowLimit(limit: number): void {
     current.defaultRowLimit = limit;
+    void persist();
+  },
+  setStatementTimeoutSecs(secs: number): void {
+    current.statementTimeoutSecs = secs;
     void persist();
   },
 };

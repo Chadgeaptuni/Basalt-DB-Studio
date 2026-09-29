@@ -1,8 +1,9 @@
 import { clearMocks, mockIPC } from "@tauri-apps/api/mocks";
 import { fireEvent, render, screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { CellValue, RunResult, StatementResult } from "$lib/api/types";
+import type { CellValue, RunResult, SessionInfo, StatementResult } from "$lib/api/types";
 import { editorTabs } from "$lib/stores/tabs.svelte";
+import { connections } from "$lib/stores/connections.svelte";
 import { zoom } from "$lib/stores/zoom.svelte";
 import StatusBar from "./StatusBar.svelte";
 
@@ -17,11 +18,16 @@ const statement = (over: Partial<StatementResult> = {}): StatementResult => ({
   ...over,
 });
 
+const session: SessionInfo = { sessionId: "s-status", profileId: "p", engine: "postgres", readOnly: false };
+
+/** A run as the editor records it: the result on the tab, the tx on the session. */
 function seedRun(result: RunResult): void {
   const id = editorTabs.open("select 1");
   const tab = editorTabs.find(id);
   if (!tab) throw new Error("tab not opened");
   tab.result = result;
+  connections.setActive(session);
+  connections.noteTx(session.sessionId, result.txStatus);
 }
 
 beforeEach(() => {
@@ -33,6 +39,8 @@ afterEach(() => {
   clearMocks();
   zoom.reset();
   for (const t of [...editorTabs.list]) editorTabs.close(t.id);
+  connections.noteTx(session.sessionId, "idle");
+  connections.setActive(null);
 });
 
 describe("StatusBar zoom stepper", () => {

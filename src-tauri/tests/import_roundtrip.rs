@@ -15,7 +15,7 @@ fn write_csv(body: &str) -> String {
 }
 
 async fn scalar_text(sid: &str, sql: &str, reg: &connection_service::SessionRegistry) -> String {
-    let out = query_service::run(sid, sql, None, false, None, reg)
+    let out = query_service::run(sid, sql, None, false, None, None, reg)
         .await
         .unwrap();
     match &out.statements[0].rows[0][0] {
@@ -33,14 +33,23 @@ async fn import_roundtrip(url: &str, namespace: &str) {
     let sid = &info.session_id;
     let cols = vec!["id".to_string(), "name".to_string()];
 
-    query_service::run(sid, "DROP TABLE IF EXISTS imp_rt", None, true, None, &reg)
-        .await
-        .unwrap();
+    query_service::run(
+        sid,
+        "DROP TABLE IF EXISTS imp_rt",
+        None,
+        true,
+        None,
+        None,
+        &reg,
+    )
+    .await
+    .unwrap();
     query_service::run(
         sid,
         "CREATE TABLE imp_rt (id int PRIMARY KEY, name varchar(50))",
         None,
         true,
+        None,
         None,
         &reg,
     )
@@ -101,7 +110,7 @@ async fn import_roundtrip(url: &str, namespace: &str) {
         "new"
     );
 
-    query_service::run(sid, "DROP TABLE imp_rt", None, true, None, &reg)
+    query_service::run(sid, "DROP TABLE imp_rt", None, true, None, None, &reg)
         .await
         .unwrap();
     connection_service::disconnect(sid, &reg).await.unwrap();

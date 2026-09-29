@@ -1,5 +1,6 @@
 <script lang="ts">
   import Play from "@lucide/svelte/icons/play";
+  import Square from "@lucide/svelte/icons/square";
   import WrapText from "@lucide/svelte/icons/wrap-text";
   import Save from "@lucide/svelte/icons/save";
   import Button from "$lib/components/ui/Button.svelte";
@@ -60,11 +61,14 @@
     confirmed: boolean,
   ): Promise<void> {
     if (!tab || !sess) return;
-    const result = await queryApi.run(sess.sessionId, payload.sql, {
+    const sessionId = sess.sessionId;
+    const result = await queryApi.run(sessionId, payload.sql, {
       cursorOffset: payload.cursorOffset,
       confirmed,
       limit: settings.defaultRowLimit,
+      timeoutSecs: settings.statementTimeoutSecs,
     });
+    connections.noteTx(sessionId, result.txStatus);
     tab.result = result;
     tab.lastRunSql = payload.sql;
     tab.activeStatement = 0;
@@ -89,6 +93,7 @@
     tab.running = true;
     tab.runError = null;
     tab.runStartedAt = Date.now();
+    runningSession = sess.sessionId;
     try {
       await runOnce(payload, false);
     } catch (e) {
@@ -110,6 +115,20 @@
       tab.runStartedAt = null;
     }
   }
+
+  // The session the run went to, not the active one — the user may have pointed
+  // the workspace elsewhere while it runs.
+  let runningSession: string | null = null;
+
+  function cancel(): void {
+    if (!tab?.running || !runningSession) return;
+    queryApi.cancel(runningSession).catch((e) => toast.fromError(e, "Couldn't cancel the query"));
+  }
+
+  $effect(() => {
+    if (!tab?.running) return;
+    return keyboard.register("escape", cancel);
+  });
 
   async function confirmDestructive(err: ApiError): Promise<boolean> {
     const detail = err.detail as { statements?: { statement: string; reason: string }[] } | undefined;
@@ -140,16 +159,17 @@
 
 <div class="flex h-full flex-col bg-surface">
   <div class="flex h-10 shrink-0 items-center gap-2 border-b border-outline-variant px-2">
-    <Button
-      variant="filled"
-      size="sm"
-      disabled={!canRun}
-      loading={tab?.running}
-      onclick={() => tab && handleRun({ sql: tab.sql })}
-    >
-      <Play size={14} strokeWidth={2} /> Run
-    </Button>
-    <span class="text-label-sm text-on-surface-muted">{keyboard.label("mod+enter")} at cursor</span>
+    {#if tab?.running}
+      <Button variant="tonal" size="sm" onclick={cancel}>
+        <Square size={14} strokeWidth={2} /> Cancel
+      </Button>
+      <span class="text-label-sm text-on-surface-muted">{keyboard.label("escape")}</span>
+    {:else}
+      <Button variant="filled" size="sm" disabled={!canRun} onclick={() => tab && handleRun({ sql: tab.sql })}>
+        <Play size={14} strokeWidth={2} /> Run
+      </Button>
+      <span class="text-label-sm text-on-surface-muted">{keyboard.label("mod+enter")} at cursor</span>
+    {/if}
     <div class="flex-1"></div>
     <IconButton
       icon={Save}

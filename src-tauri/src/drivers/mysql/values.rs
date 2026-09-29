@@ -5,16 +5,15 @@
 //! ENUM/SET decode as `Text`.
 
 use serde_json::Value;
-use sqlx::mysql::MySqlRow;
+use sqlx::mysql::{MySqlColumn, MySqlRow};
 use sqlx::types::chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use sqlx::types::BigDecimal;
 use sqlx::{Column, MySql, QueryBuilder, Row, TypeInfo, ValueRef};
 
 use crate::drivers::types::{BytesPreview, CellValue, ColumnInfo, UnknownValue};
 
-pub fn columns(row: &MySqlRow) -> Vec<ColumnInfo> {
-    row.columns()
-        .iter()
+pub fn columns(cols: &[MySqlColumn]) -> Vec<ColumnInfo> {
+    cols.iter()
         .map(|c| ColumnInfo {
             name: c.name().to_string(),
             type_name: c.type_info().name().to_string(),

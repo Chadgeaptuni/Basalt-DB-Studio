@@ -159,14 +159,27 @@
                 />
               {/snippet}
             </SettingRow>
+
+            <SettingRow
+              label="Statement timeout"
+              hint="Seconds before a running statement is cancelled. 0 never cancels."
+            >
+              {#snippet control(label)}
+                <NumberField
+                  {label}
+                  value={settings.statementTimeoutSecs}
+                  min={0}
+                  step={5}
+                  onchange={settings.setStatementTimeoutSecs}
+                />
+              {/snippet}
+            </SettingRow>
           </SettingsGroup>
         {:else if activeTab === "appearance"}
           <section class="flex flex-col gap-3">
             <div class="flex items-center justify-between gap-3">
               <div class="min-w-0">
-                <h3 class="text-overline">
-                  Themes &amp; Variants
-                </h3>
+                <h3 class="text-overline">Themes &amp; Variants</h3>
                 <p class="text-body-sm text-on-surface-muted">Choose a color palette and display mode.</p>
               </div>
               <span

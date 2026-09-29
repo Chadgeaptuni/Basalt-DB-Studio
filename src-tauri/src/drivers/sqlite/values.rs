@@ -4,14 +4,13 @@
 //! booleans have no native type — they arrive as their stored class (text/int)
 //! and render as such, matching how SQLite itself sees them.
 
-use sqlx::sqlite::SqliteRow;
+use sqlx::sqlite::{SqliteColumn, SqliteRow};
 use sqlx::{Column, QueryBuilder, Row, Sqlite, TypeInfo, ValueRef};
 
 use crate::drivers::types::{BytesPreview, CellValue, ColumnInfo, UnknownValue};
 
-pub fn columns(row: &SqliteRow) -> Vec<ColumnInfo> {
-    row.columns()
-        .iter()
+pub fn columns(cols: &[SqliteColumn]) -> Vec<ColumnInfo> {
+    cols.iter()
         .map(|c| ColumnInfo {
             name: c.name().to_string(),
             type_name: c.type_info().name().to_string(),
@@ -127,7 +126,7 @@ mod tests {
         );
         assert_eq!(cells[4], CellValue::Null);
 
-        let meta = columns(&row);
+        let meta = columns(row.columns());
         assert_eq!(
             meta.iter().map(|c| c.name.as_str()).collect::<Vec<_>>(),
             ["i", "r", "t", "b", "n"]

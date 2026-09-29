@@ -3,14 +3,14 @@
 //! literal never counts and a leading comment never hides the keyword.
 
 use super::split::mask_noise;
+use crate::drivers::types::Engine;
 
-/// The transaction control a statement performs, for MySQL/SQLite tx tracking
-/// (Postgres reads real tx status from the connection instead).
+/// The transaction control a statement performs, for the session's tx status.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TxEffect {
     Begin,
-    Commit,
-    Rollback,
+    /// COMMIT, ROLLBACK, or a statement that commits implicitly.
+    End,
     None,
 }
 
@@ -72,7 +72,9 @@ pub fn returns_rows(text: &str) -> bool {
     ) || has_word(&masked, "RETURNING")
 }
 
-pub fn tx_effect(text: &str) -> TxEffect {
+// ponytail: keyword classification, so a tx opened inside a function body or by
+// `SET autocommit = 0` goes unseen; read the protocol status if sqlx exposes it.
+pub fn tx_effect(text: &str, engine: Engine) -> TxEffect {
     let masked = mask_noise(text);
     let mut words = masked.split_whitespace();
     match words.next().map(str::to_ascii_uppercase).as_deref() {
@@ -83,10 +85,18 @@ pub fn tx_effect(text: &str) -> TxEffect {
         {
             TxEffect::Begin
         }
+        // `ROLLBACK TO [SAVEPOINT] x` undoes to a savepoint and keeps the tx open.
+        Some("ROLLBACK") if has_word(&masked, "TO") => TxEffect::None,
         // pg/SQLite treat `END` as commit; MySQL only uses it to close blocks,
         // which are dollar/BEGIN…END bodies that never arrive here standalone.
-        Some("COMMIT" | "END") => TxEffect::Commit,
-        Some("ROLLBACK") => TxEffect::Rollback,
+        Some("COMMIT" | "END" | "ROLLBACK") => TxEffect::End,
+        // MySQL commits an open tx before any DDL (dev.mysql.com, "Statements That
+        // Cause an Implicit Commit"); temporary tables are the exception.
+        Some("CREATE" | "ALTER" | "DROP" | "TRUNCATE" | "RENAME")
+            if engine == Engine::MySql && !has_word(&masked, "TEMPORARY") =>
+        {
+            TxEffect::End
+        }
         _ => TxEffect::None,
     }
 }
@@ -149,11 +159,42 @@ mod tests {
 
     #[test]
     fn tx_effect_detection() {
-        assert_eq!(tx_effect("BEGIN"), TxEffect::Begin);
-        assert_eq!(tx_effect("start transaction"), TxEffect::Begin);
-        assert_eq!(tx_effect("COMMIT"), TxEffect::Commit);
-        assert_eq!(tx_effect("rollback"), TxEffect::Rollback);
-        assert_eq!(tx_effect("SELECT 1"), TxEffect::None);
-        assert_eq!(tx_effect("START"), TxEffect::None);
+        let pg = Engine::Postgres;
+        assert_eq!(tx_effect("BEGIN", pg), TxEffect::Begin);
+        assert_eq!(tx_effect("start transaction", pg), TxEffect::Begin);
+        assert_eq!(tx_effect("COMMIT", pg), TxEffect::End);
+        assert_eq!(tx_effect("rollback", pg), TxEffect::End);
+        assert_eq!(tx_effect("SELECT 1", pg), TxEffect::None);
+        assert_eq!(tx_effect("START", pg), TxEffect::None);
+    }
+
+    #[test]
+    fn rollback_to_a_savepoint_keeps_the_tx_open() {
+        assert_eq!(
+            tx_effect("ROLLBACK TO SAVEPOINT a", Engine::Postgres),
+            TxEffect::None
+        );
+        assert_eq!(tx_effect("rollback to a", Engine::MySql), TxEffect::None);
+        assert_eq!(
+            tx_effect("ROLLBACK TRANSACTION TO a", Engine::Sqlite),
+            TxEffect::None
+        );
+    }
+
+    #[test]
+    fn mysql_ddl_commits_implicitly_but_not_elsewhere() {
+        assert_eq!(
+            tx_effect("CREATE TABLE t (a int)", Engine::MySql),
+            TxEffect::End
+        );
+        assert_eq!(tx_effect("DROP TABLE t", Engine::MySql), TxEffect::End);
+        assert_eq!(
+            tx_effect("CREATE TEMPORARY TABLE t (a int)", Engine::MySql),
+            TxEffect::None
+        );
+        assert_eq!(
+            tx_effect("CREATE TABLE t (a int)", Engine::Postgres),
+            TxEffect::None
+        );
     }
 }

@@ -45,6 +45,7 @@
     runError = null;
     try {
       const result = await queryApi.run(sess.sessionId, sql, { confirmed: true });
+      connections.noteTx(sess.sessionId, result.txStatus);
       const failed = result.statements.find((s) => s.error);
       if (failed?.error) {
         runError = failed.error;

@@ -4,16 +4,15 @@
 //! text-castable type) decode as `Text`; everything else falls back to `Unknown`.
 
 use serde_json::Value;
-use sqlx::postgres::PgRow;
+use sqlx::postgres::{PgColumn, PgRow};
 use sqlx::types::chrono::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
 use sqlx::types::{BigDecimal, Uuid};
 use sqlx::{Column, Postgres, QueryBuilder, Row, TypeInfo, ValueRef};
 
 use crate::drivers::types::{BytesPreview, CellValue, ColumnInfo, UnknownValue};
 
-pub fn columns(row: &PgRow) -> Vec<ColumnInfo> {
-    row.columns()
-        .iter()
+pub fn columns(cols: &[PgColumn]) -> Vec<ColumnInfo> {
+    cols.iter()
         .map(|c| ColumnInfo {
             name: c.name().to_string(),
             type_name: c.type_info().name().to_string(),
