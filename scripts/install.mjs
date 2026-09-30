@@ -26,7 +26,8 @@ const installed = win
   ? path.join(process.env.LOCALAPPDATA, 'Programs', productName, `${productName}.exe`)
   : path.join('/Applications', `${productName}.app`);
 
-const run = (cmd, args, opts = {}) => spawnSync(cmd, args, { cwd: root, stdio: 'inherit', shell: true, ...opts });
+// A shell resolves pnpm.cmd on Windows; args are pre-quoted by the callers.
+const run = (cmd, args, opts = {}) => spawnSync([cmd, ...args].join(' '), { cwd: root, stdio: 'inherit', shell: true, ...opts });
 const build = (...flags) => {
   const { status } = run('pnpm', ['tauri', 'build', ...flags, ...process.argv.slice(2).filter((a) => !a.startsWith('--roll') && a !== '--dist')]);
   if (status !== 0) process.exit(status ?? 1);
