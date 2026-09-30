@@ -87,3 +87,9 @@ lto = true
 opt-level = "s"
 panic = "abort"
 strip = true
+
+[profile.release.build-override]
+# rustc strips via rust-objcopy, which leaves a dylib's LINKEDIT string pool
+# 4-byte aligned; macOS 27 dyld then refuses to dlopen stripped proc-macros.
+# Build scripts and proc-macros never ship, so this costs no bundle size.
+strip = false
