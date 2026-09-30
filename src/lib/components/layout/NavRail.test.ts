@@ -6,7 +6,7 @@ import { DESTINATIONS } from "./destinations";
 import NavRail from "./NavRail.svelte";
 
 beforeEach(() => {
-  panel.select("schema");
+  panel.select("connections");
   panel.setCollapsed(false);
 });
 
@@ -22,34 +22,34 @@ describe("NavRail", () => {
 
   it("marks only the showing destination as selected", async () => {
     render(NavRail);
-    expect(screen.getByRole("tab", { name: "Schema" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Connections" })).toHaveAttribute("aria-selected", "true");
 
     await fireEvent.click(screen.getByRole("tab", { name: "History" }));
 
     expect(panel.active).toBe("history");
     expect(screen.getByRole("tab", { name: "History" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("tab", { name: "Schema" })).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByRole("tab", { name: "Connections" })).toHaveAttribute("aria-selected", "false");
   });
 
   // A collapsed panel means no destination is showing, even though one is still
   // the active choice — otherwise the rail claims to display a hidden panel.
   it("deselects while the panel is collapsed", async () => {
     render(NavRail);
-    await fireEvent.click(screen.getByRole("tab", { name: "Schema" }));
+    await fireEvent.click(screen.getByRole("tab", { name: "Connections" }));
 
     expect(panel.collapsed).toBe(true);
-    expect(screen.getByRole("tab", { name: "Schema" })).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByRole("tab", { name: "Connections" })).toHaveAttribute("aria-selected", "false");
   });
 
   it("moves focus with the arrow keys without selecting", async () => {
     render(NavRail);
-    const schema = screen.getByRole("tab", { name: "Schema" });
-    schema.focus();
+    const connectionsTab = screen.getByRole("tab", { name: "Connections" });
+    connectionsTab.focus();
 
-    await fireEvent.keyDown(schema, { key: "ArrowDown" });
+    await fireEvent.keyDown(connectionsTab, { key: "ArrowDown" });
 
     expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Queries" }));
-    expect(panel.active).toBe("schema"); // focus moved, selection did not
+    expect(panel.active).toBe("connections"); // focus moved, selection did not
   });
 
   it("wraps focus at both ends", async () => {
@@ -72,9 +72,9 @@ describe("NavRail", () => {
     expect(settings).not.toHaveAttribute("role", "tab");
     expect(screen.getAllByRole("tab")).toHaveLength(DESTINATIONS.length);
 
-    const schema = screen.getByRole("tab", { name: "Schema" });
-    schema.focus();
-    await fireEvent.keyDown(schema, { key: "End" });
+    const connectionsTab = screen.getByRole("tab", { name: "Connections" });
+    connectionsTab.focus();
+    await fireEvent.keyDown(connectionsTab, { key: "End" });
 
     const last = DESTINATIONS[DESTINATIONS.length - 1].label;
     expect(document.activeElement).toBe(screen.getByRole("tab", { name: last }));
@@ -85,12 +85,12 @@ describe("NavRail", () => {
   // becomes a button inside a button and stops being a tab.
   it("names each destination without rendering a visible label", () => {
     render(NavRail);
-    const schema = screen.getByRole("tab", { name: "Schema" });
+    const connectionsTab = screen.getByRole("tab", { name: "Connections" });
 
-    expect(schema).toHaveAttribute("aria-label", "Schema");
-    expect(schema).toHaveTextContent("");
-    expect(schema.querySelector("button")).toBeNull();
-    expect(schema.closest("button")).toBe(schema);
+    expect(connectionsTab).toHaveAttribute("aria-label", "Connections");
+    expect(connectionsTab).toHaveTextContent("");
+    expect(connectionsTab.querySelector("button")).toBeNull();
+    expect(connectionsTab.closest("button")).toBe(connectionsTab);
   });
 
   // The open destination's panel sits right beside the icon with the same word in
@@ -99,15 +99,15 @@ describe("NavRail", () => {
   // button's DOM node alive, so keyboard focus survives activating a destination.
   it("shows no hover label on the destination that is already open", async () => {
     render(NavRail);
-    const schema = screen.getByRole("tab", { name: "Schema" });
+    const connectionsTab = screen.getByRole("tab", { name: "Connections" });
     const queries = screen.getByRole("tab", { name: "Queries" });
 
-    await fireEvent.pointerEnter(schema);
-    await fireEvent.focus(schema);
+    await fireEvent.pointerEnter(connectionsTab);
+    await fireEvent.focus(connectionsTab);
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
 
     // Both stay real trigger elements — the open one is suppressed, not unwrapped.
-    expect(schema).toHaveAttribute("data-tooltip-trigger");
+    expect(connectionsTab).toHaveAttribute("data-tooltip-trigger");
     expect(queries).toHaveAttribute("data-tooltip-trigger");
   });
 
@@ -142,8 +142,8 @@ describe("NavRail", () => {
     const pill = (name: string): string =>
       screen.getByRole("tab", { name }).querySelector("span")!.className;
 
-    expect(pill("Schema")).toContain("bg-secondary-container"); // active
-    for (const name of ["Schema", "Queries"]) {
+    expect(pill("Connections")).toContain("bg-secondary-container"); // active
+    for (const name of ["Connections", "Queries"]) {
       expect(pill(name), name).toContain("before:bg-current");
       expect(pill(name), name).toContain("isolate");
     }

@@ -19,9 +19,9 @@ tests plus the integration suites, all run live against `postgres:16`,
 self-skip when unset). Release DMG (macOS aarch64) **4.71 MB**, binary 9.6 MB.
 
 State of the product:
-- **Layout** — rail: Connections · Schema · Queries · History (+ Settings).
-  The Connections panel lists and manages profiles; opening one connects it and
-  moves to Schema, which browses the active connection only (a Postgres profile
+- **Layout** — rail: Connections · Queries · History (+ Settings).
+  The Connections panel is one pgAdmin-style tree: every profile is a root, and
+  expanding one connects it and shows its schema beneath it (a Postgres root
   opens onto its databases, each its own session). Engine logos are gone — the
   PG/MY/SQ tag names the engine.
 - **Storage** — `app_config_dir()` (`<OS config>/app.basalt.studio/`):

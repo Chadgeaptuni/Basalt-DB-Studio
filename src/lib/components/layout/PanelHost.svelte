@@ -1,6 +1,5 @@
 <script lang="ts">
   import ConnectionsPanel from "$lib/components/connections/ConnectionsPanel.svelte";
-  import SchemaTree from "$lib/components/schema/SchemaTree.svelte";
   import SavedQueriesPanel from "$lib/components/savedQueries/SavedQueriesPanel.svelte";
   import HistoryPanel from "$lib/components/history/HistoryPanel.svelte";
   import ResizeHandle from "$lib/components/ui/ResizeHandle.svelte";
@@ -53,8 +52,6 @@
     <div class="flex h-full min-h-0 flex-col" style="width:{panel.width}px">
       {#if panel.active === "connections"}
         <ConnectionsPanel />
-      {:else if panel.active === "schema"}
-        <SchemaTree />
       {:else if panel.active === "queries"}
         <SavedQueriesPanel />
       {:else}

@@ -3,7 +3,7 @@ import { panel, PANELS } from "./panel.svelte";
 
 describe("panel store", () => {
   beforeEach(() => {
-    panel.select("schema");
+    panel.select("queries");
     panel.setCollapsed(false);
   });
 
@@ -24,14 +24,14 @@ describe("panel store", () => {
   // The rail's only mouse affordance for hiding the panel: click the destination
   // that is already showing.
   it("collapses when the active destination is selected again", () => {
-    panel.select("schema");
+    panel.select("queries");
     expect(panel.collapsed).toBe(true);
-    expect(panel.active).toBe("schema"); // still the destination, just hidden
+    expect(panel.active).toBe("queries"); // still the destination, just hidden
   });
 
   it("re-selecting a collapsed destination reopens rather than toggling off", () => {
     panel.setCollapsed(true);
-    panel.select("schema");
+    panel.select("queries");
     expect(panel.collapsed).toBe(false);
   });
 

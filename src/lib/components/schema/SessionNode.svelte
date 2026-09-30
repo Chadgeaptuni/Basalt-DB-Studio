@@ -12,10 +12,11 @@
   import { connections, type ConnState } from "$lib/stores/connections.svelte";
   import { branchIndent, ICON_TONE } from "./tree";
 
-  // A tree node that owns a session — a Postgres database row. Expanding one
-  // *opens* it, the icon carries its status, the branch beneath it is what it
-  // opened, and Refresh and Disconnect act on that session. Guards against a
-  // second connect while one is in flight, which would orphan a live pool.
+  // A tree node that owns a session. A connection root and a Postgres database
+  // row are the same node at two depths: expanding one *opens* it, the icon
+  // carries its status, the branch beneath it is what it opened, and Refresh and
+  // Disconnect act on that session. Guards against a second connect while one is
+  // in flight, which would orphan a live pool.
   interface Props {
     label: string;
     icon: IconComponent;
@@ -24,6 +25,11 @@
     /** This node's session state, read from the connections store. */
     state: ConnState;
     expanded: boolean;
+    /** Whether clicking the row points the workspace at this session. False for a
+     *  node whose session is not the one statements run against: a Postgres
+     *  connection root holds the *server's* session, on the maintenance database,
+     *  and the databases beneath it are what you query. */
+    activates?: boolean;
     /** Opens this node's session. A null result re-collapses the node. */
     open: () => Promise<SessionInfo | null>;
     /** Drops this node's cached introspection. */
@@ -32,6 +38,9 @@
      *  database row that reuses its parent's session. */
     close?: () => void;
     onexpand: (expanded: boolean) => void;
+    /** Menu groups appended after this node's own session group. */
+    menu?: MenuItem[][];
+    trailing?: Snippet;
     branch: Snippet<[SessionInfo]>;
   }
 
@@ -42,10 +51,13 @@
     title,
     state,
     expanded,
+    activates = true,
     open,
     refresh,
     close,
     onexpand,
+    menu = [],
+    trailing,
     branch,
   }: Props = $props();
 
@@ -54,7 +66,7 @@
   );
 
   async function toggle(): Promise<void> {
-    if (state.session) connections.setActive(state.session);
+    if (activates && state.session) connections.setActive(state.session);
     const next = !expanded;
     onexpand(next);
     if (!next || state.status === "connected" || state.status === "connecting") return;
@@ -63,9 +75,11 @@
     if (!(await open())) onexpand(false);
   }
 
-  function items(): MenuItem[] {
+  // Two sections, because the rows mean two different things: what this session
+  // does, then whatever the node's owner adds about its subject.
+  function items(): MenuItem[][] {
     const closeNode = close;
-    return state.session
+    const session: MenuItem[] = state.session
       ? [
           { label: "Refresh", icon: RotateCw, onselect: refresh },
           ...(closeNode
@@ -82,6 +96,7 @@
             : []),
         ]
       : [{ label: "Connect", icon: Plug, onselect: () => void toggle() }];
+    return [session, ...menu].filter((group) => group.length > 0);
   }
 </script>
 
@@ -97,6 +112,7 @@
     {title}
     onclick={() => void toggle()}
     ontoggle={() => void toggle()}
+    {trailing}
   />
 </ContextMenu>
 

@@ -16,8 +16,8 @@
   import { editorTabs } from "$lib/stores/tabs.svelte";
   import { ddl } from "$lib/stores/ddl.svelte";
 
-  // One session's schema: the whole tree for MySQL and SQLite, the branch under a
-  // database row for Postgres.
+  // One session's schema: the branch under a MySQL or SQLite connection root, or
+  // under a Postgres database row.
   //
   // `activate` runs before anything that reads the *active* session — opening a
   // table tab, any DDL dialog — because the tree shows every connected session at
@@ -29,11 +29,11 @@
     filter: string;
     kind: "all" | RelationKind;
     activate: () => void;
-    /** Depth of this branch's first namespace row. 0 at the top of the tree; 1
+    /** Depth of this branch's first namespace row. 1 under a connection root; 2
      *  under a Postgres database node, which adds a level above. */
     depth?: number;
   }
-  let { sessionId, engine, filter, kind, activate, depth = 0 }: Props = $props();
+  let { sessionId, engine, filter, kind, activate, depth = 1 }: Props = $props();
 
   const NS_DEPTH = $derived(depth);
   const REL_DEPTH = $derived(depth + 1);

@@ -38,7 +38,7 @@ export function refreshSession(sessionId: string): void {
   schema.clearTree(sessionId);
 }
 
-/** Refresh a connection: its database list *and* every database already
+/** Refresh a connection root: its database list *and* every database already
  *  open under it. Clearing the server session's cache alone re-listed the
  *  databases — so the branch flickered as though the refresh had worked — while
  *  every open database below it kept its stale tree. */

@@ -228,10 +228,10 @@ async function attemptConnect(
     }
     into[key] = { status: "error", error: e as ApiError };
     // A failed connect is announced once, here, rather than rendered wherever the
-    // click came from: the Connections panel, the schema tree, the command palette
-    // and the start pane all call this, and an error pinned under a row is a
-    // message you have to go back and find. The status still carries the error,
-    // which is what colours the row's icon.
+    // click came from: the connection tree, the command palette and the start
+    // pane all call this, and an error pinned under a row is a message you have to
+    // go back and find. The status still carries the error, which is what colours
+    // the root's icon.
     toast.fromError(e, `Connect to “${label}”`);
     return null;
   }

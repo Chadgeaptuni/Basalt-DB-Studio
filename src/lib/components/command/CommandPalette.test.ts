@@ -35,7 +35,7 @@ beforeEach(async () => {
     return null;
   });
   await schema.loadTree(SESSION);
-  panel.select("schema");
+  panel.select("queries");
   panel.setCollapsed(false);
 });
 

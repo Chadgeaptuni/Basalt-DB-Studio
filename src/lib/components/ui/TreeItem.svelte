@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import type { IconComponent } from "./icon";
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
   import ChevronDown from "@lucide/svelte/icons/chevron-down";
@@ -19,6 +20,8 @@
     ondblclick?: () => void;
     oncontextmenu?: (e: MouseEvent) => void;
     ontoggle?: () => void;
+    /** Right-aligned markers after the label — a connection's environment badge. */
+    trailing?: Snippet;
   }
 
   let {
@@ -34,6 +37,7 @@
     ondblclick,
     oncontextmenu,
     ontoggle,
+    trailing,
   }: Props = $props();
 </script>
 
@@ -89,5 +93,6 @@
     <span class="w-4 shrink-0"></span>
   {/if}
   {#if Icon}<Icon size={14} strokeWidth={2} class="shrink-0 {iconClass}" />{/if}
-  <span class="truncate">{label}</span>
+  <span class="min-w-0 truncate">{label}</span>
+  {#if trailing}<span class="ml-auto flex shrink-0 items-center">{@render trailing()}</span>{/if}
 </div>
