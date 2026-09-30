@@ -175,7 +175,14 @@
         <Input type="password" bind:value={password} />
       </Field>
       <TlsFields bind:tls />
-      <SshFields bind:ssh bind:secret={sshSecret} />
+      <SshFields
+        bind:ssh
+        bind:secret={sshSecret}
+        onforward={(target) => {
+          host = target.host;
+          portStr = String(target.port);
+        }}
+      />
       <Checkbox bind:checked={remember} label="Save passwords in the OS keychain" />
     {/if}
 

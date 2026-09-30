@@ -189,7 +189,7 @@ async fn agent(handle: &mut Handle<KnownHosts>, user: &str) -> AppResult<bool> {
 }
 
 /// `~/` in a key path, as every SSH tool accepts it.
-fn expand_home(path: &str) -> PathBuf {
+pub(crate) fn expand_home(path: &str) -> PathBuf {
     match (path.strip_prefix("~/"), std::env::home_dir()) {
         (Some(rest), Some(home)) => home.join(rest),
         _ => PathBuf::from(path),

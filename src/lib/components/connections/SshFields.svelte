@@ -4,7 +4,9 @@
   import Select from "$lib/components/ui/Select.svelte";
   import Checkbox from "$lib/components/ui/Checkbox.svelte";
   import PathField from "./PathField.svelte";
-  import type { SshAuthKind, SshConfig } from "$lib/api/types";
+  import { connectionsApi } from "$lib/api/connections";
+  import { toast } from "$lib/stores/toasts.svelte";
+  import type { SshAuthKind, SshConfig, SshHost } from "$lib/api/types";
 
   // An SSH bastion in front of the database. The host and port above are then
   // the database's address as the bastion sees it. `secret` is the SSH password
@@ -12,8 +14,10 @@
   interface Props {
     ssh: SshConfig | undefined;
     secret: string;
+    /** A picked host's `LocalForward` target, for the database fields above. */
+    onforward: (target: { host: string; port: number }) => void;
   }
-  let { ssh = $bindable(), secret = $bindable() }: Props = $props();
+  let { ssh = $bindable(), secret = $bindable(), onforward }: Props = $props();
 
   const AUTH = [
     { value: "agent", label: "SSH agent" },
@@ -33,11 +37,37 @@
     get: () => ssh?.keyPath ?? "",
     set: (v: string) => ssh && (ssh.keyPath = v.trim() || undefined),
   };
+
+  // Picking a host from ~/.ssh/config copies it into the profile once; editing
+  // the config later does not reach a saved profile until it is picked again.
+  function loadHosts() {
+    return connectionsApi.sshHosts().catch((e) => {
+      toast.fromError(e);
+      return [] as SshHost[];
+    });
+  }
+  function pick(host: SshHost) {
+    ssh = { ...host.ssh };
+    if (host.forward) onforward(host.forward);
+  }
 </script>
 
 <Checkbox bind:checked={enabled.get, enabled.set} label="Connect through an SSH tunnel" />
 
 {#if ssh}
+  <!-- No saved hosts, no picker: the typed fields below are the whole form. -->
+  {#await loadHosts() then hosts}
+    {#if hosts.length}
+      <Field label="Saved host">
+        <Select
+          label="Saved host"
+          options={hosts.map((h, i) => ({ value: String(i), label: h.alias }))}
+          placeholder="From ~/.ssh/config"
+          onchange={(i) => pick(hosts[Number(i)])}
+        />
+      </Field>
+    {/if}
+  {/await}
   <div class="grid grid-cols-3 gap-2">
     <div class="col-span-2">
       <Field label="SSH host"><Input bind:value={ssh.host} placeholder="bastion.example.com" /></Field>

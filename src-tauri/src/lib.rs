@@ -10,6 +10,7 @@ pub mod drivers;
 pub mod secrets;
 pub mod services;
 pub mod sqlgen;
+pub mod ssh_hosts;
 pub mod state;
 pub mod tunnel;
 
@@ -68,6 +69,7 @@ pub fn run() {
             commands::connections::test_connection,
             commands::connections::connect,
             commands::connections::disconnect,
+            commands::connections::list_ssh_hosts,
             commands::introspect::introspect,
             commands::introspect::list_databases,
             commands::introspect::describe_table,

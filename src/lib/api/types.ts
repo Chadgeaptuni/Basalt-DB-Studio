@@ -67,6 +67,14 @@ export interface SshConfig {
   keyPath?: string;
 }
 
+/** A `Host` from ~/.ssh/config as `ssh -G` resolves it. Mirrors `ssh_hosts::SshHost`. */
+export interface SshHost {
+  alias: string;
+  ssh: SshConfig;
+  /** The first `LocalForward`'s target: the database as the SSH server sees it. */
+  forward?: { host: string; port: number };
+}
+
 /** Which deployment a profile points at. Lives in the profile, and `undefined`
  *  means untagged — never assume `local`. */
 /** What the OS keychain holds for a profile — never part of the profile itself.

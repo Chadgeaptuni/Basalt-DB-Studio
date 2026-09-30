@@ -8,6 +8,7 @@ use crate::config::connections::{self, ConnectionProfile};
 use crate::drivers::types::{SessionInfo, SshAuthKind};
 use crate::secrets::{self, Secret};
 use crate::services::connection_service;
+use crate::ssh_hosts::{self, SshHost};
 use crate::state::AppState;
 use crate::AppResult;
 
@@ -70,6 +71,12 @@ pub async fn connect(
 #[tauri::command]
 pub async fn disconnect(session_id: String, state: State<'_, AppState>) -> AppResult<()> {
     connection_service::disconnect(&session_id, &state.sessions).await
+}
+
+/// `async` only to leave the main thread: it waits on one `ssh -G` per host.
+#[tauri::command(async)]
+pub fn list_ssh_hosts() -> Vec<SshHost> {
+    ssh_hosts::list()
 }
 
 /// The keychain is read only for what the caller did not supply.

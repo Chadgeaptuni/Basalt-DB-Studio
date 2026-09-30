@@ -1,5 +1,5 @@
 import { invoke } from "./client";
-import type { ConnectionProfile, Secret, SessionInfo } from "./types";
+import type { ConnectionProfile, Secret, SessionInfo, SshHost } from "./types";
 
 // Typed wrappers over the connection commands. The ONLY invoke site for this
 // domain (DESIGN §9). Arg keys are camelCase; Tauri maps them to snake_case.
@@ -23,4 +23,5 @@ export const connectionsApi = {
       database,
     }),
   disconnect: (sessionId: string) => invoke<void>("disconnect", { sessionId }),
+  sshHosts: () => invoke<SshHost[]>("list_ssh_hosts"),
 };
